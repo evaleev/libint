@@ -93,6 +93,7 @@ using libint2::Shell;
 
 std::vector<Atom> read_geometry(const std::string& filename);
 Matrix compute_soad(const std::vector<Atom>& atoms);
+Matrix compute_sap_matrix(const BasisSet& obs, const std::vector<Atom>& atoms);
 // computes norm of shell-blocks of A
 Matrix compute_shellblock_norm(const BasisSet& obs, const Matrix& A);
 
@@ -222,11 +223,13 @@ int main(int argc, char* argv[]) {
     // filename (.xyz) from the command line
     const auto filename = (argc > 1) ? argv[1] : "h2o.xyz";
     const auto basisname = (argc > 2) ? argv[2] : "aug-cc-pVDZ";
+    // guess type: "soad" (default) or "sap"
+    const std::string guess_type = (argc > 3) ? argv[3] : "soad";
     bool do_density_fitting = false;
     double cholesky_threshold = 1e-4;
 #ifdef HAVE_DENSITY_FITTING
-    do_density_fitting = (argc > 3);
-    const std::string dfbasisname = do_density_fitting ? argv[3] : "";
+    do_density_fitting = (argc > 4);
+    const std::string dfbasisname = do_density_fitting ? argv[4] : "";
 
     // if autoDF use e.g. -> autodf(1e-6) as command line argument
     if (dfbasisname.rfind("autodf", 0) == 0) {
@@ -339,7 +342,6 @@ int main(int argc, char* argv[]) {
     auto V = compute_1body_ints<Operator::nuclear>(
         obs, libint2::make_point_charges(atoms))[0];
     Matrix H = T + V;
-    T.resize(0, 0);
     V.resize(0, 0);
 
     // compute orthogonalizer X such that X.transpose() . S . X = I
@@ -362,40 +364,51 @@ int main(int argc, char* argv[]) {
     Matrix C;
     Matrix C_occ;
     Matrix evals;
-    {  // use SOAD as the guess density
+    {  // compute initial guess density
       const auto tstart = std::chrono::high_resolution_clock::now();
 
-      auto D_minbs =
-          libint2::compute_soad(atoms);  // compute guess in minimal basis
-      BasisSet minbs("STO-3G", atoms);
-      if (minbs == obs)
-        D = D_minbs;
-      else {  // if basis != minimal basis, map non-representable SOAD guess
-              // into the AO basis
-              // by diagonalizing a Fock matrix
-        std::cout << "projecting SOAD into AO basis ... ";
-        auto F = H;
-        F += compute_2body_fock_general(
-            obs, D_minbs, minbs, true /* SOAD_D_is_shelldiagonal */,
-            std::numeric_limits<double>::epsilon()  // this is cheap, no reason
-                                                    // to be cheaper
-        );
+      if (guess_type == "sap") {
+        // SAP guess: F_guess = T + V_sap
+        std::cout << "computing SAP guess ... ";
+        auto V_sap = compute_sap_matrix(obs, atoms);
+        auto F = T + V_sap;
 
-        // solve F C = e S C by (conditioned) transformation to F' C' = e C',
-        // where
-        // F' = X.transpose() . F . X; the original C is obtained as C = X . C'
         Eigen::SelfAdjointEigenSolver<Matrix> eig_solver(X.transpose() * F * X);
         C = X * eig_solver.eigenvectors();
-
-        // compute density, D = C(occ) . C(occ)T
         C_occ = C.leftCols(ndocc);
         D = C_occ * C_occ.transpose();
 
         const auto tstop = std::chrono::high_resolution_clock::now();
         const std::chrono::duration<double> time_elapsed = tstop - tstart;
         std::cout << "done (" << time_elapsed.count() << " s)" << std::endl;
+      } else {
+        // SOAD guess (default)
+        auto D_minbs =
+            libint2::compute_soad(atoms);  // compute guess in minimal basis
+        BasisSet minbs("STO-3G", atoms);
+        if (minbs == obs)
+          D = D_minbs;
+        else {  // if basis != minimal basis, map non-representable SOAD guess
+                // into the AO basis by diagonalizing a Fock matrix
+          std::cout << "projecting SOAD into AO basis ... ";
+          auto F = H;
+          F += compute_2body_fock_general(
+              obs, D_minbs, minbs, true /* SOAD_D_is_shelldiagonal */,
+              std::numeric_limits<double>::epsilon());
+
+          Eigen::SelfAdjointEigenSolver<Matrix> eig_solver(X.transpose() * F *
+                                                           X);
+          C = X * eig_solver.eigenvectors();
+          C_occ = C.leftCols(ndocc);
+          D = C_occ * C_occ.transpose();
+
+          const auto tstop = std::chrono::high_resolution_clock::now();
+          const std::chrono::duration<double> time_elapsed = tstop - tstart;
+          std::cout << "done (" << time_elapsed.count() << " s)" << std::endl;
+        }
       }
     }
+    T.resize(0, 0);  // free kinetic energy matrix
 
     // pre-compute data for Schwarz bounds
     auto K = compute_schwarz_ints<>(obs);
@@ -919,6 +932,40 @@ std::vector<Atom> read_geometry(const std::string& filename) {
 // matrix
 // in minimal basis; occupies subshells by smearing electrons evenly over the
 // orbitals
+Matrix compute_sap_matrix(const BasisSet& obs, const std::vector<Atom>& atoms) {
+  // Load SAP + point nuclear data per center
+  auto q_gau_data = libint2::make_q_gau_data(libint2::NuclearModel::PointCharge,
+                                             atoms, "sap_helfem_large");
+
+  auto point_charges = libint2::make_point_charges(atoms);
+  const auto n = libint2::nbf(obs);
+  const auto nshells = obs.size();
+  auto shell2bf = obs.shell2bf();
+  size_t gau_max_nprim = 0;
+  for (const auto& ptr : q_gau_data)
+    if (ptr) gau_max_nprim = std::max(gau_max_nprim, ptr->size());
+  const auto max_nprim = std::max(obs.max_nprim(), gau_max_nprim);
+
+  libint2::Engine engine(Operator::q_gau, max_nprim, obs.max_l());
+  engine.set_params(std::make_tuple(q_gau_data, point_charges));
+  const auto& buf = engine.results();
+
+  Matrix V_sap = Matrix::Zero(n, n);
+  for (size_t s1 = 0; s1 < nshells; ++s1) {
+    auto bf1 = shell2bf[s1];
+    auto n1 = obs[s1].size();
+    for (size_t s2 = 0; s2 <= s1; ++s2) {
+      auto bf2 = shell2bf[s2];
+      auto n2 = obs[s2].size();
+      engine.compute(obs[s1], obs[s2]);
+      Eigen::Map<const Matrix> buf_mat(buf[0], n1, n2);
+      V_sap.block(bf1, bf2, n1, n2) = buf_mat;
+      if (s1 != s2) V_sap.block(bf2, bf1, n2, n1) = buf_mat.transpose();
+    }
+  }
+  return V_sap;
+}
+
 Matrix compute_soad(const std::vector<Atom>& atoms) {
   // compute number of atomic orbitals
   size_t nao = 0;

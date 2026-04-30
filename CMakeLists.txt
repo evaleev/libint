@@ -39,7 +39,7 @@ set(${PROJECT_NAME}_LICENSE "GPL-3.0-only for generator; LGPL-3.0-only for gener
 
 # along with project(... VERSION) above scanned by dynamic_version() from `git
 #   describe`, these are the authoritative version source (formerly in configure.ac)
-set(LIBINT_BUILDID "post999")
+set(LIBINT_BUILDID "post999" CACHE STRING "Custom build ID suffix for the exported tarball")
 set(LIBINT_SO_VERSION "2:3:0")
 set(LIBINT_DOI "10.5281/zenodo.10369117")  # 2.8.0
 
@@ -339,6 +339,9 @@ booleanize01(LIBINT2_PROFILE)
 if (LIBINT2_EXPORT_COMPRESSOR STREQUAL "gzip")
     set(LIBINT_EXPORT_COMPRESSOR_CMD "cfz")
     set(LIBINT_EXPORT_COMPRESSOR_EXT "tgz")
+elseif (LIBINT2_EXPORT_COMPRESSOR STREQUAL "xz")
+    set(LIBINT_EXPORT_COMPRESSOR_CMD "Jcf")
+    set(LIBINT_EXPORT_COMPRESSOR_EXT "tar.xz")
 elseif (LIBINT2_EXPORT_COMPRESSOR STREQUAL "bzip2")
     set(LIBINT_EXPORT_COMPRESSOR_CMD "jcf")
     set(LIBINT_EXPORT_COMPRESSOR_EXT "tbz2")

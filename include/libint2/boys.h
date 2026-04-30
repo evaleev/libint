@@ -1984,6 +1984,8 @@ template <typename Real, int K>
 struct r12_xx_K_gm_eval;
 template <typename Real>
 struct erfx_coulomb_gm_eval;
+template <typename Real>
+struct q_gau_gm_eval;
 }  // namespace os_core_ints
 
 namespace detail {
@@ -2003,6 +2005,14 @@ struct CoreEvalScratch<os_core_ints::erfx_coulomb_gm_eval<Real>> {
   CoreEvalScratch(const CoreEvalScratch&) = default;
   CoreEvalScratch(CoreEvalScratch&&) = default;
   // need to store Fm(T) for m = 0 .. mmax
+  explicit CoreEvalScratch(int mmax) { Fm_.resize(mmax + 1); }
+};
+/// q_gau_gm_eval needs extra scratch data
+template <typename Real>
+struct CoreEvalScratch<os_core_ints::q_gau_gm_eval<Real>> {
+  std::vector<Real> Fm_;
+  CoreEvalScratch(const CoreEvalScratch&) = default;
+  CoreEvalScratch(CoreEvalScratch&&) = default;
   explicit CoreEvalScratch(int mmax) { Fm_.resize(mmax + 1); }
 };
 }  // namespace detail
@@ -2145,6 +2155,77 @@ struct erfx_coulomb_gm_eval
 
  private:
   std::shared_ptr<const FmEvalType> fm_eval_;  // need for odd K
+};
+
+/// Generalized core integral evaluator for Gaussian-type nuclear potentials.
+/// Computes G_m = sum_i c_i * (α_i/(α_i+ρ))^(m+1/2) * F_m(T·α_i/(α_i+ρ))
+/// where each primitive defines one (α_i, c_i) pair.
+/// Special case: α_i = infinity contributes c_i * F_m(T) (point charge).
+/// When multiplied by the standard prefactor -q·(2/√π)·√ρ·(0_A||0_B),
+/// this produces the nuclear attraction integral for an arbitrary Gaussian
+/// potential expansion (point nuclear, finite nuclear, SAP, erf, etc.).
+/// @note needs extra scratch for Boys function values
+template <typename Real>
+struct q_gau_gm_eval : private detail::CoreEvalScratch<q_gau_gm_eval<Real>> {
+  typedef detail::CoreEvalScratch<q_gau_gm_eval<Real>> base_type;
+  typedef Real value_type;
+
+#ifndef LIBINT_USER_DEFINED_REAL
+  using FmEvalType = libint2::FmEval_Chebyshev7<double>;
+#else
+  using FmEvalType = libint2::FmEval_Reference<scalar_type>;
+#endif
+
+  q_gau_gm_eval(unsigned int mmax, Real precision) : base_type(mmax) {
+    fm_eval_ = FmEvalType::instance(mmax, precision);
+  }
+
+  /// Evaluates the generalized nuclear potential core integral.
+  /// @tparam PrimitivesContainer a range of objects with .exponent and
+  ///         .coefficient members
+  template <typename PrimitivesContainer>
+  void operator()(Real* Gm, Real rho, Real T, int mmax,
+                  const PrimitivesContainer& primitives) {
+    using std::isfinite;
+    using std::isinf;
+    using std::isnan;
+    using std::sqrt;
+
+    if (primitives.empty()) {
+      std::fill(Gm, Gm + mmax + 1, Real{0});
+      return;
+    }
+
+    std::fill(Gm, Gm + mmax + 1, Real{0});
+
+    for (const auto& prim : primitives) {
+      assert(!isnan(prim.exponent) &&
+             "q_gau_gm_eval: primitive exponent is NaN");
+      assert(prim.exponent > 0.0 &&
+             "q_gau_gm_eval: primitive exponent is non-positive");
+      assert(isfinite(prim.coefficient) &&
+             "q_gau_gm_eval: primitive coefficient is not finite");
+
+      // Only +inf is the point-charge sentinel. -inf (invalid input that
+      // escapes validation in release) falls into the Gaussian branch and
+      // produces NaN from -inf/(-inf+rho) — visibly wrong rather than silently.
+      if (isinf(prim.exponent) && prim.exponent > 0.0) {
+        // α = ∞ => (∞/(∞+ρ)) = 1, contributes c_i * F_m(T)
+        fm_eval_->eval(&base_type::Fm_[0], T, mmax);
+        for (auto m = 0; m <= mmax; ++m)
+          Gm[m] += prim.coefficient * base_type::Fm_[m];
+      } else {
+        const auto r = prim.exponent / (prim.exponent + rho);
+        fm_eval_->eval(&base_type::Fm_[0], T * r, mmax);
+        auto factor = prim.coefficient * sqrt(r);
+        for (auto m = 0; m <= mmax; ++m, factor *= r)
+          Gm[m] += factor * base_type::Fm_[m];
+      }
+    }
+  }
+
+ private:
+  std::shared_ptr<const FmEvalType> fm_eval_;
 };
 
 }  // namespace os_core_ints

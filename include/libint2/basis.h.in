@@ -32,9 +32,13 @@
 #include <libint2/util/deprecated.h>
 
 #include <cerrno>
+#include <cmath>
 #include <iostream>
 #include <fstream>
+#include <limits>
 #include <locale>
+#include <map>
+#include <memory>
 #include <vector>
 #include <stdexcept>
 
@@ -87,6 +91,68 @@ namespace libint2 {
       for (auto&& c: shell.contr)
         l = std::max(c.l, l);
     return l;
+  }
+
+  /// converts fortran scientific-notation floats that use d/D instead of e/E
+  /// @param[in,out] str string in which chars 'd' and 'D' are replaced with 'e'
+  ///                and 'E', respectively
+  inline void fortran_dfloats_to_efloats(std::string& str) {
+    for (auto& ch : str) {
+      if (ch == 'd') ch = 'e';
+      if (ch == 'D') ch = 'E';
+    }
+  }
+
+  /// @return the default locale name for parsing basis set files
+  inline const char* default_locale_name() {
+#ifdef _MSC_VER
+    return "en-US";
+#else
+    return "POSIX";
+#endif
+  }
+
+  /// determines the path to the basis data directory
+  /// @sa BasisSet::data_path()
+  inline std::string basis_data_path() {
+    std::string path;
+    const char* data_path_env = getenv("LIBINT_DATA_PATH");
+    if (data_path_env) {
+      path = data_path_env;
+    } else {
+#if defined(LIBINT_DATADIR)
+      path = std::string{LIBINT_DATADIR};
+#elif defined(LIBINT_SRCDATADIR)
+      path = std::string{LIBINT_SRCDATADIR};
+#else
+      path = std::string("@LIBINT_DATADIR_ABSOLUTE@");
+#endif
+    }
+    // validate basis_path = path + "/basis"
+    std::string basis_path = path + PATH_SEPARATOR + std::string("basis");
+    bool error = true;
+    std::error_code ec;
+    auto validate_basis_path = [&basis_path, &error, &ec]() -> void {
+      if (not basis_path.empty()) {
+        struct stat sb;
+        error = (::stat(basis_path.c_str(), &sb) == -1);
+        error = error || not S_ISDIR(sb.st_mode);
+        if (error)
+          ec = std::error_code(errno, std::generic_category());
+      }
+    };
+    validate_basis_path();
+    if (error) {  // try without "/basis"
+      basis_path = path;
+      validate_basis_path();
+    }
+    if (error) {
+      std::ostringstream oss;
+      oss << "basis_data_path(): path \"" << path
+          << "{/basis}\" is not valid";
+      throw std::system_error(ec, oss.str());
+    }
+    return basis_path;
   }
 
   /// BasisSet is a slightly decorated \c std::vector of \c libint2::Shell objects.
@@ -153,7 +219,8 @@ namespace libint2 {
           auto file_dot_g94 = basis_lib_path + PATH_SEPARATOR + basis_component_name + ".g94";
 
           // use same cartesian_d convention for all components!
-          component_basis_sets.emplace_back(read_g94_basis_library(file_dot_g94, force_cartesian_d, throw_if_no_match));
+          component_basis_sets.emplace_back(read_g94_basis_library(file_dot_g94, force_cartesian_d, throw_if_no_match,
+              default_locale_name()));
         }
 
         // for each atom find the corresponding basis components
@@ -400,64 +467,14 @@ namespace libint2 {
         return component_names;
       }
 
-      /** determines the path to the data directory, as follows:
-       *       <ol>
-       *         <li> specified by LIBINT_DATA_PATH environmental variable, if defined </li>
-       *         <li> specified by LIBINT_DATADIR macro variable, if defined </li>
-       *         <li> specified by LIBINT_SRCDATADIR macro variable, if defined </li>
-       *         <li> hardwired to directory \c @LIBINT_DATADIR_ABSOLUTE@/basis </li>
-       *       </ol>
-       *  @throw std::system_error if the path is not valid, or cannot be determined
-       *  @return valid path to the data directory
-       */
+      /// @sa libint2::basis_data_path()
       static std::string data_path() {
-        std::string path;
-        const char* data_path_env = getenv("LIBINT_DATA_PATH");
-        if (data_path_env) {
-          path = data_path_env;
-        }
-        else {
-#if defined(LIBINT_DATADIR)
-          path = std::string{LIBINT_DATADIR};
-#elif defined(LIBINT_SRCDATADIR)
-          path = std::string{LIBINT_SRCDATADIR};
-#else
-          path = std::string("@LIBINT_DATADIR_ABSOLUTE@");
-#endif
-        }
-        // validate basis_path = path + "/basis"
-        std::string basis_path = path + PATH_SEPARATOR + std::string("basis");
-        bool error = true;
-        std::error_code ec;
-        auto validate_basis_path = [&basis_path, &error, &ec]() -> void {
-          if (not basis_path.empty()) {
-            struct stat sb;
-            error = (::stat(basis_path.c_str(), &sb) == -1);
-            error = error || not S_ISDIR(sb.st_mode);
-            if (error)
-              ec = std::error_code(errno, std::generic_category());
-          }
-        };
-        validate_basis_path();
-        if (error) { // try without "/basis"
-          basis_path = path;
-          validate_basis_path();
-        }
-        if (error) {
-          std::ostringstream oss; oss << "BasisSet::data_path(): path \"" << path << "{/basis}\" is not valid";
-          throw std::system_error(ec, oss.str());
-        }
-        return basis_path;
+        return libint2::basis_data_path();
       }
 
-      /// converts fortran scientific-notation floats that use d/D instead of e/E in \c str
-      /// @param[in,out] str string in which chars 'd' and 'D' are replaced with 'e' and 'E',
-      ///                respectively
+      /// @sa libint2::fortran_dfloats_to_efloats()
       static void fortran_dfloats_to_efloats(std::string& str) {
-        for(auto& ch: str) {
-          if (ch == 'd') ch = 'e';
-          if (ch == 'D') ch = 'E';
-        }
+        libint2::fortran_dfloats_to_efloats(str);
       }
 
     public:
@@ -474,11 +491,7 @@ namespace libint2 {
       static std::vector<std::vector<libint2::Shell>> read_g94_basis_library(std::string file_dot_g94,
                                                                              bool force_cartesian_d = false,
                                                                              bool throw_if_missing = true,
-#ifdef _MSC_VER
-                                                                             std::string locale_name = std::string("en-US")
-#else
-                                                                             std::string locale_name = std::string("POSIX")  // "en_US"
-#endif
+                                                                             std::string locale_name = std::string(default_locale_name())
                                                                             ) {
 
         std::locale locale(locale_name.c_str());  // TODO omit c_str() with up-to-date stdlib
@@ -663,6 +676,288 @@ namespace libint2 {
   inline bool operator==(const BasisSet::base_type& bs1, const BasisSet& bs2) {
     return bs1 == bs2.shells();
   }
+
+  /// Reads Gaussian potential basis from a Gaussian94-format file (e.g. SAP).
+  /// Only s-type entries are expected; throws std::logic_error otherwise.
+  /// No normalization is applied to the coefficients.
+  /// @param[in] file_dot_g94 path to the .g94 file
+  /// @return vector indexed by atomic number Z
+  inline std::vector<GaussianPotentialData> read_sap_basis_library(
+      const std::string& file_dot_g94) {
+    std::locale locale(default_locale_name());
+    std::vector<GaussianPotentialData> sap_data(119);
+    std::ifstream is(file_dot_g94);
+    is.imbue(locale);
+
+    if (is.good()) {
+      std::string line, rest;
+
+      auto LINE_TO_SS = [&](const std::string& l) {
+        std::istringstream iss{l};
+        iss.imbue(locale);
+        return iss;
+      };
+
+      size_t Z = 0;
+      auto nextbasis = true, nextshell = false;
+      bool first_element = true;
+
+      do {
+        if (line.empty() || line[0] == '!') continue;
+        if (line == "****") {
+          if (first_element) continue;
+          nextbasis = true;
+          nextshell = false;
+          continue;
+        }
+        if (nextbasis) {
+          nextbasis = false;
+          first_element = false;
+          auto iss = LINE_TO_SS(line);
+          std::string elemsymbol;
+          iss >> elemsymbol >> rest;
+
+          bool found = false;
+          for (const auto& e : libint2::chemistry::get_element_info()) {
+            if (strcaseequal(e.symbol, elemsymbol)) {
+              Z = e.Z;
+              found = true;
+              break;
+            }
+          }
+          if (not found) {
+            std::ostringstream oss;
+            oss << "in file " << file_dot_g94
+                << " found SAP basis set for element symbol \"" << elemsymbol
+                << "\", not found in Periodic Table.";
+            throw std::logic_error(oss.str());
+          }
+
+          nextshell = true;
+          continue;
+        }
+        if (nextshell) {
+          auto iss = LINE_TO_SS(line);
+          std::string amlabel;
+          std::size_t nprim = 0;
+          if (!(iss >> amlabel >> nprim >> rest)) {
+            std::ostringstream oss;
+            oss << "in file " << file_dot_g94
+                << ": failed to parse SAP shell header line: \"" << line
+                << "\"";
+            throw std::logic_error(oss.str());
+          }
+
+          if (amlabel != "S" && amlabel != "s") {
+            std::ostringstream oss;
+            oss << "in file " << file_dot_g94
+                << ": SAP basis must contain only s-type shells, found \""
+                << amlabel << "\"";
+            throw std::logic_error(oss.str());
+          }
+
+          auto& element_data = sap_data.at(Z);
+          for (decltype(nprim) p = 0; p != nprim; ++p) {
+            while (std::getline(is, line) && (line.empty() || line[0] == '!')) {
+            }
+            fortran_dfloats_to_efloats(line);
+            auto iss2 = LINE_TO_SS(line);
+            double e = 0.0, c = 0.0;
+            if (!(iss2 >> e >> c)) {
+              std::ostringstream oss;
+              oss << "in file " << file_dot_g94
+                  << ": failed to parse SAP primitive " << (p + 1) << " of "
+                  << nprim << " for element Z=" << Z << " from line: \""
+                  << line << "\"";
+              throw std::logic_error(oss.str());
+            }
+            element_data.push_back(GaussianPotentialPrimitive{e, c});
+          }
+        }
+      } while (std::getline(is, line));
+    } else {
+      std::ostringstream oss;
+      oss << "read_sap_basis_library(): could not open \"" << file_dot_g94
+          << "\"";
+      throw std::ios_base::failure(oss.str());
+    }
+
+    return sap_data;
+  }
+
+  /// Nuclear model for make_q_gau_data().
+  enum class NuclearModel {
+    PointCharge,     ///< point nuclear charge: {∞, 1}
+    GaussianCharge,  ///< Gaussian nuclear charge: {ξ(Z), 1}
+  };
+
+  /// @name make_q_gau_data overloads
+  /// Build GaussianPotentialCentersData for use with Operator::q_gau.
+  /// Same-Z atoms share data via shared_ptr (no duplication).
+  ///@{
+
+  /// Nuclear model only (no SAP correction).
+  /// @param[in] model nuclear charge model
+  /// @param[in] atoms the atoms
+  inline GaussianPotentialCentersData make_q_gau_data(
+      NuclearModel model, const std::vector<Atom>& atoms) {
+    constexpr double inf = libint2::infinite_exponent;
+    std::map<int, std::shared_ptr<const GaussianPotentialData>> cache;
+    GaussianPotentialCentersData result;
+    result.reserve(atoms.size());
+    for (const auto& atom : atoms) {
+      const int Z = atom.atomic_number;
+      auto it = cache.find(Z);
+      if (it != cache.end()) {
+        result.push_back(it->second);
+      } else {
+        std::shared_ptr<const GaussianPotentialData> ptr;
+        if (Z != 0) {
+          GaussianPotentialData data;
+          if (model == NuclearModel::PointCharge) {
+            data.push_back({inf, 1.0});
+          } else {
+            data.push_back(
+                {chemistry::gaussian_nuclear_exponent(Z), 1.0});
+          }
+          ptr = std::make_shared<const GaussianPotentialData>(std::move(data));
+        }
+        cache.emplace(Z, ptr);
+        result.push_back(std::move(ptr));
+      }
+    }
+    return result;
+  }
+
+  /// Nuclear model + SAP correction from a named basis set.
+  /// SAP primitive coefficients are scaled by 1/q (q = atomic number).
+  /// @param[in] model nuclear charge model
+  /// @param[in] atoms the atoms
+  /// @param[in] sap_basis_name SAP basis set name (e.g. "sap_helfem_large")
+  inline GaussianPotentialCentersData make_q_gau_data(
+      NuclearModel model, const std::vector<Atom>& atoms,
+      const std::string& sap_basis_name) {
+    constexpr double inf = libint2::infinite_exponent;
+    std::string basis_lib_path = basis_data_path();
+    std::string canonical_name = sap_basis_name;
+    std::transform(sap_basis_name.begin(), sap_basis_name.end(),
+                   canonical_name.begin(), [](char c) {
+                     char cc = ::tolower(c);
+                     if (cc == '/') cc = 'I';
+                     return cc;
+                   });
+    auto file = basis_lib_path + PATH_SEPARATOR + canonical_name + ".g94";
+    auto sap_by_Z = read_sap_basis_library(file);
+
+    // Validate unconditionally: SAP data comes from disk (system boundary).
+    // A corrupt .g94 file must not silently propagate invalid exponents or
+    // coefficients into integral evaluation.
+    for (size_t z = 0; z < sap_by_Z.size(); ++z) {
+      for (const auto& p : sap_by_Z[z]) {
+        if (!std::isfinite(p.exponent) || p.exponent <= 0.0)
+          throw std::invalid_argument(
+              "make_q_gau_data: SAP basis contains invalid exponent");
+        if (!std::isfinite(p.coefficient))
+          throw std::invalid_argument(
+              "make_q_gau_data: SAP basis contains non-finite coefficient");
+      }
+    }
+
+    std::map<int, std::shared_ptr<const GaussianPotentialData>> cache;
+    GaussianPotentialCentersData result;
+    result.reserve(atoms.size());
+    for (const auto& atom : atoms) {
+      const int Z = atom.atomic_number;
+      auto it = cache.find(Z);
+      if (it != cache.end()) {
+        result.push_back(it->second);
+      } else {
+        std::shared_ptr<const GaussianPotentialData> ptr;
+        if (Z != 0) {
+          GaussianPotentialData data;
+          // nuclear model term
+          if (model == NuclearModel::PointCharge) {
+            data.push_back({inf, 1.0});
+          } else {
+            data.push_back(
+                {chemistry::gaussian_nuclear_exponent(Z), 1.0});
+          }
+          // SAP correction terms (coefficients scaled by 1/q)
+          if (Z >= 0 && static_cast<size_t>(Z) < sap_by_Z.size() &&
+              !sap_by_Z[Z].empty()) {
+            const double oo_q = 1.0 / static_cast<double>(Z);
+            for (const auto& prim : sap_by_Z[Z]) {
+              data.push_back({prim.exponent, prim.coefficient * oo_q});
+            }
+          }
+          ptr = std::make_shared<const GaussianPotentialData>(std::move(data));
+        }
+        cache.emplace(Z, ptr);
+        result.push_back(std::move(ptr));
+      }
+    }
+    return result;
+  }
+
+  /// Build GaussianPotentialCentersData for erf(ω)/r model.
+  inline GaussianPotentialCentersData make_q_gau_data_erf(
+      double omega, const std::vector<Atom>& atoms) {
+    if (!std::isfinite(omega) || omega <= 0.0)
+      throw std::invalid_argument(
+          "make_q_gau_data_erf: omega must be positive and finite");
+    auto data = std::make_shared<const GaussianPotentialData>(
+        GaussianPotentialData{{omega * omega, 1.0}});
+    GaussianPotentialCentersData result;
+    result.reserve(atoms.size());
+    for (const auto& atom : atoms)
+      result.push_back(atom.atomic_number != 0 ? data : nullptr);
+    return result;
+  }
+
+  /// Build GaussianPotentialCentersData for erfc(ω)/r model.
+  inline GaussianPotentialCentersData make_q_gau_data_erfc(
+      double omega, const std::vector<Atom>& atoms) {
+    if (!std::isfinite(omega) || omega <= 0.0)
+      throw std::invalid_argument(
+          "make_q_gau_data_erfc: omega must be positive and finite");
+    constexpr double inf = libint2::infinite_exponent;
+    auto data = std::make_shared<const GaussianPotentialData>(
+        GaussianPotentialData{{inf, 1.0}, {omega * omega, -1.0}});
+    GaussianPotentialCentersData result;
+    result.reserve(atoms.size());
+    for (const auto& atom : atoms)
+      result.push_back(atom.atomic_number != 0 ? data : nullptr);
+    return result;
+  }
+
+  /// Build GaussianPotentialCentersData for erfx(ω,λ,σ)/r model.
+  /// Computes (λ·erf(ωr) + σ·erfc(ωr))/r = σ/r - (σ-λ)·erf(ωr)/r.
+  /// Zero is valid for lambda and sigma: λ = 0 gives σ·erfc(ωr)/r,
+  /// σ = 0 gives λ·erf(ωr)/r.
+  inline GaussianPotentialCentersData make_q_gau_data_erfx(
+      double omega, double lambda, double sigma,
+      const std::vector<Atom>& atoms) {
+    if (!std::isfinite(omega) || omega <= 0.0)
+      throw std::invalid_argument(
+          "make_q_gau_data_erfx: omega must be positive and finite");
+    if (!std::isfinite(lambda))
+      throw std::invalid_argument(
+          "make_q_gau_data_erfx: lambda must be finite");
+    if (!std::isfinite(sigma))
+      throw std::invalid_argument(
+          "make_q_gau_data_erfx: sigma must be finite");
+    constexpr double inf = libint2::infinite_exponent;
+    auto data = std::make_shared<const GaussianPotentialData>(
+        GaussianPotentialData{{inf, sigma},
+                              {omega * omega, -(sigma - lambda)}});
+    GaussianPotentialCentersData result;
+    result.reserve(atoms.size());
+    for (const auto& atom : atoms)
+      result.push_back(atom.atomic_number != 0 ? data : nullptr);
+    return result;
+  }
+
+  ///@}
 
 } // namespace libint2
 

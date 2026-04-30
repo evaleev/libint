@@ -112,6 +112,28 @@ enum class Operator {
   /// \f$ (\lambda \mathrm{erf}(\omega r) + \sigma \mathrm{erfc}(\omega r) )/r
   /// \f$
   erfx_nuclear,
+  /// Generalized Gaussian-charge nuclear potential operator.
+  /// The core evaluator at each center is a sum of Gaussian primitives:
+  /// \f$ G_m = \sum_i c_i (\alpha_i/(\alpha_i+\rho))^{m+1/2}
+  ///          F_m(T \cdot \alpha_i/(\alpha_i+\rho)) \f$
+  ///
+  /// All standard nuclear models are special cases of this expansion:
+  ///
+  /// | Model              | Primitives (α, c)                          |
+  /// |--------------------|--------------------------------------------|
+  /// | Point nuclear      | (∞, 1)                                     |
+  /// | Gaussian nuclear   | (ξ(Z), 1)                                  |
+  /// | erf-attenuated     | (ω², 1)                                    |
+  /// | erfc-attenuated    | (∞, 1), (ω², −1)                           |
+  /// | erfx               | (∞, σ), (ω², −(σ−λ))                       |
+  /// | SAP                | (∞, 1), (α₁, c₁/q), (α₂, c₂/q), ...        |
+  ///
+  /// Params type: tuple of GaussianPotentialCentersData (per-center
+  /// primitives) and point charges (positions + charges for geometry
+  /// derivative support). Use make_q_gau_data() helpers to construct.
+  /// \sa GaussianPotentialCentersData, operator_traits<Operator::q_gau>
+  /// \sa Surjuse, Deng, Asadchev, Valeev, arXiv:2603.16989 (2025)
+  q_gau,
   //! overlap + (Cartesian) electric dipole moment,
   //! \f$ x_O, y_O, z_O \f$, where
   //! \f$ x_O \equiv x - O_x \f$ is relative to
@@ -145,8 +167,31 @@ enum class Operator {
   //! Previous to cdbb9f3 released in v2.8.0, Standard -or- Gaussian ordering
   //! could be be specified at generator/compiler configure time.
   sphemultipole,
-  /// The four components of σp . V . σp, where V is the nuclear potential.
+  /// The four quaternionic components of (σ·p) V (σ·p), where V is the
+  /// point-charge nuclear potential. Used for relativistic modified Dirac
+  /// equation (RKB, picture-change corrections).
+  ///
+  /// Component ordering of results():
+  ///   - [0] scalar: (∂a/∂x V ∂b/∂x) + (∂a/∂y V ∂b/∂y) + (∂a/∂z V ∂b/∂z)
+  ///   - [1] x:      (∂a/∂y V ∂b/∂z) − (∂a/∂z V ∂b/∂y)
+  ///   - [2] y:      (∂a/∂z V ∂b/∂x) − (∂a/∂x V ∂b/∂z)
+  ///   - [3] z:      (∂a/∂x V ∂b/∂y) − (∂a/∂y V ∂b/∂x)
+  ///
+  /// Params type: same as Operator::nuclear (point charges vector).
   opVop,
+  /// The four quaternionic components of (σ·p) V (σ·p), where V is the
+  /// generalized Gaussian potential (same parameterization as Operator::q_gau).
+  /// Component ordering same as Operator::opVop (scalar, x, y, z).
+  ///
+  /// All nuclear models from the q_gau primitives table apply here — just
+  /// swapping the core evaluator in the (σ·p) V (σ·p) framework.
+  ///
+  /// Params type: same as Operator::q_gau (tuple of
+  /// GaussianPotentialCentersData + point charges).
+  /// \sa Operator::q_gau for the primitives table
+  /// \sa operator_traits<Operator::op_q_gau_op>
+  /// \sa Surjuse, Deng, Asadchev, Valeev, arXiv:2603.16989 (2025)
+  op_q_gau_op,
   /// (1-body) σp . r . σp, the σ·p-on-both-sides analog of the dipole moment.
   /// Produces 12 components = 3 dipole directions × 4 Pauli quaternion
   /// components (trace + 3 antisym), indexed as `4*k + q` with `k ∈ {x,y,z}`
@@ -267,11 +312,13 @@ struct operator_traits<Operator::nuclear>
 #endif
 };
 
+/// opVop: 4 quaternionic components (scalar, x, y, z) of (σ·p)V(σ·p).
+/// Inherits point-charge params from nuclear; uses Boys function core eval.
 template <>
 struct operator_traits<Operator::opVop>
     : public operator_traits<Operator::nuclear> {
-  static constexpr auto nopers = 4;
-  static constexpr auto intrinsic_deriv_order = 2;
+  static constexpr auto nopers = 4;  //!< scalar + 3 spin components
+  static constexpr auto intrinsic_deriv_order = 2;  //!< two ∇ operators
 };
 
 template <>
@@ -325,6 +372,37 @@ struct operator_traits<Operator::erfx_nuclear>
   typedef const libint2::GenericGmEval<
       libint2::os_core_ints::erfx_coulomb_gm_eval<scalar_type>>
       core_eval_type;
+};
+
+/// q_gau: generalized Gaussian potential nuclear operator.
+/// Params = tuple of {per-center Gaussian primitives, point charges}.
+/// Core evaluator sums over primitives; see Operator::q_gau for the table.
+template <>
+struct operator_traits<Operator::q_gau>
+    : public detail::default_operator_traits {
+  /// {Gaussian potential per-center data, nuclear charges/positions}
+  typedef std::tuple<
+      libint2::GaussianPotentialCentersData,
+      typename operator_traits<Operator::nuclear>::oper_params_type>
+      oper_params_type;
+  static oper_params_type default_params() {
+    return std::make_tuple(
+        libint2::GaussianPotentialCentersData{},
+        operator_traits<Operator::nuclear>::default_params());
+  }
+  typedef const libint2::GenericGmEval<
+      libint2::os_core_ints::q_gau_gm_eval<scalar_type>>
+      core_eval_type;
+};
+
+/// op_q_gau_op: 4 quaternionic components (scalar, x, y, z) of
+/// (σ·p)V(σ·p) with V = generalized Gaussian potential.
+/// Inherits params and core evaluator from q_gau.
+template <>
+struct operator_traits<Operator::op_q_gau_op>
+    : public operator_traits<Operator::q_gau> {
+  static constexpr auto nopers = 4;  //!< scalar + 3 spin components
+  static constexpr auto intrinsic_deriv_order = 2;  //!< two ∇ operators
 };
 
 template <>

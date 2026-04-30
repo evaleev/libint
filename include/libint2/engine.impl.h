@@ -77,34 +77,36 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
      (elecpot,                       /* erf_nuclear */       \
       (elecpot,                      /* erfc_nuclear */      \
        (elecpot,                     /* erfx_nuclear */      \
-        (1emultipole,                /* emultipole1 */       \
-         (2emultipole,               /* emultipole2 */       \
-          (3emultipole,              /* emultipole3 */       \
-           (sphemultipole,           /* sphemultipole */     \
-            (opVop,                  /* opVop */             \
-             (oprop,                 /* oprop */             \
-              (eri,                  /* delta */             \
-               (eri,                 /* coulomb */           \
-                (coulomb_opop,       /* coulomb_opop */      \
-                 (opop_coulomb_opop, /* opop_coulomb_opop */ \
-                  (op_coulomb_op,    /* op_coulomb_op */     \
-                   (eri,             /* cgtg */              \
-                    (eri,            /* cgtg_x_coulomb */    \
-                     (eri,           /* delcgtg2 */          \
-                      (eri,          /* r12 */               \
-                       (eri,         /* erf_coulomb */       \
-                        (eri,        /* erfc_coulomb */      \
-                         (eri,       /* erfx_coulomb */      \
-                          (eri,      /* stg */               \
-                           (eri,     /* yukawa */            \
-                            BOOST_PP_NIL))))))))))))))))))))))))))
+        (elecpot,                    /* q_gau */             \
+         (1emultipole,               /* emultipole1 */       \
+          (2emultipole,              /* emultipole2 */       \
+           (3emultipole,             /* emultipole3 */       \
+            (sphemultipole,          /* sphemultipole */     \
+             (opVop,                 /* opVop */             \
+              (opVop,                /* op_q_gau_op */       \
+               (oprop,                /* oprop */            \
+                (eri,                  /* delta */           \
+                 (eri,                 /* coulomb */         \
+                  (coulomb_opop,       /* coulomb_opop */    \
+                   (opop_coulomb_opop, /* opop_coulomb_opop */ \
+                    (op_coulomb_op,    /* op_coulomb_op */   \
+                     (eri,             /* cgtg */            \
+                      (eri,            /* cgtg_x_coulomb */  \
+                       (eri,           /* delcgtg2 */        \
+                        (eri,          /* r12 */             \
+                         (eri,         /* erf_coulomb */     \
+                          (eri,        /* erfc_coulomb */    \
+                           (eri,       /* erfx_coulomb */    \
+                            (eri,      /* stg */             \
+                             (eri,     /* yukawa */          \
+                              BOOST_PP_NIL))))))))))))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
 #define BOOST_PP_NBODY_OPERATOR_INDEX_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE)
 #define BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX \
-  11  // oprop, the 12th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last
+  13  // oprop, the 14th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last
       // 1-body operator
 
 // make list of braket indices for n-body ints
@@ -197,7 +199,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   const auto oper_is_nuclear =
       (oper_ == Operator::nuclear || oper_ == Operator::erf_nuclear ||
        oper_ == Operator::erfc_nuclear || oper_ == Operator::erfx_nuclear ||
-       oper_ == Operator::opVop);
+       oper_ == Operator::q_gau || oper_ == Operator::opVop ||
+       oper_ == Operator::op_q_gau_op);
 
   const auto l1 = s1.contr[0].l;
   const auto l2 = s2.contr[0].l;
@@ -267,7 +270,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   const auto compute_directly =
       lmax == 0 && deriv_order_ == 0 &&
       (oper_ == Operator::overlap || oper_is_nuclear) &&
-      oper_ != Operator::opVop;
+      oper_ != Operator::opVop && oper_ != Operator::op_q_gau_op;
   if (compute_directly) {
     primdata_[0].stack[0] = 0;
     targets_[0] = primdata_[0].stack;
@@ -300,6 +303,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
                       primdata_[p12]._0_Overlap_0_z[0];
           break;
         case Operator::nuclear:
+        case Operator::q_gau:
         case Operator::erf_nuclear:
         case Operator::erfc_nuclear:
         case Operator::erfx_nuclear:
@@ -790,6 +794,13 @@ __libint2_engine_inline unsigned int Engine::nparams() const {
                  any_cast<const operator_traits<
                      Operator::erfx_nuclear>::oper_params_type&>(params_))
           .size();
+    case Operator::q_gau:
+    case Operator::op_q_gau_op:
+      return std::get<1>(
+                 any_cast<
+                     const operator_traits<Operator::q_gau>::oper_params_type&>(
+                     params_))
+          .size();
     default:
       return 1;
   }
@@ -930,6 +941,20 @@ __libint2_engine_inline void Engine::init_core_ints_params(const any& params) {
         core_ints_params.push_back(std::make_pair(gexp, gcoeff_rescaled));
       }
     core_ints_params_ = core_ints_params;
+  } else if (oper_ == Operator::q_gau || oper_ == Operator::op_q_gau_op) {
+    const auto& q_gau_params =
+        any_cast<const operator_traits<Operator::q_gau>::oper_params_type&>(
+            params);
+    if (std::get<0>(q_gau_params).size() != std::get<1>(q_gau_params).size()) {
+      throw std::logic_error(
+          "Engine::set_params(Operator::" +
+          std::string(oper_ == Operator::q_gau ? "q_gau" : "op_q_gau_op") +
+          "): per-center data size (" +
+          std::to_string(std::get<0>(q_gau_params).size()) +
+          ") != point charges size (" +
+          std::to_string(std::get<1>(q_gau_params).size()) + ")");
+    }
+    core_ints_params_ = params;
   } else {
     core_ints_params_ = params;
   }
@@ -969,7 +994,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   const auto oper_is_nuclear =
       (oper_ == Operator::nuclear || oper_ == Operator::erf_nuclear ||
        oper_ == Operator::erfc_nuclear || oper_ == Operator::erfx_nuclear ||
-       oper_ == Operator::opVop);
+       oper_ == Operator::q_gau || oper_ == Operator::opVop ||
+       oper_ == Operator::op_q_gau_op);
 
   // need to use HRR? see strategy.cc
   const auto l1 = s1.contr[0].l;
@@ -1077,7 +1103,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   primdata._0_Overlap_0_z[0] = ovlp_ss_z;
 
   if (oper_ == Operator::kinetic || (deriv_order_ > 0) ||
-      oper_ == Operator::opVop || oper_ == Operator::oprop) {
+      oper_ == Operator::opVop || oper_ == Operator::op_q_gau_op ||
+      oper_ == Operator::oprop) {
 #if LIBINT2_DEFINED(eri, two_alpha0_bra)
     primdata.two_alpha0_bra[0] = 2.0 * alpha1;
 #endif
@@ -1087,21 +1114,25 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   }
 
   if (oper_is_nuclear) {
-    const auto& params =
-        (oper_ == Operator::nuclear || oper_ == Operator::opVop)
-            ? any_cast<
-                  const operator_traits<Operator::nuclear>::oper_params_type&>(
-                  params_)
-            : ((oper_ == Operator::erf_nuclear ||
-                oper_ == Operator::erfc_nuclear)
-                   ? std::get<1>(
-                         any_cast<const operator_traits<
-                             Operator::erfc_nuclear>::oper_params_type&>(
-                             params_))
-                   : std::get<1>(
-                         any_cast<const operator_traits<
-                             Operator::erfx_nuclear>::oper_params_type&>(
-                             params_)));
+    using nuclear_params_type =
+        operator_traits<Operator::nuclear>::oper_params_type;
+    const auto& params = [&]() -> const nuclear_params_type& {
+      if (oper_ == Operator::nuclear || oper_ == Operator::opVop)
+        return any_cast<const nuclear_params_type&>(params_);
+      else if (oper_ == Operator::erf_nuclear ||
+               oper_ == Operator::erfc_nuclear)
+        return std::get<1>(
+            any_cast<const operator_traits<
+                Operator::erfc_nuclear>::oper_params_type&>(params_));
+      else if (oper_ == Operator::q_gau || oper_ == Operator::op_q_gau_op)
+        return std::get<1>(
+            any_cast<const operator_traits<Operator::q_gau>::oper_params_type&>(
+                params_));
+      else
+        return std::get<1>(
+            any_cast<const operator_traits<
+                Operator::erfx_nuclear>::oper_params_type&>(params_));
+    }();
 
     const auto& C = params[oset].second;
     const auto& q = params[oset].first;
@@ -1169,6 +1200,25 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
               Operator::erfx_nuclear>::oper_params_type&>(core_ints_params_));
       core_eval_ptr->eval(fm_ptr, gammap, U, mmax, core_ints_params[0],
                           core_ints_params[1], core_ints_params[2]);
+    } else if (oper_ == Operator::q_gau || oper_ == Operator::op_q_gau_op) {
+      const auto& core_eval_ptr =
+          (oper_ == Operator::q_gau)
+              ? any_cast<const detail::core_eval_pack_type<Operator::q_gau>&>(
+                    core_eval_pack_)
+                    .first()
+              : any_cast<
+                    const detail::core_eval_pack_type<Operator::op_q_gau_op>&>(
+                    core_eval_pack_)
+                    .first();
+      const auto& gau_centers_data = std::get<0>(
+          any_cast<const typename operator_traits<
+              Operator::q_gau>::oper_params_type&>(core_ints_params_));
+      // nullptr => no potential; non-null => Gaussian potential from primitives
+      // q_gau_gm_eval handles empty primitives (zero) gracefully
+      static const GaussianPotentialData empty_gau_data;
+      const auto& center_data =
+          gau_centers_data[oset] ? *gau_centers_data[oset] : empty_gau_data;
+      core_eval_ptr->eval(fm_ptr, gammap, U, mmax, center_data);
     }
 
     decltype(U) two_o_sqrt_PI(1.12837916709551257389615890312);

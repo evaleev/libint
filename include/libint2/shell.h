@@ -34,6 +34,10 @@
 #include <cassert>
 #include <cmath>
 #include <iostream>
+#include <limits>
+#include <map>
+#include <memory>
+#include <stdexcept>
 #include <type_traits>
 #include <vector>
 
@@ -764,7 +768,7 @@ struct Shell {
   /// @param embed_normalization_into_coefficients is used to control whether
   /// or not Shell should treat the coefficients as already normalized. If
   /// embed_normalization_into_coefficients is true Shell will normalize the
-  /// primitives and update the coefficients to include the normalization, else 
+  /// primitives and update the coefficients to include the normalization, else
   /// Shell will use the coefficients in @p _contr as given
   Shell(svector<real_t> _alpha, svector<Contraction> _contr,
         std::array<real_t, 3> _O,
@@ -1329,6 +1333,60 @@ struct ShellPair {
     this->screening_method_ = screening_method;
   }
 };
+
+/// Sentinel value for GaussianPotentialPrimitive::exponent indicating a point
+/// charge (bare Coulomb 1/r potential).  Prefer this over raw INFINITY or
+/// std::numeric_limits<double>::infinity() for clarity.
+constexpr double infinite_exponent = std::numeric_limits<double>::infinity();
+
+/// A single Gaussian primitive contributing to a nuclear potential.
+/// Each primitive represents a term c * (α/(α+ρ))^(m+1/2) * F_m(T·α/(α+ρ))
+/// in the core integral expansion. Use exponent = libint2::infinite_exponent
+/// for point-charge contributions (recovers bare Coulomb F_m(T)).
+struct GaussianPotentialPrimitive {
+  double exponent;  ///< Gaussian exponent α; use libint2::infinite_exponent for
+                    ///< point charge
+  double coefficient;  ///< coefficient c
+};
+
+/// Gaussian potential data for a single center: a list of primitives defining
+/// the nuclear potential expansion. Used for point/finite nuclear models, SAP
+/// corrections, erf/erfc attenuations, or any combination thereof.
+using GaussianPotentialData = std::vector<GaussianPotentialPrimitive>;
+
+/// Gaussian potential data per center, parallel to the point-charges vector
+/// passed to Engine::set_params(). Each element is a shared_ptr to the
+/// potential primitives for that center:
+///
+///  - nullptr  => no potential from this center (zero contribution).
+///               Use this for ghost atoms or centers to skip entirely.
+///  - non-null => potential defined by the referenced primitives.
+///               Multiple centers may share the same shared_ptr.
+///
+/// The convenience functions make_q_gau_data() build this from a nuclear model
+/// specification and a list of atoms. For full per-center control (e.g.,
+/// different models for QM vs MM atoms), construct the vector manually.
+/// Each primitive must satisfy: exponent > 0 or exponent ==
+/// libint2::infinite_exponent; coefficient must be finite (not NaN or +/-inf).
+/// @code
+///   using libint2::infinite_exponent;
+///   GaussianPotentialCentersData centers(point_charges.size());
+///   // QM atom — point nuclear + one SAP primitive
+///   centers[0] = std::make_shared<const GaussianPotentialData>(
+///       GaussianPotentialData{{infinite_exponent, 1.0}, {alpha1, c1}});
+///   // QM atom — finite (Gaussian) nuclear model
+///   auto xi = chemistry::gaussian_nuclear_exponent(Z);
+///   centers[1] = std::make_shared<const GaussianPotentialData>(
+///       GaussianPotentialData{{xi, 1.0}});
+///   // MM point charge — bare Coulomb (point nuclear)
+///   static auto pt = std::make_shared<const GaussianPotentialData>(
+///       GaussianPotentialData{{infinite_exponent, 1.0}});
+///   centers[2] = pt;
+///   // Ghost atom — no potential
+///   centers[3] = nullptr;
+/// @endcode
+using GaussianPotentialCentersData =
+    std::vector<std::shared_ptr<const GaussianPotentialData>>;
 
 }  // namespace libint2
 

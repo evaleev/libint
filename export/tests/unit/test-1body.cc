@@ -310,6 +310,538 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "σpRσp correctness",
 #endif  // LIBINT2_SUPPORT_ONEBODY
 }
 
+
+// Helper: max number of primitives across all centers in q_gau data.
+static size_t max_nprim(const libint2::GaussianPotentialCentersData& data) {
+  size_t result = 0;
+  for (const auto& ptr : data)
+    if (ptr) result = std::max(result, ptr->size());
+  return result;
+}
+
+// Helper: compute lower-triangle (packed) 1-body matrix for a nuclear-type
+// operator using the given engine. Returns n*(n+1)/2 elements.
+static std::vector<double> compute_nuclear_ltri(Engine& engine,
+                                                const BasisSet& obs) {
+  const auto n = libint2::nbf(obs);
+  const auto nshells = obs.size();
+  auto shell2bf = obs.shell2bf();
+  const auto& buf = engine.results();
+  const auto ntri = n * (n + 1) / 2;
+  std::vector<double> V(ntri, 0.0);
+  for (size_t s1 = 0; s1 < nshells; ++s1) {
+    auto bf1 = shell2bf[s1];
+    auto n1 = obs[s1].size();
+    for (size_t s2 = 0; s2 <= s1; ++s2) {
+      auto bf2 = shell2bf[s2];
+      auto n2 = obs[s2].size();
+      engine.compute(obs[s1], obs[s2]);
+      for (size_t i = 0; i < n1; ++i)
+        for (size_t j = 0; j < n2; ++j) {
+          const auto ii = bf1 + i;
+          const auto jj = bf2 + j;
+          if (ii >= jj) V[ii * (ii + 1) / 2 + jj] = buf[0][i * n2 + j];
+        }
+    }
+  }
+  return V;
+}
+
+// Helper: compare two lower-triangle vectors element-wise.
+static void compare_ltri(const std::vector<double>& V,
+                         const std::vector<double>& V_ref, size_t n, double eps,
+                         const std::string& label) {
+  REQUIRE(V.size() == V_ref.size());
+  for (size_t i = 0; i < n; ++i) {
+    for (size_t j = 0; j <= i; ++j) {
+      const auto idx = i * (i + 1) / 2 + j;
+      INFO(label << "(" << i << "," << j << ") = " << V[idx]
+                 << " ref = " << V_ref[idx]);
+      if (std::abs(V_ref[idx]) > 1e-12) {
+        REQUIRE(V[idx] == Approx(V_ref[idx]).epsilon(eps));
+      } else {
+        REQUIRE(std::abs(V[idx]) < std::max(eps, 1e-14));
+      }
+    }
+  }
+}
+
+TEST_CASE_METHOD(libint2::unit::DefaultFixture,
+                 "q_gau point nuclear matches Operator::nuclear",
+                 "[engine][1-body]") {
+#if defined(LIBINT2_SUPPORT_ONEBODY)
+  BasisSet obs("sto-3g", atoms);
+  auto point_charges = make_point_charges(atoms);
+  const auto n = libint2::nbf(obs);
+
+  // Reference: Operator::nuclear
+  Engine nuc_engine(Operator::nuclear, obs.max_nprim(), obs.max_l());
+  nuc_engine.set_params(point_charges);
+  auto V_nuc = compute_nuclear_ltri(nuc_engine, obs);
+
+  // q_gau with point nuclear model
+  auto q_gau_data =
+      libint2::make_q_gau_data(libint2::NuclearModel::PointCharge, atoms);
+  Engine q_engine(Operator::q_gau,
+                  std::max(obs.max_nprim(), max_nprim(q_gau_data)),
+                  obs.max_l());
+  q_engine.set_params(std::make_tuple(q_gau_data, point_charges));
+  auto V_qgau = compute_nuclear_ltri(q_engine, obs);
+
+  compare_ltri(V_qgau, V_nuc, n, 1e-14, "q_gau_pt");
+#endif
+}
+
+TEST_CASE_METHOD(libint2::unit::DefaultFixture,
+                 "q_gau erf matches Operator::erf_nuclear",
+                 "[engine][1-body]") {
+#if defined(LIBINT2_SUPPORT_ONEBODY)
+  BasisSet obs("sto-3g", atoms);
+  auto point_charges = make_point_charges(atoms);
+  const auto n = libint2::nbf(obs);
+  const double omega = 0.5;
+
+  // Reference: Operator::erf_nuclear
+  Engine erf_engine(Operator::erf_nuclear, obs.max_nprim(), obs.max_l());
+  erf_engine.set_params(std::make_tuple(omega, point_charges));
+  auto V_erf = compute_nuclear_ltri(erf_engine, obs);
+
+  // q_gau with erf model
+  auto q_gau_data = libint2::make_q_gau_data_erf(omega, atoms);
+  Engine q_engine(Operator::q_gau,
+                  std::max(obs.max_nprim(), max_nprim(q_gau_data)),
+                  obs.max_l());
+  q_engine.set_params(std::make_tuple(q_gau_data, point_charges));
+  auto V_qgau = compute_nuclear_ltri(q_engine, obs);
+
+  compare_ltri(V_qgau, V_erf, n, 1e-14, "q_gau_erf");
+#endif
+}
+
+TEST_CASE_METHOD(libint2::unit::DefaultFixture,
+                 "q_gau erfc matches Operator::erfc_nuclear",
+                 "[engine][1-body]") {
+#if defined(LIBINT2_SUPPORT_ONEBODY)
+  BasisSet obs("sto-3g", atoms);
+  auto point_charges = make_point_charges(atoms);
+  const auto n = libint2::nbf(obs);
+  const double omega = 0.5;
+
+  // Reference: Operator::erfc_nuclear
+  Engine erfc_engine(Operator::erfc_nuclear, obs.max_nprim(), obs.max_l());
+  erfc_engine.set_params(std::make_tuple(omega, point_charges));
+  auto V_erfc = compute_nuclear_ltri(erfc_engine, obs);
+
+  // q_gau with erfc model
+  auto q_gau_data = libint2::make_q_gau_data_erfc(omega, atoms);
+  Engine q_engine(Operator::q_gau,
+                  std::max(obs.max_nprim(), max_nprim(q_gau_data)),
+                  obs.max_l());
+  q_engine.set_params(std::make_tuple(q_gau_data, point_charges));
+  auto V_qgau = compute_nuclear_ltri(q_engine, obs);
+
+  compare_ltri(V_qgau, V_erfc, n, 1e-14, "q_gau_erfc");
+#endif
+}
+
+TEST_CASE_METHOD(libint2::unit::DefaultFixture,
+                 "q_gau erfx matches Operator::erfx_nuclear",
+                 "[engine][1-body]") {
+#if defined(LIBINT2_SUPPORT_ONEBODY)
+  BasisSet obs("sto-3g", atoms);
+  auto point_charges = make_point_charges(atoms);
+  const auto n = libint2::nbf(obs);
+  const double omega = 0.5, lambda = 0.3, sigma = 0.7;
+
+  // Reference: Operator::erfx_nuclear
+  Engine erfx_engine(Operator::erfx_nuclear, obs.max_nprim(), obs.max_l());
+  erfx_engine.set_params(std::make_tuple(
+      std::array<double, 3>{omega, lambda, sigma}, point_charges));
+  auto V_erfx = compute_nuclear_ltri(erfx_engine, obs);
+
+  // q_gau with erfx model
+  auto q_gau_data = libint2::make_q_gau_data_erfx(omega, lambda, sigma, atoms);
+  Engine q_engine(Operator::q_gau,
+                  std::max(obs.max_nprim(), max_nprim(q_gau_data)),
+                  obs.max_l());
+  q_engine.set_params(std::make_tuple(q_gau_data, point_charges));
+  auto V_qgau = compute_nuclear_ltri(q_engine, obs);
+
+  compare_ltri(V_qgau, V_erfx, n, 1e-14, "q_gau_erfx");
+#endif
+}
+
+TEST_CASE_METHOD(libint2::unit::DefaultFixture,
+                 "q_gau Gaussian nuclear matches per-center erf_nuclear",
+                 "[engine][1-body]") {
+#if defined(LIBINT2_SUPPORT_ONEBODY)
+  // Gaussian nuclear model: V(r) = -(eZ/r)*erf(sqrt(xi)*r)
+  // equivalent to erf_nuclear with omega = sqrt(xi(Z)) per center.
+  // For a heteronuclear system, build reference by accumulating per-center
+  // erf_nuclear contributions, each with omega = sqrt(xi(Z_i)).
+  BasisSet obs("sto-3g", atoms);
+  auto point_charges = make_point_charges(atoms);
+  const auto n = libint2::nbf(obs);
+  const auto ntri = n * (n + 1) / 2;
+
+  // Reference: accumulate per-center erf_nuclear with omega = sqrt(xi(Z))
+  std::vector<double> V_ref(ntri, 0.0);
+  for (size_t a = 0; a < atoms.size(); ++a) {
+    const int Z = atoms[a].atomic_number;
+    if (Z == 0) continue;
+    const double xi = libint2::chemistry::gaussian_nuclear_exponent(Z);
+    const double omega = std::sqrt(xi);
+    // single-center point charge
+    std::vector<std::pair<double, std::array<double, 3>>> single_charge = {
+        point_charges[a]};
+    Engine erf_engine(Operator::erf_nuclear, obs.max_nprim(), obs.max_l());
+    erf_engine.set_params(std::make_tuple(omega, single_charge));
+    auto V_center = compute_nuclear_ltri(erf_engine, obs);
+    for (size_t k = 0; k < ntri; ++k) V_ref[k] += V_center[k];
+  }
+
+  // q_gau with Gaussian nuclear model
+  auto q_gau_data =
+      libint2::make_q_gau_data(libint2::NuclearModel::GaussianCharge, atoms);
+  Engine q_engine(Operator::q_gau,
+                  std::max(obs.max_nprim(), max_nprim(q_gau_data)),
+                  obs.max_l());
+  q_engine.set_params(std::make_tuple(q_gau_data, point_charges));
+  auto V_qgau = compute_nuclear_ltri(q_engine, obs);
+
+  compare_ltri(V_qgau, V_ref, n, 1e-14, "q_gau_finite_nuc");
+#endif
+}
+
+TEST_CASE_METHOD(libint2::unit::DefaultFixture, "q_gau SAP correctness",
+                 "[engine][1-body]") {
+#if defined(LIBINT2_SUPPORT_ONEBODY)
+  // atoms from fixture: O(0,0,0), O(0,0,2), H(0,-1,-1), H(0,1,3) in Bohr
+  BasisSet obs("sto-3g", atoms);
+  auto point_charges = make_point_charges(atoms);
+  const auto n = libint2::nbf(obs);
+
+  auto q_gau_data = libint2::make_q_gau_data(libint2::NuclearModel::PointCharge,
+                                             atoms, "sap_helfem_large");
+  Engine q_engine(Operator::q_gau,
+                  std::max(obs.max_nprim(), max_nprim(q_gau_data)),
+                  obs.max_l());
+  q_engine.set_params(std::make_tuple(q_gau_data, point_charges));
+  auto V_sap = compute_nuclear_ltri(q_engine, obs);
+
+  // clang-format off
+  // Reference SAP lower triangle (packed, 78 elements for 12x12 matrix).
+  // See source directory for reference generation details.
+  const double V_sap_ref[] = {
+      -48.161626712664187,
+      -4.7836856246433701, -3.5844048783736095,
+      0, 0, -3.3343483508728493,
+      0.012917426701848284, 0.13411995427355725, 0, -3.4287357703538213,
+      -0.010967831892154056, -0.23517850034936605, 0, -0.096970266316132495,
+      -3.7771303420092082,
+      -2.0033821099010749e-06, -0.77175616234890021, 0,
+      -0.00034296744926888052, -1.2810294579879118, -48.161626712664173,
+      -0.77175616234890032, -1.2542321767214553, 0, 0.0063225004608634238,
+      -1.378150375719013, -4.7836856246433701, -3.5844048783736095,
+      0, 0, -0.48800756489751196, 0, 0, 0, 0, -3.3343483508728493,
+      0.00034296744926888063, -0.0063225004608634264, 0,
+      -0.49670368376476004, -0.02113524909099768, -0.012917426701848284,
+      -0.13411995427355725, 0, -3.4287357703538213,
+      1.2810294579879122, 1.3781503757190121, 0, -0.021135249090997673,
+      1.1856000889763396, 0.010967831892154431, 0.23517850034936605, 0,
+      -0.096970266316132495, -3.7771303420092082,
+      -1.8612853433654166, -1.7121869000279206, 0, 0.79173492433793191,
+      0.66883426856379913, -0.21984583270685026, -0.40830320535018161, 0,
+      0.076419612610196419, 0.43074554813761501, -1.8237300358596116,
+      -0.21984583270685035, -0.40830320535018183, 0, -0.07641961261019653,
+      -0.43074554813761523, -1.8612853433654166, -1.7121869000279188, 0,
+      -0.79173492433793236, -0.66883426856379957, -0.14206535846913848,
+      -1.8237300358596116};
+  // clang-format on
+
+  const auto ntri = n * (n + 1) / 2;
+  std::vector<double> V_ref(V_sap_ref, V_sap_ref + ntri);
+  compare_ltri(V_sap, V_ref, n, 1e-10, "q_gau_sap");
+#endif
+}
+
+// Helper: compute full n×n 1-body matrix for a specific component of a
+// multi-component nuclear-type operator, then pack as lower triangle.
+static std::vector<double> compute_nuclear_ltri_comp(Engine& engine,
+                                                     const BasisSet& obs,
+                                                     int comp) {
+  const auto n = libint2::nbf(obs);
+  const auto nshells = obs.size();
+  auto shell2bf = obs.shell2bf();
+  const auto& buf = engine.results();
+  const auto ntri = n * (n + 1) / 2;
+  // Compute full matrix (need all shell pairs for accumulation over centers)
+  std::vector<double> M(n * n, 0.0);
+  for (size_t s1 = 0; s1 < nshells; ++s1) {
+    auto bf1 = shell2bf[s1];
+    auto n1 = obs[s1].size();
+    for (size_t s2 = 0; s2 < nshells; ++s2) {
+      auto bf2 = shell2bf[s2];
+      auto n2 = obs[s2].size();
+      engine.compute(obs[s1], obs[s2]);
+      if (buf[comp] == nullptr) continue;
+      for (size_t i = 0; i < n1; ++i)
+        for (size_t j = 0; j < n2; ++j)
+          M[(bf1 + i) * n + (bf2 + j)] = buf[comp][i * n2 + j];
+    }
+  }
+  // Pack lower triangle
+  std::vector<double> V(ntri, 0.0);
+  for (size_t i = 0; i < n; ++i)
+    for (size_t j = 0; j <= i; ++j) V[i * (i + 1) / 2 + j] = M[i * n + j];
+  return V;
+}
+
+TEST_CASE_METHOD(libint2::unit::DefaultFixture, "op_q_gau_op SAP correctness",
+                 "[engine][1-body]") {
+#if defined(LIBINT2_SUPPORT_ONEBODY)
+  // atoms from fixture: O(0,0,0), O(0,0,2), H(0,-1,-1), H(0,1,3) in Bohr
+  // sto-3g gives n=12 basis functions
+  BasisSet obs("sto-3g", atoms);
+  auto point_charges = make_point_charges(atoms);
+  const auto n = libint2::nbf(obs);
+
+  // Build SAP-only data: replace the point nuclear {inf, 1.0} with {inf, 0.0}
+  // so only the SAP correction primitives contribute (no bare Coulomb).
+  auto q_gau_data = libint2::make_q_gau_data(libint2::NuclearModel::PointCharge,
+                                             atoms, "sap_grasp_large");
+  libint2::GaussianPotentialCentersData sap_only_data;
+  sap_only_data.reserve(q_gau_data.size());
+  for (const auto& ptr : q_gau_data) {
+    if (ptr && !ptr->empty()) {
+      auto data = *ptr;           // copy
+      data[0].coefficient = 0.0;  // zero out the point nuclear coefficient
+      sap_only_data.push_back(
+          std::make_shared<const libint2::GaussianPotentialData>(
+              std::move(data)));
+    } else {
+      sap_only_data.push_back(ptr);
+    }
+  }
+  const auto lmax =
+      std::min(static_cast<int>(obs.max_l()), LIBINT2_MAX_AM_elecpot);
+  Engine q_engine(Operator::op_q_gau_op,
+                  std::max(obs.max_nprim(), max_nprim(sap_only_data)), lmax);
+  q_engine.set_params(std::make_tuple(sap_only_data, point_charges));
+
+  // clang-format off
+  // Reference W_sap lower triangles from external 4c Dirac code (real parts).
+  // These are the SAP correction only (without the bare Coulomb opVop).
+  // Component 0 (scalar), 78 elements
+  const double W_ref_s[] = {
+      1017.1940316588756,
+      -6.7517438914914019, 14.90263333586061,
+      0, 0, 59.231740315770757,
+      0.0067660273198012749, -0.032326959926133783, 0, 59.238689218930077,
+      -0.22936483274329972, 1.6831735948256663, 0, 0.0096263636335646371, 59.881035733738578,
+      -0.00094922461392558217, -0.49401374578031587, 0, -0.0010286720297784421, -0.74258885324890422, 1017.1940316588756,
+      -0.49401374577993529, 1.0557146456752298, 0, -0.0019906557365285044, 5.3008728671145358, -6.7517438914914036, 14.902633335860607,
+      0, 0, 2.972026321615155, 0, 0, 0, 0, 59.231740315770757,
+      0.0010286720297784711, 0.0019906557365284975, 0, 2.9711640731200957, 0.001938293450133753, -0.0067660273198012887, 0.032326959926133783, 0, 59.238689218930077,
+      0.74258885324854762, -5.3008728671145224, 0, 0.0019382934501337695, -12.733566048947557, 0.22936483274331063, -1.6831735948256625, 0, 0.0096263636335646476, 59.881035733738578,
+      0.68020575472394618, 3.8324410553887276, 0, -6.1334779485505644, -5.7614548706357862, -0.098493544021966237, -0.5349072985870249, 0, -0.096640899779031425, -0.025753311617736457, 11.034319903150422,
+      -0.098493544021899443, -0.53490729858702546, 0, 0.096640899779031925, 0.025753311617739822, 0.68020575472423772, 3.8324410553887276, 0, 6.1334779485505653, 5.7614548706357844, -0.30378068899204275, 11.034319903150422};
+  // Component 1 (x), 78 elements
+  const double W_ref_x[] = {
+      0,
+      0, 0,
+      0, 0, 0,
+      -1.5576470863370833, -0.90699161564122788, 0, 0,
+      -0.04151583448537164, -0.018843269537484188, 0, -6.7719625920746838, 0,
+      0, 0.0022578738355661931, 0, -0.057002833209069528, 0.0036697623210374501, 0,
+      -0.0022578738355661949, 0, 0, -0.97547564303023371, 0.0050498697820343993, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0,
+      -0.057002833209069965, -0.9754756430302336, 0, 0, -0.83353261538165768, 1.5576470863370886, 0.9069916156412271, 0, 0,
+      0.0036697623210374588, 0.0050498697820344045, 0, 0.83353261538165646, 0, 0.041515834485371626, 0.018843269537484185, 0, -6.7719625920746838, 0,
+      0.10694989397838189, 0.21179524040308861, 0, 1.2532746958054455, -1.1391504297329242, -0.0071399526451828427, -0.14271807794149374, 0, 0.34084650640231423, 0.094452927305536089, 0,
+      -0.0071399526451828427, -0.14271807794149355, 0, -0.34084650640231434, -0.094452927305535311, 0.10694989397838202, 0.21179524040308961, 0, -1.2532746958054461, 1.1391504297329258, 0, 0};
+  // Component 2 (y), 78 elements
+  const double W_ref_y[] = {
+      0,
+      0, 0,
+      1.5576470863370833, 0.90699161564122788, 0,
+      0, 0, -0.013127348731989879, 0,
+      0, 0, 6.7819650765550188, 0, 0,
+      0, 0, 0.057099410762780578, 0, 0, 0,
+      0, 0, 0.97887720985746873, 0, 0, 0, 0,
+      0.057099410762781022, 0.97887720985746862, 0, 0.0033118181997882313, 0.83646315449674191, -1.5576470863370886, -0.9069916156412271, 0,
+      0, 0, -0.0033118181997882305, 0, 0, 0, 0, -0.013127348731989886, 0,
+      0, 0, -0.83646315449674069, 0, 0, 0, 0, 6.7819650765550188, 0, 0,
+      0, 0, -1.4039352021168525, 0, 0, 0, 0, -0.2999647102418202, 0, 0, 0,
+      0, 0, 0.29996471024182048, 0, 0, 0, 0, 1.403935202116853, 0, 0, 0, 0};
+  // Component 3 (z), 78 elements
+  const double W_ref_z[] = {
+      0,
+      0, 0,
+      0.04151583448537164, 0.018843269537484185, 0,
+      0, 0, -7.6393474522098979, 0,
+      0, 0, 0.013127348731989879, 0, 0,
+      0, 0, 0.0011163986474808916, 0, 0, 0,
+      0, 0, -0.00064583414690861773, 0, 0, 0, 0,
+      0.0011163986474808918, -0.00064583414690861859, 0, 1.0367677328022835, -0.0033118181997882339, -0.041515834485371633, -0.018843269537484185, 0,
+      0, 0, -1.0367677328022835, 0, 0, 0, 0, -7.6393474522098979, 0,
+      0, 0, 0.0033118181997882279, 0, 0, 0, 0, 0.013127348731989872, 0, 0,
+      0, 0, 1.1307212934920607, 0, 0, 0, 0, 0.14863087674797437, 0, 0, 0,
+      0, 0, -0.14863087674797437, 0, 0, 0, 0, -1.1307212934920605, 0, 0, 0, 0};
+  // clang-format on
+
+  const auto ntri = n * (n + 1) / 2;
+  const double* W_refs[4] = {W_ref_s, W_ref_x, W_ref_y, W_ref_z};
+  const char* comp_labels[4] = {"s", "x", "y", "z"};
+  for (int comp = 0; comp < 4; ++comp) {
+    auto W_comp = compute_nuclear_ltri_comp(q_engine, obs, comp);
+    std::vector<double> W_ref(W_refs[comp], W_refs[comp] + ntri);
+    compare_ltri(W_comp, W_ref, n, 1e-10,
+                 std::string("op_q_gau_op_sap_") + comp_labels[comp]);
+  }
+#endif
+}
+
+TEST_CASE_METHOD(libint2::unit::DefaultFixture,
+                 "op_q_gau_op point nuclear matches Operator::opVop",
+                 "[engine][1-body]") {
+#if defined(LIBINT2_SUPPORT_ONEBODY)
+  BasisSet obs("sto-3g", atoms);
+  auto point_charges = make_point_charges(atoms);
+  const auto n = libint2::nbf(obs);
+  const auto nshells = obs.size();
+  auto shell2bf = obs.shell2bf();
+
+  const auto lmax =
+      std::min(static_cast<int>(obs.max_l()), LIBINT2_MAX_AM_elecpot);
+
+  // Reference: Operator::opVop
+  Engine ref_engine(Operator::opVop, obs.max_nprim(), lmax);
+  ref_engine.set_params(point_charges);
+
+  // op_q_gau_op with point nuclear model
+  auto q_gau_data =
+      libint2::make_q_gau_data(libint2::NuclearModel::PointCharge, atoms);
+  Engine q_engine(Operator::op_q_gau_op,
+                  std::max(obs.max_nprim(), max_nprim(q_gau_data)), lmax);
+  q_engine.set_params(std::make_tuple(q_gau_data, point_charges));
+
+  // Compare all 4 Pauli components
+  for (size_t s1 = 0; s1 < nshells; ++s1) {
+    auto bf1 = shell2bf[s1];
+    auto n1 = obs[s1].size();
+    for (size_t s2 = 0; s2 < nshells; ++s2) {
+      auto bf2 = shell2bf[s2];
+      auto n2 = obs[s2].size();
+
+      ref_engine.compute(obs[s1], obs[s2]);
+      const auto& ref_buf = ref_engine.results();
+      q_engine.compute(obs[s1], obs[s2]);
+      const auto& q_buf = q_engine.results();
+
+      for (int comp = 0; comp < 4; ++comp) {
+        if (ref_buf[comp] == nullptr && q_buf[comp] == nullptr) continue;
+        REQUIRE(ref_buf[comp] != nullptr);
+        REQUIRE(q_buf[comp] != nullptr);
+        for (size_t i = 0; i < n1; ++i) {
+          for (size_t j = 0; j < n2; ++j) {
+            const auto idx = i * n2 + j;
+            INFO("shell(" << s1 << "," << s2 << ") comp=" << comp << " bf("
+                          << bf1 + i << "," << bf2 + j << ")");
+            if (std::abs(ref_buf[comp][idx]) > 1e-12) {
+              REQUIRE(q_buf[comp][idx] ==
+                      Approx(ref_buf[comp][idx]).epsilon(1e-14));
+            } else {
+              REQUIRE(std::abs(q_buf[comp][idx]) < 1e-14);
+            }
+          }
+        }
+      }
+    }
+  }
+#endif
+}
+
+TEST_CASE("infinite_exponent sentinel", "[engine][1-body][validation]") {
+  REQUIRE(libint2::infinite_exponent ==
+          std::numeric_limits<double>::infinity());
+  REQUIRE(std::isinf(libint2::infinite_exponent));
+  REQUIRE(libint2::infinite_exponent > 0.0);
+}
+
+TEST_CASE("make_q_gau_data factory validation",
+          "[engine][1-body][validation]") {
+  using libint2::Atom;
+
+  std::vector<Atom> atoms = {Atom{1, 0.0, 0.0, 0.0}};
+
+  SECTION("make_q_gau_data_erf rejects NaN omega") {
+    REQUIRE_THROWS_AS(libint2::make_q_gau_data_erf(
+                          std::numeric_limits<double>::quiet_NaN(), atoms),
+                      std::invalid_argument);
+  }
+
+  SECTION("make_q_gau_data_erf rejects non-positive or non-finite omega") {
+    REQUIRE_THROWS_AS(libint2::make_q_gau_data_erf(0.0, atoms),
+                      std::invalid_argument);
+    REQUIRE_THROWS_AS(libint2::make_q_gau_data_erf(-1.0, atoms),
+                      std::invalid_argument);
+    REQUIRE_THROWS_AS(libint2::make_q_gau_data_erf(
+                          std::numeric_limits<double>::infinity(), atoms),
+                      std::invalid_argument);
+  }
+
+  SECTION("make_q_gau_data_erfc rejects invalid omega") {
+    REQUIRE_THROWS_AS(libint2::make_q_gau_data_erfc(
+                          std::numeric_limits<double>::quiet_NaN(), atoms),
+                      std::invalid_argument);
+    REQUIRE_THROWS_AS(libint2::make_q_gau_data_erfc(0.0, atoms),
+                      std::invalid_argument);
+    REQUIRE_THROWS_AS(libint2::make_q_gau_data_erfc(-1.0, atoms),
+                      std::invalid_argument);
+    REQUIRE_THROWS_AS(libint2::make_q_gau_data_erfc(
+                          std::numeric_limits<double>::infinity(), atoms),
+                      std::invalid_argument);
+  }
+
+  SECTION("make_q_gau_data_erfx rejects invalid parameters") {
+    REQUIRE_THROWS_AS(
+        libint2::make_q_gau_data_erfx(std::numeric_limits<double>::quiet_NaN(),
+                                      0.3, 0.7, atoms),
+        std::invalid_argument);
+    REQUIRE_THROWS_AS(libint2::make_q_gau_data_erfx(0.0, 0.3, 0.7, atoms),
+                      std::invalid_argument);
+    REQUIRE_THROWS_AS(libint2::make_q_gau_data_erfx(-1.0, 0.3, 0.7, atoms),
+                      std::invalid_argument);
+    REQUIRE_THROWS_AS(
+        libint2::make_q_gau_data_erfx(std::numeric_limits<double>::infinity(),
+                                      0.3, 0.7, atoms),
+        std::invalid_argument);
+    REQUIRE_THROWS_AS(
+        libint2::make_q_gau_data_erfx(
+            0.5, std::numeric_limits<double>::quiet_NaN(), 0.7, atoms),
+        std::invalid_argument);
+    REQUIRE_THROWS_AS(
+        libint2::make_q_gau_data_erfx(
+            0.5, std::numeric_limits<double>::infinity(), 0.7, atoms),
+        std::invalid_argument);
+    REQUIRE_THROWS_AS(
+        libint2::make_q_gau_data_erfx(
+            0.5, 0.3, std::numeric_limits<double>::quiet_NaN(), atoms),
+        std::invalid_argument);
+    REQUIRE_THROWS_AS(
+        libint2::make_q_gau_data_erfx(
+            0.5, 0.3, std::numeric_limits<double>::infinity(), atoms),
+        std::invalid_argument);
+  }
+
+  SECTION("valid factory calls succeed") {
+    REQUIRE_NOTHROW(libint2::make_q_gau_data_erf(0.5, atoms));
+    REQUIRE_NOTHROW(libint2::make_q_gau_data_erfc(0.5, atoms));
+    REQUIRE_NOTHROW(libint2::make_q_gau_data_erfx(0.5, 0.3, 0.7, atoms));
+  }
+}
+
 // verify that python/tests/test_libint2.py:test_integrals is correct
 TEST_CASE_METHOD(libint2::unit::DefaultFixture, "python correctness",
                  "[engine][1-body]") {
