@@ -291,6 +291,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
 
     if (compute_directly) {
       auto& result = primdata_[0].stack[0];
+#ifdef LIBINT2_BOYS_TIMING
+      ::libint2::detail::rr_kernel_timer().start(0);
+#endif
       switch (oper_) {
         case Operator::overlap:
           for (auto p12 = 0; p12 != primdata_[0].contrdepth; ++p12)
@@ -309,11 +312,20 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
         default:
           assert(false && "missing case in switch");
       }
+#ifdef LIBINT2_BOYS_TIMING
+      ::libint2::detail::rr_kernel_timer().stop(0);
+#endif
       primdata_[0].targets[0] = &result;
     } else {
       const auto buildfnidx = s1.contr[0].l * hard_lmax_ + s2.contr[0].l;
       assert(buildfnptrs_[buildfnidx] && "null build function ptr");
+#ifdef LIBINT2_BOYS_TIMING
+      ::libint2::detail::rr_kernel_timer().start(0);
+#endif
       buildfnptrs_[buildfnidx](&primdata_[0]);
+#ifdef LIBINT2_BOYS_TIMING
+      ::libint2::detail::rr_kernel_timer().stop(0);
+#endif
 
       if (accumulate_ints_in_scratch) {
         set_targets = true;
@@ -524,6 +536,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   }    // pset (accumulation batches)
 
   if (tform_to_solids) {
+#ifdef LIBINT2_BOYS_TIMING
+    ::libint2::detail::tform_timer().start(0);
+#endif
     set_targets = false;
     // where do spherical ints go?
     auto* spherical_ints =
@@ -550,6 +565,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
       // .. and compute the destination
       targets_[s] = spherical_ints;
     }  // loop cartesian shell set
+#ifdef LIBINT2_BOYS_TIMING
+    ::libint2::detail::tform_timer().stop(0);
+#endif
   }    // tform to solids
 
   if (set_targets) {
@@ -715,8 +733,8 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
     // will be resized to appropriate size in reset_scratch via _initialize
   }
 
-#ifdef LIBINT2_ENGINE_TIMERS
-  timers.set_now_overhead(25);
+#if defined(LIBINT2_ENGINE_TIMERS) || defined(LIBINT2_BOYS_TIMING)
+  timers_.set_now_overhead(25);
 #endif
 #ifdef LIBINT2_PROFILE
   primdata_[0].timers->set_now_overhead(25);
@@ -1212,7 +1230,18 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
       static const GaussianPotentialData empty_gau_data;
       const auto& center_data =
           gau_centers_data[oset] ? *gau_centers_data[oset] : empty_gau_data;
+      // Boys timing for q_gau is captured *inside* q_gau_gm_eval at each
+      // bare fm_eval_->eval(...) call (see boys.h). The outer
+      // q_gau_total_timer wrap captures the whole q_gau_gm_eval call
+      // (Boys + per-primitive sqrt/pow/accumulate); benchmark computes
+      // post_fm = q_gau_total - Boys.
+#ifdef LIBINT2_BOYS_TIMING
+      ::libint2::detail::q_gau_total_timer().start(0);
+#endif
       core_eval_ptr->eval(fm_ptr, gammap, U, mmax, center_data);
+#ifdef LIBINT2_BOYS_TIMING
+      ::libint2::detail::q_gau_total_timer().stop(0);
+#endif
     }
 
     decltype(U) two_o_sqrt_PI(1.12837916709551257389615890312);
@@ -1326,7 +1355,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
 // compute primitive data
 #ifdef LIBINT2_ENGINE_TIMERS
-  timers.start(0);
+  timers_.start(0);
 #endif
   {
     auto p = 0;
@@ -1480,7 +1509,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                       any_cast<const detail::core_eval_pack_type<
                           Operator::coulomb>&>(core_eval_pack_)
                           .first();
+#ifdef LIBINT2_BOYS_TIMING
+                  ::libint2::detail::boys_fm_timer().start(0);
+#endif
                   core_eval_ptr->eval(gm_ptr, T, mmax);
+#ifdef LIBINT2_BOYS_TIMING
+                  ::libint2::detail::boys_fm_timer().stop(0);
+#endif
                 } break;
                 case Operator::cgtg_x_coulomb: {
                   const auto& core_eval_ptr =
@@ -1862,7 +1897,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   }
 
 #ifdef LIBINT2_ENGINE_TIMERS
-  const auto t0 = timers.stop(0);
+  const auto t0 = timers_.stop(0);
 #ifdef LIBINT2_ENGINE_PROFILE_CLASS
   class_profiles[id].prereqs += t0.count();
   if (primdata_[0].contrdepth != 0) {
@@ -1883,15 +1918,21 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
   if (compute_directly) {
 #ifdef LIBINT2_ENGINE_TIMERS
-    timers.start(1);
+    timers_.start(1);
+#endif
+#ifdef LIBINT2_BOYS_TIMING
+    ::libint2::detail::rr_kernel_timer().start(0);
 #endif
     auto& stack = primdata_[0].stack[0];
     stack = 0;
     for (auto p = 0; p != primdata_[0].contrdepth; ++p)
       stack += primdata_[p].LIBINT_T_SS_EREP_SS(0)[0];
     primdata_[0].targets[0] = primdata_[0].stack;
+#ifdef LIBINT2_BOYS_TIMING
+    ::libint2::detail::rr_kernel_timer().stop(0);
+#endif
 #ifdef LIBINT2_ENGINE_TIMERS
-    const auto t1 = timers.stop(1);
+    const auto t1 = timers_.stop(1);
 #ifdef LIBINT2_ENGINE_PROFILE_CLASS
     class_profiles[id].build_vrr += t1.count();
 #endif
@@ -1903,7 +1944,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     const auto t1_hrr_start = primdata_[0].timers->read(0);
     const auto t1_vrr_start = primdata_[0].timers->read(1);
 #endif
-    timers.start(1);
+    timers_.start(1);
 #endif
 
     size_t buildfnidx;
@@ -1991,10 +2032,16 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     }
 
     assert(buildfnptrs_[buildfnidx] && "null build function ptr");
+#ifdef LIBINT2_BOYS_TIMING
+    ::libint2::detail::rr_kernel_timer().start(0);
+#endif
     buildfnptrs_[buildfnidx](&primdata_[0]);
+#ifdef LIBINT2_BOYS_TIMING
+    ::libint2::detail::rr_kernel_timer().stop(0);
+#endif
 
 #ifdef LIBINT2_ENGINE_TIMERS
-    const auto t1 = timers.stop(1);
+    const auto t1 = timers_.stop(1);
 #ifdef LIBINT2_ENGINE_PROFILE_CLASS
 #ifndef LIBINT2_PROFILE
     class_profiles[id].build_vrr += t1.count();
@@ -2006,7 +2053,10 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
 
 #ifdef LIBINT2_ENGINE_TIMERS
-    timers.start(2);
+    timers_.start(2);
+#endif
+#ifdef LIBINT2_BOYS_TIMING
+    ::libint2::detail::tform_timer().start(0);
 #endif
 
     const auto ntargets = nshellsets();
@@ -2187,8 +2237,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
       }
     }
 
+#ifdef LIBINT2_BOYS_TIMING
+    ::libint2::detail::tform_timer().stop(0);
+#endif
 #ifdef LIBINT2_ENGINE_TIMERS
-    const auto t2 = timers.stop(2);
+    const auto t2 = timers_.stop(2);
 #ifdef LIBINT2_ENGINE_PROFILE_CLASS
     class_profiles[id].tform += t2.count();
 #endif

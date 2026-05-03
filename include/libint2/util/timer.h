@@ -86,6 +86,66 @@ class Timers {
                     // adjust reported timings is you need fine-grained timing
 };
 
+#ifdef LIBINT2_BOYS_TIMING
+namespace detail {
+/// Thread-local timer accumulating *bare* FmEval->eval(...) time across all
+/// engine paths. Slot 0 is started/stopped around each Fm call inside
+/// q_gau_gm_eval (boys.h) and inside the Operator::coulomb case in
+/// engine.impl.h. Engine::boys_time_seconds() reads slot 0 of this timer;
+/// Engine::reset_timers() clears it. set_now_overhead(25) calibrates out
+/// the ~27 ns std::chrono::high_resolution_clock::now() cost on Apple M2.
+inline ::libint2::Timers<1>& boys_fm_timer() {
+  thread_local ::libint2::Timers<1> tm = []{
+    ::libint2::Timers<1> t;
+    t.set_now_overhead(25);
+    return t;
+  }();
+  return tm;
+}
+
+/// Thread-local timer accumulating time inside the libint-generated kernel
+/// (the OS recurrence relations: HRR + VRR + contraction). Wrapped around
+/// the kernel call sites in engine.impl.h: the 1-body buildfnptrs call (and
+/// the L=0 manual-contraction fallback), and the 2-body compute_directly
+/// path and buildfnptrs call. Engine::rr_time_seconds() reads it.
+inline ::libint2::Timers<1>& rr_kernel_timer() {
+  thread_local ::libint2::Timers<1> tm = []{
+    ::libint2::Timers<1> t;
+    t.set_now_overhead(25);
+    return t;
+  }();
+  return tm;
+}
+
+/// Thread-local timer accumulating *total* time inside q_gau_gm_eval (the
+/// q_gau core evaluator that loops over SAP primitives, calling Fm and doing
+/// per-primitive sqrt/pow/multiply/accumulate). Wrapped around the
+/// `core_eval_ptr->eval(...)` call inside compute_primdata at engine.impl.h
+/// for Operator::q_gau / op_q_gau_op. The benchmark derives the q_gau
+/// "post-Fm" cost as this total minus boys_fm_timer.
+inline ::libint2::Timers<1>& q_gau_total_timer() {
+  thread_local ::libint2::Timers<1> tm = []{
+    ::libint2::Timers<1> t;
+    t.set_now_overhead(25);
+    return t;
+  }();
+  return tm;
+}
+
+/// Thread-local timer accumulating time inside the solid-harmonic transform
+/// stage (compute1: lines ~538–565; compute2: lines ~2019–2200). Engine::
+/// tform_time_seconds() reads it.
+inline ::libint2::Timers<1>& tform_timer() {
+  thread_local ::libint2::Timers<1> tm = []{
+    ::libint2::Timers<1> t;
+    t.set_now_overhead(25);
+    return t;
+  }();
+  return tm;
+}
+}  // namespace detail
+#endif
+
 }  // namespace libint2
 
 #endif  // C++11 or later

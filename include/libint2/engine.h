@@ -984,13 +984,22 @@ class Engine {
   /// prints the contents of timers to @c os
   void print_timers(std::ostream& os = std::cout) {
 #ifdef LIBINT2_ENGINE_TIMERS
-    os << "timers: prereq = " << timers.read(0);
+    os << "timers: prereq = " << timers_.read(0);
 #ifndef LIBINT2_PROFILE  // if libint's profiling was on, engine's build timer
                          // will include its overhead
     // do not report it, detailed profiling from libint will be printed below
-    os << " build = " << timers.read(1);
+    os << " build = " << timers_.read(1);
 #endif
-    os << " tform = " << timers.read(2) << std::endl;
+    os << " tform = " << timers_.read(2);
+#ifdef LIBINT2_BOYS_TIMING
+    os << " boys = " << timers_.read(3);
+#endif
+    os << std::endl;
+#endif
+#ifdef LIBINT2_BOYS_TIMING
+#ifndef LIBINT2_ENGINE_TIMERS
+    os << "timers: boys = " << timers_.read(3) << std::endl;
+#endif
 #endif
 #ifdef LIBINT2_PROFILE
     os << "build timers: hrr = " << primdata_[0].timers->read(0)
@@ -1008,6 +1017,70 @@ class Engine {
       os << buf << std::endl;
     }
 #endif
+#endif
+  }
+
+  /// @return time (in seconds) spent inside *bare* FmEval->eval(...) calls
+  ///         since last reset_timers().
+  double boys_time_seconds() const {
+#ifdef LIBINT2_BOYS_TIMING
+    return ::libint2::detail::boys_fm_timer().read(0);
+#else
+    return 0.0;
+#endif
+  }
+
+  /// @return time (in seconds) spent inside the libint-generated kernel
+  ///         (HRR/VRR recurrence + primitive contraction) since last
+  ///         reset_timers().
+  double rr_time_seconds() const {
+#ifdef LIBINT2_BOYS_TIMING
+    return ::libint2::detail::rr_kernel_timer().read(0);
+#else
+    return 0.0;
+#endif
+  }
+
+  /// @return *total* time (in seconds) spent inside q_gau_gm_eval — i.e.
+  ///         the q_gau core evaluator that loops over SAP primitives,
+  ///         calling Fm and accumulating with per-primitive sqrt/pow factors.
+  ///         Subtract boys_time_seconds() to get the post-Fm work alone.
+  ///         Always 0 on the 3c-coulomb path (which doesn't go through
+  ///         q_gau_gm_eval).
+  double q_gau_total_time_seconds() const {
+#ifdef LIBINT2_BOYS_TIMING
+    return ::libint2::detail::q_gau_total_timer().read(0);
+#else
+    return 0.0;
+#endif
+  }
+
+  /// @return time (in seconds) spent inside the solid-harmonic transform
+  ///         stage (compute1 lines 538-570; compute2 lines 2056-2240).
+  double tform_time_seconds() const {
+#ifdef LIBINT2_BOYS_TIMING
+    return ::libint2::detail::tform_timer().read(0);
+#else
+    return 0.0;
+#endif
+  }
+
+  /// reset all engine timers (Boys, RR, q_gau-total, tform, and the
+  /// prereq/build/tform legacy slots) to zero
+  void reset_timers() {
+#if defined(LIBINT2_ENGINE_TIMERS) || defined(LIBINT2_BOYS_TIMING)
+    timers_.clear();
+    timers_.set_now_overhead(25);
+#endif
+#ifdef LIBINT2_BOYS_TIMING
+    ::libint2::detail::boys_fm_timer().clear();
+    ::libint2::detail::boys_fm_timer().set_now_overhead(25);
+    ::libint2::detail::rr_kernel_timer().clear();
+    ::libint2::detail::rr_kernel_timer().set_now_overhead(25);
+    ::libint2::detail::q_gau_total_timer().clear();
+    ::libint2::detail::q_gau_total_timer().set_now_overhead(25);
+    ::libint2::detail::tform_timer().clear();
+    ::libint2::detail::tform_timer().set_now_overhead(25);
 #endif
   }
 
@@ -1075,6 +1148,12 @@ class Engine {
   scalar_type scale_;
 
   any core_eval_pack_;
+
+#if defined(LIBINT2_ENGINE_TIMERS) || defined(LIBINT2_BOYS_TIMING)
+  // 0=prereq, 1=build (HRR/VRR), 2=tform, 3=boys (core_eval->eval).
+  // Slots 0/1/2 active under LIBINT2_ENGINE_TIMERS; slot 3 under LIBINT2_BOYS_TIMING.
+  mutable libint2::Timers<4> timers_;
+#endif
 
   /// operator params
   any params_;  // operator params

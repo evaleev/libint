@@ -24,6 +24,7 @@
 #if defined(__cplusplus)
 
 #include <libint2/util/optional.h>
+#include <libint2/util/timer.h>
 #include <libint2/util/vector.h>
 
 #include <algorithm>
@@ -2211,12 +2212,24 @@ struct q_gau_gm_eval : private detail::CoreEvalScratch<q_gau_gm_eval<Real>> {
       // produces NaN from -inf/(-inf+rho) — visibly wrong rather than silently.
       if (isinf(prim.exponent) && prim.exponent > 0.0) {
         // α = ∞ => (∞/(∞+ρ)) = 1, contributes c_i * F_m(T)
+#ifdef LIBINT2_BOYS_TIMING
+        ::libint2::detail::boys_fm_timer().start(0);
+#endif
         fm_eval_->eval(&base_type::Fm_[0], T, mmax);
+#ifdef LIBINT2_BOYS_TIMING
+        ::libint2::detail::boys_fm_timer().stop(0);
+#endif
         for (auto m = 0; m <= mmax; ++m)
           Gm[m] += prim.coefficient * base_type::Fm_[m];
       } else {
         const auto r = prim.exponent / (prim.exponent + rho);
+#ifdef LIBINT2_BOYS_TIMING
+        ::libint2::detail::boys_fm_timer().start(0);
+#endif
         fm_eval_->eval(&base_type::Fm_[0], T * r, mmax);
+#ifdef LIBINT2_BOYS_TIMING
+        ::libint2::detail::boys_fm_timer().stop(0);
+#endif
         auto factor = prim.coefficient * sqrt(r);
         for (auto m = 0; m <= mmax; ++m, factor *= r)
           Gm[m] += factor * base_type::Fm_[m];
