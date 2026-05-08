@@ -107,6 +107,26 @@ std::size_t max_nprim_qgau(const GaussianPotentialCentersData& data) {
   return n;
 }
 
+// Measure the per-call cost of std::chrono::high_resolution_clock::now() on
+// the current machine, in nanoseconds. Mirrors src/bin/profile/chrono.cc.
+// Run once at test start so each per-component sub-run can subtract the
+// right per-stop overhead — independent of host hardware.
+std::size_t measure_chrono_now_overhead_ns() {
+  using clock_t = std::chrono::high_resolution_clock;
+  constexpr std::size_t nrepeats = 2'000'000;
+  const auto t0 = clock_t::now();
+  // Side-effect on a volatile sink so the compiler can't elide now().
+  volatile clock_t::rep sink = 0;
+  for (std::size_t i = 0; i != nrepeats; ++i) {
+    sink ^= clock_t::now().time_since_epoch().count();
+  }
+  const auto t1 = clock_t::now();
+  (void)sink;
+  const double ns =
+      std::chrono::duration<double, std::nano>(t1 - t0).count() / nrepeats;
+  return static_cast<std::size_t>(ns + 0.5);
+}
+
 Shell make_shell(double alpha, int L, std::array<double, 3> O) {
   libint2::svector<double> a{alpha};
   libint2::svector<double> c{1.0};
@@ -117,6 +137,13 @@ Shell make_shell(double alpha, int L, std::array<double, 3> O) {
 
 TEST_CASE("SAP 2c-vs-3c benchmark on Fe AHGBSP3-9",
           "[.benchmark][engine][sap]") {
+  // Re-measure chrono::now() overhead on this host so component timers
+  // subtract the right per-stop cost (calibrates ~16 ns on Apple M2,
+  // ~30–40 ns on x86 with vDSO clock). 2 M reps takes ~30 ms.
+  const std::size_t chrono_overhead_ns = measure_chrono_now_overhead_ns();
+  std::cerr << "Measured chrono::now() overhead = " << chrono_overhead_ns
+            << " ns (used for per-stop overhead correction)\n";
+
   constexpr int Z_Fe = 26;
   const std::vector<Atom> atoms{{Z_Fe, 0.0, 0.0, 0.0}};
   const std::array<double, 3> nu_pos{{0.5, 0.3, 0.2}};
@@ -242,6 +269,11 @@ TEST_CASE("SAP 2c-vs-3c benchmark on Fe AHGBSP3-9",
       ::libint2::detail::boys_fm_timer().clear();
       ::libint2::detail::rr_kernel_timer().clear();
       ::libint2::detail::tform_timer().clear();
+      // Use the runtime-measured chrono overhead so each stop() subtracts
+      // the right per-call bias on this machine.
+      ::libint2::detail::boys_fm_timer().set_now_overhead(chrono_overhead_ns);
+      ::libint2::detail::rr_kernel_timer().set_now_overhead(chrono_overhead_ns);
+      ::libint2::detail::tform_timer().set_now_overhead(chrono_overhead_ns);
       ::libint2::detail::active_timer_kind() = kind;
       const auto t0 = std::chrono::steady_clock::now();
       for (std::size_t k = 0; k < K; ++k) {
@@ -378,8 +410,8 @@ TEST_CASE("SAP 2c-vs-3c benchmark on Fe AHGBSP3-9",
                "sub-run with only that timer active (no nested chrono "
                "overhead). Total = wall time of compute() with all inner "
                "timers disabled. set_now_overhead = "
-            << ::libint2::detail::kChronoNowOverheadNs
-            << " ns (measured via src/bin/profile/chrono.cc).\n";
+            << chrono_overhead_ns
+            << " ns (measured at test startup on this host).\n";
 
   auto print_table = [&](const char* title, double Cell::*t,
                          double Cell::*b, double Cell::*r,
