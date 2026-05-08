@@ -870,14 +870,39 @@ class Engine {
   __libint2_engine_inline const target_ptr_vec& compute(
       const libint2::Shell& first_shell, const ShellPack&... rest_of_shells);
 
+  /// 3-shell (xs_xx-style) overload that forwards a precomputed @c spket
+  /// ShellPair to the 2-body kernel; when @c spket is non-null the
+  /// kernel skips the per-call @c spket_.init(...) primitive-pair geometry
+  /// setup. The bra-side ShellPair is inferred (unit shell), so only @c spket
+  /// is exposed.
+  __libint2_engine_inline const target_ptr_vec& compute(
+      const libint2::Shell& bra, const libint2::Shell& ket1,
+      const libint2::Shell& ket2, const ShellPair* spket);
+
+  /// 4-shell overload that forwards precomputed @c spbra and @c spket
+  /// ShellPair data to the 2-body kernel; when non-null the kernel skips
+  /// the corresponding per-call @c sp*_.init(...) primitive-pair geometry
+  /// setup.
+  __libint2_engine_inline const target_ptr_vec& compute(
+      const libint2::Shell& bra1, const libint2::Shell& bra2,
+      const libint2::Shell& ket1, const libint2::Shell& ket2,
+      const ShellPair* spbra, const ShellPair* spket = nullptr);
+
   /// Computes target shell sets of 1-body integrals.
   /// @param[in] s1 bra shell
   /// @param[in] s2 ket shell
+  /// @param[in] sp optional precomputed ShellPair for {s1,s2}; when non-null,
+  /// the inner primitive-pair loop iterates over `sp->primpairs[]` instead of
+  /// the full `nprim1 x nprim2` cartesian product, skipping primitive pairs
+  /// already culled by the ShellPair-level screening. The per-primitive
+  /// geometry is still recomputed inside `compute_primdata()` — this overload
+  /// is a quick benchmark-side cull, not a full primdata reuse path.
   /// @return vector of pointers to target shell sets, the number of sets =
   /// Engine::nshellsets() \note resulting shell sets are stored in row-major
   /// order
   __libint2_engine_inline const target_ptr_vec& compute1(
-      const libint2::Shell& s1, const libint2::Shell& s2);
+      const libint2::Shell& s1, const libint2::Shell& s2,
+      const ShellPair* sp = nullptr);
 
   /// Computes target shell sets of 2-body integrals, @code  @endcode
   /// @note result is stored in the "chemists"/Mulliken form, @code (bra1
@@ -1214,10 +1239,10 @@ class Engine {
                                          : primdata_[0].stack;
   }
 
-  __libint2_engine_inline void compute_primdata(Libint_t& primdata,
-                                                const Shell& s1,
-                                                const Shell& s2, size_t p1,
-                                                size_t p2, size_t oset);
+  __libint2_engine_inline void compute_primdata(
+      Libint_t& primdata, const Shell& s1, const Shell& s2, size_t p1,
+      size_t p2, size_t oset, const ShellPair* sp = nullptr,
+      const ShellPair::PrimPairData* pp = nullptr);
 
  public:
   /// 3-dim array of pointers to help dispatch efficiently based on oper_,

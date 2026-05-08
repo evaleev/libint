@@ -88,57 +88,44 @@ class Timers {
 
 #ifdef LIBINT2_BOYS_TIMING
 namespace detail {
-/// Thread-local timer accumulating *bare* FmEval->eval(...) time across all
-/// engine paths. Slot 0 is started/stopped around each Fm call inside
-/// q_gau_gm_eval (boys.h) and inside the Operator::coulomb case in
-/// engine.impl.h. Engine::boys_time_seconds() reads slot 0 of this timer;
-/// Engine::reset_timers() clears it. set_now_overhead(25) calibrates out
-/// the ~27 ns std::chrono::high_resolution_clock::now() cost on Apple M2.
+/// Active-timer kind. Only the timer with this kind fires; all others are
+/// no-ops. Used to measure each component (Boys / RR / tform) in its OWN
+/// dedicated run, without nesting overhead. Set to TimerKind::None to
+/// disable all inner timers (used for measuring whole-compute() wall time
+/// without nested chrono bias).
+enum class TimerKind : int { None = 0, Boys = 1, RR = 2, Tform = 3 };
+
+inline TimerKind& active_timer_kind() {
+  thread_local TimerKind k = TimerKind::None;
+  return k;
+}
+
+/// Per-call chrono::high_resolution_clock::now() cost. Measured on the
+/// host machine via src/bin/profile/chrono.cc — adjust if you re-measure.
+constexpr int kChronoNowOverheadNs = 16;
+
 inline ::libint2::Timers<1>& boys_fm_timer() {
   thread_local ::libint2::Timers<1> tm = []{
     ::libint2::Timers<1> t;
-    t.set_now_overhead(25);
+    t.set_now_overhead(kChronoNowOverheadNs);
     return t;
   }();
   return tm;
 }
 
-/// Thread-local timer accumulating time inside the libint-generated kernel
-/// (the OS recurrence relations: HRR + VRR + contraction). Wrapped around
-/// the kernel call sites in engine.impl.h: the 1-body buildfnptrs call (and
-/// the L=0 manual-contraction fallback), and the 2-body compute_directly
-/// path and buildfnptrs call. Engine::rr_time_seconds() reads it.
 inline ::libint2::Timers<1>& rr_kernel_timer() {
   thread_local ::libint2::Timers<1> tm = []{
     ::libint2::Timers<1> t;
-    t.set_now_overhead(25);
+    t.set_now_overhead(kChronoNowOverheadNs);
     return t;
   }();
   return tm;
 }
 
-/// Thread-local timer accumulating *total* time inside q_gau_gm_eval (the
-/// q_gau core evaluator that loops over SAP primitives, calling Fm and doing
-/// per-primitive sqrt/pow/multiply/accumulate). Wrapped around the
-/// `core_eval_ptr->eval(...)` call inside compute_primdata at engine.impl.h
-/// for Operator::q_gau / op_q_gau_op. The benchmark derives the q_gau
-/// "post-Fm" cost as this total minus boys_fm_timer.
-inline ::libint2::Timers<1>& q_gau_total_timer() {
-  thread_local ::libint2::Timers<1> tm = []{
-    ::libint2::Timers<1> t;
-    t.set_now_overhead(25);
-    return t;
-  }();
-  return tm;
-}
-
-/// Thread-local timer accumulating time inside the solid-harmonic transform
-/// stage (compute1: lines ~538–565; compute2: lines ~2019–2200). Engine::
-/// tform_time_seconds() reads it.
 inline ::libint2::Timers<1>& tform_timer() {
   thread_local ::libint2::Timers<1> tm = []{
     ::libint2::Timers<1> t;
-    t.set_now_overhead(25);
+    t.set_now_overhead(kChronoNowOverheadNs);
     return t;
   }();
   return tm;
@@ -147,6 +134,73 @@ inline ::libint2::Timers<1>& tform_timer() {
 #endif
 
 }  // namespace libint2
+
+// ---------------------------------------------------------------------------
+// Timing-accumulator macros. Each LIBINT2_TIME_*_CALL(EXPR) wraps a single
+// statement so that the time spent in EXPR is added to the corresponding
+// thread-local timer. Pair-style _BEGIN/_END is provided for multi-statement
+// blocks. When LIBINT2_BOYS_TIMING is undefined the wrappers degenerate to
+// the bare expression / no-op, with zero runtime cost.
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// One-active-timer policy: each macro fires only when the matching
+// active_timer_kind is set, so component timings are taken in separate runs
+// without nested chrono overhead. Each call pair (start+stop) carries a
+// single `now()` overhead on this machine (~16 ns), already calibrated via
+// `set_now_overhead` in the timer accessors above.
+// ---------------------------------------------------------------------------
+#ifdef LIBINT2_BOYS_TIMING
+#  define LIBINT2_TIME_BOYS_CALL(EXPR)                                       \
+     do {                                                                    \
+       if (::libint2::detail::active_timer_kind() ==                         \
+           ::libint2::detail::TimerKind::Boys) {                             \
+         ::libint2::detail::boys_fm_timer().start(0);                        \
+         EXPR;                                                               \
+         ::libint2::detail::boys_fm_timer().stop(0);                         \
+       } else { EXPR; }                                                      \
+     } while (0)
+#  define LIBINT2_TIME_RR_BEGIN                                              \
+     do {                                                                    \
+       if (::libint2::detail::active_timer_kind() ==                         \
+           ::libint2::detail::TimerKind::RR)                                 \
+         ::libint2::detail::rr_kernel_timer().start(0);                      \
+     } while (0)
+#  define LIBINT2_TIME_RR_END                                                \
+     do {                                                                    \
+       if (::libint2::detail::active_timer_kind() ==                         \
+           ::libint2::detail::TimerKind::RR)                                 \
+         ::libint2::detail::rr_kernel_timer().stop(0);                       \
+     } while (0)
+#  define LIBINT2_TIME_TFORM_BEGIN                                           \
+     do {                                                                    \
+       if (::libint2::detail::active_timer_kind() ==                         \
+           ::libint2::detail::TimerKind::Tform)                              \
+         ::libint2::detail::tform_timer().start(0);                          \
+     } while (0)
+#  define LIBINT2_TIME_TFORM_END                                             \
+     do {                                                                    \
+       if (::libint2::detail::active_timer_kind() ==                         \
+           ::libint2::detail::TimerKind::Tform)                              \
+         ::libint2::detail::tform_timer().stop(0);                           \
+     } while (0)
+// Deprecated wraps kept as no-ops to avoid touching every call site.
+#  define LIBINT2_TIME_RR_CALL(EXPR)   do { EXPR; } while (0)
+#  define LIBINT2_TIME_QGAU_CALL(EXPR) do { EXPR; } while (0)
+#  define LIBINT2_TIME_PREP_CALL(EXPR) do { EXPR; } while (0)
+#  define LIBINT2_TIME_PREP_BEGIN      ((void)0)
+#  define LIBINT2_TIME_PREP_END        ((void)0)
+#else
+#  define LIBINT2_TIME_BOYS_CALL(EXPR) do { EXPR; } while (0)
+#  define LIBINT2_TIME_RR_CALL(EXPR)   do { EXPR; } while (0)
+#  define LIBINT2_TIME_QGAU_CALL(EXPR) do { EXPR; } while (0)
+#  define LIBINT2_TIME_RR_BEGIN        ((void)0)
+#  define LIBINT2_TIME_RR_END          ((void)0)
+#  define LIBINT2_TIME_TFORM_BEGIN     ((void)0)
+#  define LIBINT2_TIME_TFORM_END       ((void)0)
+#  define LIBINT2_TIME_PREP_CALL(EXPR) do { EXPR; } while (0)
+#  define LIBINT2_TIME_PREP_BEGIN      ((void)0)
+#  define LIBINT2_TIME_PREP_END        ((void)0)
+#endif
 
 #endif  // C++11 or later
 

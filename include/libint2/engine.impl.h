@@ -182,12 +182,52 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
   abort();
 }
 
+__libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
+    const libint2::Shell& bra, const libint2::Shell& ket1,
+    const libint2::Shell& ket2, const ShellPair* spket) {
+  assert(operator_rank() == 2 &&
+         "compute(s1,s2,s3,spket) requires a 2-body operator");
+  auto compute_ptr_idx =
+      ((static_cast<int>(oper_) -
+        static_cast<int>(Operator::first_2body_oper)) *
+           nbrakets_2body +
+       (static_cast<int>(braket_) -
+        static_cast<int>(BraKet::first_2body_braket))) *
+          nderivorders_2body +
+      deriv_order_;
+  assert(compute_ptr_idx >= 0 && compute_ptr_idx < compute2_ptrs().size());
+  auto compute_ptr = compute2_ptrs()[compute_ptr_idx];
+  assert(compute_ptr != nullptr && "2-body compute function not found");
+  return (this->*compute_ptr)(bra, Shell::unit(), ket1, ket2, nullptr, spket);
+}
+
+__libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
+    const libint2::Shell& bra1, const libint2::Shell& bra2,
+    const libint2::Shell& ket1, const libint2::Shell& ket2,
+    const ShellPair* spbra, const ShellPair* spket) {
+  assert(operator_rank() == 2 &&
+         "compute(s1,s2,s3,s4,spbra,spket) requires a 2-body operator");
+  auto compute_ptr_idx =
+      ((static_cast<int>(oper_) -
+        static_cast<int>(Operator::first_2body_oper)) *
+           nbrakets_2body +
+       (static_cast<int>(braket_) -
+        static_cast<int>(BraKet::first_2body_braket))) *
+          nderivorders_2body +
+      deriv_order_;
+  assert(compute_ptr_idx >= 0 && compute_ptr_idx < compute2_ptrs().size());
+  auto compute_ptr = compute2_ptrs()[compute_ptr_idx];
+  assert(compute_ptr != nullptr && "2-body compute function not found");
+  return (this->*compute_ptr)(bra1, bra2, ket1, ket2, spbra, spket);
+}
+
 /// Computes target shell sets of 1-body integrals.
 /// @return vector of pointers to target shell sets, the number of sets =
 /// Engine::nshellsets()
 /// \note resulting shell sets are stored in row-major order
 __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
-    const libint2::Shell& s1, const libint2::Shell& s2) {
+    const libint2::Shell& s1, const libint2::Shell& s2,
+    const ShellPair* sp) {
   // can only handle 1 contraction at a time
   assert((s1.ncontr() == 1 && s2.ncontr() == 1) &&
          "generally-contracted shells not yet supported");
@@ -282,9 +322,23 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
       assert(nparam_sets == 1 && "unexpected number of operator parameters");
 
     auto p12 = 0;
-    for (auto p1 = 0; p1 != nprim1; ++p1) {
-      for (auto p2 = 0; p2 != nprim2; ++p2, ++p12) {
-        compute_primdata(primdata_[p12], s1, s2, p1, p2, pset);
+    if (sp != nullptr) {
+      // precomputed-pair fast path: iterate only over surviving primitive
+      // pairs (those that passed ShellPair-level screening) and reuse the
+      // already-computed P, one_over_gamma, AB inside compute_primdata so
+      // the per-primitive geometry recomputation is skipped — production
+      // code amortises this work across many compute() calls per pair.
+      const auto npp = static_cast<int>(sp->primpairs.size());
+      for (auto i = 0; i != npp; ++i, ++p12) {
+        const auto& pair = sp->primpairs[i];
+        compute_primdata(primdata_[p12], s1, s2, pair.p1, pair.p2, pset, sp,
+                         &pair);
+      }
+    } else {
+      for (auto p1 = 0; p1 != nprim1; ++p1) {
+        for (auto p2 = 0; p2 != nprim2; ++p2, ++p12) {
+          compute_primdata(primdata_[p12], s1, s2, p1, p2, pset);
+        }
       }
     }
     primdata_[0].contrdepth = p12;
@@ -973,11 +1027,10 @@ __libint2_engine_inline void Engine::init_core_ints_params(const any& params) {
   }
 }
 
-__libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
-                                                      const Shell& s1,
-                                                      const Shell& s2,
-                                                      size_t p1, size_t p2,
-                                                      size_t oset) {
+__libint2_engine_inline void Engine::compute_primdata(
+    Libint_t& primdata, const Shell& s1, const Shell& s2, size_t p1,
+    size_t p2, size_t oset, const ShellPair* sp,
+    const ShellPair::PrimPairData* pp) {
   const auto& A = s1.O;
   const auto& B = s2.O;
 
@@ -988,15 +1041,18 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   const auto c2 = s2.contr[0].coeff[p2];
 
   const auto gammap = alpha1 + alpha2;
-  const auto oogammap = 1 / gammap;
+  const auto oogammap = (pp != nullptr) ? pp->one_over_gamma : 1 / gammap;
   const auto rhop_over_alpha1 = alpha2 * oogammap;
   const auto rhop = alpha1 * rhop_over_alpha1;
-  const auto Px = (alpha1 * A[0] + alpha2 * B[0]) * oogammap;
-  const auto Py = (alpha1 * A[1] + alpha2 * B[1]) * oogammap;
-  const auto Pz = (alpha1 * A[2] + alpha2 * B[2]) * oogammap;
-  const auto AB_x = A[0] - B[0];
-  const auto AB_y = A[1] - B[1];
-  const auto AB_z = A[2] - B[2];
+  const auto Px = (pp != nullptr) ? pp->P[0]
+                                  : (alpha1 * A[0] + alpha2 * B[0]) * oogammap;
+  const auto Py = (pp != nullptr) ? pp->P[1]
+                                  : (alpha1 * A[1] + alpha2 * B[1]) * oogammap;
+  const auto Pz = (pp != nullptr) ? pp->P[2]
+                                  : (alpha1 * A[2] + alpha2 * B[2]) * oogammap;
+  const auto AB_x = (sp != nullptr) ? sp->AB[0] : A[0] - B[0];
+  const auto AB_y = (sp != nullptr) ? sp->AB[1] : A[1] - B[1];
+  const auto AB_z = (sp != nullptr) ? sp->AB[2] : A[2] - B[2];
   const auto AB2_x = AB_x * AB_x;
   const auto AB2_y = AB_y * AB_y;
   const auto AB2_z = AB_z * AB_z;
