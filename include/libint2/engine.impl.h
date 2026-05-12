@@ -174,9 +174,22 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
     if (nargs == 2)
       return (this->*compute_ptr)(shells[0], Shell::unit(), shells[1],
                                   Shell::unit(), nullptr, nullptr);
-    if (nargs == 3)
+    if (nargs == 3) {
+      // The 3-arg user form depends on which 3-center BraKet was set:
+      //   xs_xx — bra = (fitting, unit), ket = (AO, AO).
+      //           User passes (fitting, AO, AO), kernel sees
+      //           (fitting, unit, AO, AO).
+      //   xx_xs — bra = (AO, AO),       ket = (fitting, unit).
+      //           User passes (AO, AO, fitting), kernel sees
+      //           (AO, AO, fitting, unit).
+      // The non-xx_xs branch is the default (covers xs_xx and any future
+      // 3-center variants that follow the xs_xx convention).
+      if (braket_ == BraKet::xx_xs)
+        return (this->*compute_ptr)(shells[0], shells[1], shells[2],
+                                    Shell::unit(), nullptr, nullptr);
       return (this->*compute_ptr)(shells[0], Shell::unit(), shells[1],
                                   shells[2], nullptr, nullptr);
+    }
     if (nargs == 4)
       return (this->*compute_ptr)(shells[0], shells[1], shells[2], shells[3],
                                   nullptr, nullptr);
@@ -2015,9 +2028,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
         break;
 
       case BraKet::xx_xs:
-        assert(false && "this braket is not supported");
-        abort();
-        break;
+        // xx_xs is always canonicalized to xs_xx by swap_braket=true in the
+        // shell-aliasing logic above; the swapped shells (bra1, ket1, ket2)
+        // are already in xs_xx layout by this point. Fall through to the
+        // xs_xx case to compute buildfnidx from those swapped shells.
+        [[fallthrough]];
       case BraKet::xs_xx: {
         /// lmax might be center dependent
         int ket_lmax = hard_lmax_;
@@ -2242,6 +2257,14 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                     oper_cart_component_phase = -1.0;
                 }
                 if (swap_tket && oper_ == Operator::coulomb_opop && s > 0)
+                  oper_cart_component_phase = -1.0;
+                // For coulomb_opop in BraKet::xx_xs (the 3-center alias of
+                // xs_xx): after swap_braket the user's bra (AO pair) becomes
+                // the kernel's ket where σ·p attaches. If swap_tbra is also
+                // applied to canonicalize that AO pair, σ·p_a σ·p_b ↔
+                // σ·p_b σ·p_a — antisymmetric, so x,y,z components (s>0)
+                // pick up a -1 sign. (The scalar component s=0 is invariant.)
+                if (swap_tbra && oper_ == Operator::coulomb_opop && s > 0)
                   oper_cart_component_phase = -1.0;
                 // op_coulomb_op irrep layout under bra↔ket swap: antisym
                 // components (s ∈ {1,2,3}) flip sign; scalar (0) and sym-TL

@@ -774,6 +774,147 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
       }
     }
   }
+
+  SECTION("Coulombσpσp 3-center xs_xx") {
+    // 3-center RKB Coulombσpσp integral, (P | σ·p_μ σ·p_ν / r12) with P on
+    // the bra (fitting/DF) and σ·p acting on the AO pair (μ,ν) on the ket.
+    //
+    // Reference: the same operator and BraKet computed via the 4-center
+    // engine with Shell::unit() at the dummy bra position. The 4-center
+    // engine path is already validated by the "Coulombσpσp and
+    // σpσpCoulombσpσp" SECTION above against a primitive-eri reference, so
+    // by transitivity the 4-center engine is a trustworthy reference for the
+    // 3-center engine. Both code paths share the dummy-shell trick
+    // internally, but they are independently generated (different task
+    // labels, different dispatch tables), so this catches dispatch-table /
+    // codegen wiring mistakes in the new 3-center path.
+
+    Shell dfsh{{1.5}, {{0, false, {1.0}}}, {{-1.0, 0.5, 0.0}}};
+    std::vector<Shell> dfs{dfsh};
+    const auto &unitshell = libint2::Shell::unit();
+
+    Engine engine_3c, engine_4c_ref;
+    try {
+      engine_3c = Engine(Operator::coulomb_opop,
+                         std::max(max_nprim, libint2::max_nprim(dfs)),
+                         std::max(max_l, libint2::max_l(dfs)), 0);
+      engine_3c.set(BraKet::xs_xx);
+      // 4-center reference — same operator, default BraKet::xx_xx
+      engine_4c_ref = Engine(Operator::coulomb_opop,
+                             std::max(max_nprim, libint2::max_nprim(dfs)),
+                             std::max(max_l, libint2::max_l(dfs)), 0);
+    } catch (Engine::lmax_exceeded &) {
+      // skip if libint not configured with -DLIBINT2_ENABLE_RKB_ERI3 >= 0
+      // (or the 4-center RKB ERI was disabled)
+      return;
+    }
+
+    const auto nshell = obs.size();
+    for (int sa = 0; sa != nshell; ++sa) {
+      for (int sb = 0; sb != nshell; ++sb) {
+        const auto &results_3c =
+            engine_3c.compute(dfsh, obs[sa], obs[sb]);
+        // 4-center reference: (dfsh, unit | sh_a, sh_b). σ·p still acts on
+        // (C, D) = (sh_a, sh_b), matching the 3-center xs_xx mapping.
+        const auto &results_4c_ref =
+            engine_4c_ref.compute(dfsh, unitshell, obs[sa], obs[sb]);
+        assert(results_3c.size() == 4);
+        assert(results_4c_ref.size() == 4);
+
+        const auto n_df = dfsh.size();
+        const auto n_a = obs[sa].size();
+        const auto n_b = obs[sb].size();
+        const auto n_total = n_df * n_a * n_b;
+        // 4-center buffer is (df, unit, sa, sb); n_unit = 1; so the linear
+        // layout coincides with the 3-center (df, sa, sb) layout.
+
+        const double ABS_TOL = 5.0E-14;
+        const double REL_TOL = 1.0E-9;
+        for (auto comp = 0; comp < 4; ++comp) {
+          for (size_t k = 0; k < n_total; ++k) {
+            const auto v_3c = results_3c[comp][k];
+            const auto v_ref = results_4c_ref[comp][k];
+            const auto abs_err = std::abs(v_3c - v_ref);
+            const auto rel_err =
+                std::abs(v_ref) > 1e-30 ? std::abs(abs_err / v_ref) : 0.0;
+            bool not_ok = rel_err > REL_TOL && abs_err > ABS_TOL;
+            if (not_ok) {
+              std::cout << "(df | sa=" << sa << " sb=" << sb
+                        << ") comp=" << comp << " elem=" << k
+                        << ": 3c=" << v_3c << " 4c_ref=" << v_ref
+                        << " abs_err=" << abs_err << " rel_err=" << rel_err
+                        << std::endl;
+            }
+            REQUIRE(!not_ok);
+          }
+        }
+      }
+    }
+  }
+
+  SECTION("Coulombσpσp 3-center xx_xs alias") {
+    // The xx_xs braket re-routes through the same xs_xx kernel via the
+    // Engine::compute2 bra↔ket swap. Verify the alias yields the same
+    // integral values, with the output buffer in the user-requested
+    // (sh_a, sh_b | dfsh) index layout.
+
+    Shell dfsh{{1.5}, {{0, false, {1.0}}}, {{-1.0, 0.5, 0.0}}};
+    std::vector<Shell> dfs{dfsh};
+
+    Engine eng_xs, eng_xxs;
+    try {
+      eng_xs = Engine(Operator::coulomb_opop,
+                      std::max(max_nprim, libint2::max_nprim(dfs)),
+                      std::max(max_l, libint2::max_l(dfs)), 0);
+      eng_xs.set(BraKet::xs_xx);
+      eng_xxs = Engine(Operator::coulomb_opop,
+                       std::max(max_nprim, libint2::max_nprim(dfs)),
+                       std::max(max_l, libint2::max_l(dfs)), 0);
+      eng_xxs.set(BraKet::xx_xs);
+    } catch (Engine::lmax_exceeded &) {
+      return;
+    }
+
+    for (size_t sa = 0; sa != obs.size(); ++sa) {
+      for (size_t sb = 0; sb != obs.size(); ++sb) {
+        const auto n_df = dfsh.size();
+        const auto n_a = obs[sa].size();
+        const auto n_b = obs[sb].size();
+
+        const auto &res_xs = eng_xs.compute(dfsh, obs[sa], obs[sb]);
+        // re-set xs braket each loop in case Catch2 SECTION re-entry resets
+        eng_xxs.set(BraKet::xx_xs);
+        const auto &res_xxs = eng_xxs.compute(obs[sa], obs[sb], dfsh);
+
+        for (auto c = 0; c < 4; ++c) {
+          for (size_t i_df = 0; i_df < n_df; ++i_df) {
+            for (size_t i_a = 0; i_a < n_a; ++i_a) {
+              for (size_t i_b = 0; i_b < n_b; ++i_b) {
+                const auto v_xs =
+                    res_xs[c][i_df * n_a * n_b + i_a * n_b + i_b];
+                const auto v_xxs =
+                    res_xxs[c][i_a * n_b * n_df + i_b * n_df + i_df];
+                const auto abs_err = abs(v_xs - v_xxs);
+                const auto rel_err = std::abs(v_xs) > 1e-30
+                                         ? double(abs(abs_err / v_xs))
+                                         : 0.0;
+                bool not_ok = rel_err > 1.0E-9 && abs_err > 5.0E-14;
+                if (not_ok) {
+                  std::cout << "xx_xs alias mismatch: (sa=" << sa
+                            << " sb=" << sb << ") comp=" << c
+                            << " idx(df=" << i_df << ",a=" << i_a
+                            << ",b=" << i_b << "): xs=" << v_xs
+                            << " xxs=" << v_xxs << " abs_err=" << abs_err
+                            << std::endl;
+                }
+                REQUIRE(!not_ok);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 TEST_CASE("Erfx_Coulomb integrals", "[engine][2-body]") {

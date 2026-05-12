@@ -142,6 +142,10 @@ option_with_default(LIBINT2_ENABLE_ERI2
 option_with_default(LIBINT2_ENABLE_RKB_ERI
         "Compile with support for up to N-th derivatives of relativistic restricted kinetic
          balance (RKB) 4-center electron repulsion integrals (-1 for OFF)" 0)
+option_with_default(LIBINT2_ENABLE_RKB_ERI3
+        "Compile with support for up to N-th derivatives of relativistic restricted kinetic
+         balance (RKB) 3-center electron repulsion integrals (-1 for OFF).
+         σ·p acts on the two paired (AO) centers; the unpaired/fitting center is a spectator." -1)
 option_with_default(LIBINT2_ENABLE_G12
         "Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors (-1 for OFF)" -1)
 option_with_default(LIBINT2_ENABLE_G12DKH
@@ -226,6 +230,14 @@ option_with_default(LIBINT2_RKB_ERI_MAX_AM
    Can specify values for each derivative level as a semicolon-separated string. (default: max_am)" -1)
 option_with_default(LIBINT2_RKB_ERI_OPT_AM
         "Optimize relativistic restricted kinetic balance (RKB) 4-center ERIs maximally for up to angular momentum N (N <= max-am).
+   Can specify values for each derivative level as a semicolon-separated string (default: (max_am/2)+1)" -1)
+
+option_with_default(LIBINT2_RKB_ERI3_MAX_AM
+        "Support relativistic restricted kinetic balance (RKB) 3-center ERIs for Gaussians of angular momentum up to N.
+   Can specify values for each derivative level as a semicolon-separated string. (default: max_am)
+   This option controls only the single fitting center. The paired centers (on which σ·p acts) use LIBINT2_MAX_AM." -1)
+option_with_default(LIBINT2_RKB_ERI3_OPT_AM
+        "Optimize relativistic restricted kinetic balance (RKB) 3-center ERIs maximally for up to angular momentum N (N <= max-am).
    Can specify values for each derivative level as a semicolon-separated string (default: (max_am/2)+1)" -1)
 
 

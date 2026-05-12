@@ -358,6 +358,7 @@ endmacro()
 process_integrals_class(ONEBODY)
 process_integrals_class(ERI)
 process_integrals_class(RKB_ERI)
+process_integrals_class(RKB_ERI3)
 process_integrals_class(ERI3)
 process_integrals_class(ERI2)
 # unlike above, these classes (1) don't do AM_LIST and (2) require value in config.h if enabled
@@ -397,7 +398,7 @@ list(REVERSE _amlist)
 list(APPEND Libint2_ERI_COMPONENTS "${_amlist}")
 message(VERBOSE "setting components ${_amlist}")
 
-foreach(_cls ONEBODY;ERI;RKB_ERI;ERI3;ERI2;G12;G12DKH)
+foreach(_cls ONEBODY;ERI;RKB_ERI;RKB_ERI3;ERI3;ERI2;G12;G12DKH)
     if((_cls STREQUAL G12) OR (_cls STREQUAL G12DKH))
         add_feature_info(
           "integral class ${_cls}"
@@ -444,6 +445,18 @@ foreach(_cls ONEBODY;ERI;RKB_ERI;ERI3;ERI2;G12;G12DKH)
                         if (_lfit GREATER_EQUAL _lpr)
                             list(APPEND _amlist     "eri_${_am${_lpr}}${_am${_lpr}}${_AM${_lfit}}_d${_d}")
                             list(APPEND _pureamlist "eri_${_am${_lpr}}${_am${_lpr}}${_am${_lfit}}_d${_d}")
+                        endif()
+                    endforeach()
+                endforeach()
+            endif()
+            if (_cls STREQUAL "RKB_ERI3")
+                # Mirror ERI3 component naming: fitting (single) center on bra,
+                # paired (AO) centers on ket where σ·p acts. Paired-center AM
+                # tracks LIBINT_MAX_AM via _eri3_candidate0_d${_d}.
+                foreach(_lfit RANGE ${LIBINT_HARD_MIN_AM} ${_candidate_${_cls}_d${_d}})  # LIBINT_RKB_ERI3_MAX_AM[_LIST], fitting
+                    foreach(_lpr RANGE ${LIBINT_HARD_MIN_AM} ${_eri3_candidate0_d${_d}})  # LIBINT_MAX_AM[_LIST], paired
+                        if (_lfit GREATER_EQUAL _lpr)
+                            list(APPEND _amlist     "rkb_eri_${_am${_lpr}}${_am${_lpr}}${_AM${_lfit}}_d${_d}")
                         endif()
                     endforeach()
                 endforeach()
