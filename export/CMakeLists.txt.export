@@ -781,13 +781,16 @@ install(
   DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}/libint2"
   )
 
-# install basis.h at install time so LIBINT_DATADIR_ABSOLUTE reflects any --prefix override
+# install basis.h at install time so LIBINT_DATADIR_ABSOLUTE reflects
+# any --prefix override. $ENV{DESTDIR} must be prepended manually
+# here: install(CODE) runs custom code and does not get the automatic
+# DESTDIR handling that install(FILES) etc. have.
 install(CODE "
   set(LIBINT_VERSION \"${LIBINT_VERSION}\")
   set(LIBINT_DATADIR_ABSOLUTE \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}\")
   configure_file(
     \"${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in\"
-    \"\${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_INCLUDEDIR}/libint2/basis.h\"
+    \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_INCLUDEDIR}/libint2/basis.h\"
     @ONLY)
 ")
 
