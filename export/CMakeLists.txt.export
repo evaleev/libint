@@ -366,6 +366,7 @@ if (L2_BUILD_SHARED_LIBS)
         Libint2_VERSION "${LIBINT_VERSION}"
         Libint2_MAX_AM_ERI "${Libint2_MAX_AM_ERI}"
         Libint2_CONFIGURATION "${Libint2_CONFIG_COMPONENTS}"
+        SOVERSION "${LIBINT_MAJOR_SO_VERSION}"
       )
     set_property(TARGET int-shared APPEND PROPERTY EXPORT_PROPERTIES "${export_properties}")
     if (APPLE)
