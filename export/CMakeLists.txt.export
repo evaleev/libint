@@ -442,7 +442,7 @@ if (L2_BUILD_SHARED_LIBS)
             set_target_properties(
               int-cxx-shared
               PROPERTIES
-                #SOVERSION ${LIBINT_MAJOR_SOVERSION}
+                SOVERSION ${LIBINT_MAJOR_SOVERSION}
                 MACOSX_RPATH ON
                 OUTPUT_NAME "int2-cxx"
               )
