@@ -280,7 +280,7 @@ class Export {
   void initialize_bf_map() {
     atom2shell_ = BasisSet::atom2shell(atoms_, basis_);
 
-    const auto nao = BasisSet::nbf(basis_);
+    const auto nao = libint2::nbf(basis_);
     ao_map_.resize(nao);
     assert(nao == coefs_.rows());
     const auto shell2ao = BasisSet::compute_shell2bf(basis_);
@@ -314,7 +314,8 @@ class Export {
               ao_molden += 3;
             } else {
               FOR_SOLIDHARM_MOLDEN(l, m)
-              const auto ao_in_shell = libint2::INT_SOLIDHARMINDEX(l, m);
+              const auto ao_in_shell = libint2::INT_SOLIDHARMINDEX(
+                  libint2::solid_harmonics_ordering(), l, m);
               ao_map_[ao_molden++] = ao + ao_in_shell;
               END_FOR_SOLIDHARM_MOLDEN
             }
