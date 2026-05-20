@@ -1782,7 +1782,7 @@ void build_R12kG12_2b_2k(std::ostream& os,
 #endif  // LIBINT_INCLUDE_G12
 
 #ifdef LIBINT_INCLUDE_G12
-void build_R12kG12_2b_2k_separate(
+[[maybe_unused]] void build_R12kG12_2b_2k_separate(
     std::ostream& os, const std::shared_ptr<CompilationParameters>& cparams,
     std::shared_ptr<Libint2Iface>& iface) {
   // do not support this if the commutator integrals are needed
