@@ -234,6 +234,7 @@ else()
       configure_file(
         \"${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in\"
         \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/libint2/basis.h\"
-        @ONLY)
+        @ONLY
+        NO_SOURCE_PERMISSIONS)  # else installed basis.h inherits basis.h.in's perms (e.g. 0600), which vary by build env
     ")
 endif()
