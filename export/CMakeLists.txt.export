@@ -785,14 +785,23 @@ install(
 # install basis.h at install time so LIBINT_DATADIR_ABSOLUTE reflects
 # any --prefix override. $ENV{DESTDIR} must be prepended manually
 # here: install(CODE) runs custom code and does not get the automatic
-# DESTDIR handling that install(FILES) etc. have.
+# DESTDIR handling that install(FILES) etc. have. configure_file into the
+# build tree, then file(COPY) into the install tree with explicit
+# FILE_PERMISSIONS so the installed header does not inherit basis.h.in's
+# mode (e.g. 0600, which varies by build env); this also works with the
+# 3.16 minimum required here, unlike configure_file's NO_SOURCE_PERMISSIONS
+# (CMake 3.19+).
 install(CODE "
   set(LIBINT_VERSION \"${LIBINT_VERSION}\")
   set(LIBINT_DATADIR_ABSOLUTE \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}\")
   configure_file(
     \"${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in\"
-    \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_INCLUDEDIR}/libint2/basis.h\"
+    \"${PROJECT_BINARY_DIR}/basis.h.install/basis.h\"
     @ONLY)
+  file(COPY
+    \"${PROJECT_BINARY_DIR}/basis.h.install/basis.h\"
+    DESTINATION \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_INCLUDEDIR}/libint2\"
+    FILE_PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
 ")
 
 # install bundled Boost headers if needed
