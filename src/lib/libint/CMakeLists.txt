@@ -227,14 +227,22 @@ else()
         )
     endforeach()
 
-    # generate basis.h at install time so LIBINT_DATADIR_ABSOLUTE reflects any --prefix override
+    # generate basis.h at install time so LIBINT_DATADIR_ABSOLUTE reflects any --prefix override.
+    # configure_file into the build tree, then file(COPY) into the install tree with explicit
+    # FILE_PERMISSIONS: this avoids the installed header inheriting basis.h.in's mode (e.g. 0600,
+    # which varies by build env) without relying on NO_SOURCE_PERMISSIONS, and prepends
+    # $ENV{DESTDIR} manually -- install(CODE) runs custom code and does not get the automatic
+    # DESTDIR handling that install(FILES) etc. have.
     install(CODE "
       set(LIBINT_VERSION \"${LIBINT_VERSION}\")
       set(LIBINT_DATADIR_ABSOLUTE \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}\")
       configure_file(
         \"${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in\"
-        \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/libint2/basis.h\"
-        @ONLY
-        NO_SOURCE_PERMISSIONS)  # else installed basis.h inherits basis.h.in's perms (e.g. 0600), which vary by build env
+        \"${CMAKE_CURRENT_BINARY_DIR}/basis.h.install/basis.h\"
+        @ONLY)
+      file(COPY
+        \"${CMAKE_CURRENT_BINARY_DIR}/basis.h.install/basis.h\"
+        DESTINATION \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/libint2\"
+        FILE_PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
     ")
 endif()
