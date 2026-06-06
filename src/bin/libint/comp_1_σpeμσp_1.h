@@ -37,14 +37,14 @@ namespace libint2 {
  * @tparam F basis function type. valid choices are CGShell or CGF
  */
 template <typename F>
-class CR_1_σpRσp_1
+class CR_1_σpeμσp_1
     : public GenericRecurrenceRelation<
-          CR_1_σpRσp_1<F>, F, GenIntegralSet_1_1<F, σpRσpOper, EmptySet>> {
+          CR_1_σpeμσp_1<F>, F, GenIntegralSet_1_1<F, σpeμσpOper, EmptySet>> {
  public:
-  typedef CR_1_σpRσp_1<F> ThisType;
+  typedef CR_1_σpeμσp_1<F> ThisType;
   typedef F BasisFunctionType;
-  typedef σpRσpOper OperType;
-  typedef GenIntegralSet_1_1<F, σpRσpOper, EmptySet> TargetType;
+  typedef σpeμσpOper OperType;
+  typedef GenIntegralSet_1_1<F, σpeμσpOper, EmptySet> TargetType;
   typedef GenericRecurrenceRelation<ThisType, BasisFunctionType, TargetType>
       ParentType;
   friend class GenericRecurrenceRelation<ThisType, BasisFunctionType,
@@ -61,13 +61,13 @@ class CR_1_σpRσp_1
   using ParentType::RecurrenceRelation::expr_;
   using ParentType::RecurrenceRelation::nflops_;
 
-  CR_1_σpRσp_1(const std::shared_ptr<TargetType> &, unsigned int = 0);
+  CR_1_σpeμσp_1(const std::shared_ptr<TargetType> &, unsigned int = 0);
 
   static std::string descr() { return "CR"; }
 };
 
 template <typename F>
-CR_1_σpRσp_1<F>::CR_1_σpRσp_1(const std::shared_ptr<TargetType> &Tint,
+CR_1_σpeμσp_1<F>::CR_1_σpeμσp_1(const std::shared_ptr<TargetType> &Tint,
                               unsigned int)
     : ParentType(Tint, 0) {
   assert(Tint->num_func_bra(/* particle */ 0) == 1);
@@ -151,10 +151,10 @@ CR_1_σpRσp_1<F>::CR_1_σpRσp_1(const std::shared_ptr<TargetType> &Tint,
       }
     } break;
     default:
-      throw std::runtime_error("CR_1_σpRσp_1: invalid quaternionic index");
+      throw std::runtime_error("CR_1_σpeμσp_1: invalid quaternionic index");
   }
 
-}  // CR_1_σpRσp_1<F>::CR_1_σpRσp_1
+}  // CR_1_σpeμσp_1<F>::CR_1_σpeμσp_1
 
 };  // namespace libint2
 

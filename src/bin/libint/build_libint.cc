@@ -311,8 +311,8 @@ template <>
 }
 
 template <>
-σpRσp_Descr make_descr<σpRσp_Descr>(int p, int, int) {
-  return σpRσp_Descr(p);
+σpeμσp_Descr make_descr<σpeμσp_Descr>(int p, int, int) {
+  return σpeμσp_Descr(p);
 }
 
 template <>
@@ -452,7 +452,7 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
           descrs.emplace_back(make_descr<OperDescrType>(p));
         }
       }
-      if (std::is_same<_OperType, σpRσpOper>::value) {
+      if (std::is_same<_OperType, σpeμσpOper>::value) {
         // reset descriptors array
         descrs.resize(0);
         // iterate over 12 = 3 dipole directions × 4 Pauli components
@@ -599,11 +599,11 @@ void try_main(int argc, char* argv[]) {
 // overlap, kinetic, elecpot cannot be omitted
 #define BOOST_PP_ONEBODY_TASK_TUPLE                                  \
   (overlap, kinetic, elecpot, 1emultipole, 2emultipole, 3emultipole, \
-   sphemultipole, opVop, oprop)
+   sphemultipole, opVop, opemuop)
 #define BOOST_PP_ONEBODY_TASK_OPER_TUPLE                              \
   (OverlapOper, KineticOper, ElecPotOper, CartesianMultipoleOper<3u>, \
    CartesianMultipoleOper<3u>, CartesianMultipoleOper<3u>,            \
-   SphericalMultipoleOper, σpVσpOper, σpRσpOper)
+   SphericalMultipoleOper, σpVσpOper, σpeμσpOper)
 #define BOOST_PP_ONEBODY_TASK_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_ONEBODY_TASK_TUPLE)
 #define BOOST_PP_ONEBODY_TASK_OPER_LIST \

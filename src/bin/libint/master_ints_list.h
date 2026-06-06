@@ -50,8 +50,8 @@ typedef GenIntegralSet_1_1<CGShell, ElecPotOper, mType> ElecPot_1_1_sh;
 typedef GenIntegralSet_1_1<CGF, ElecPotOper, mType> ElecPot_1_1_int;
 typedef GenIntegralSet_1_1<CGShell, σpVσpOper, EmptySet> σpVσp_1_1_sh;
 typedef GenIntegralSet_1_1<CGF, σpVσpOper, EmptySet> σpVσp_1_1_int;
-typedef GenIntegralSet_1_1<CGShell, σpRσpOper, EmptySet> σpRσp_1_1_sh;
-typedef GenIntegralSet_1_1<CGF, σpRσpOper, EmptySet> σpRσp_1_1_int;
+typedef GenIntegralSet_1_1<CGShell, σpeμσpOper, EmptySet> σpeμσp_1_1_sh;
+typedef GenIntegralSet_1_1<CGF, σpeμσpOper, EmptySet> σpeμσp_1_1_int;
 typedef GenIntegralSet_1_1<CGShell, CartesianMultipoleOper<3u>, EmptySet>
     CMultipole_1_1_sh;
 typedef GenIntegralSet_1_1<CGF, CartesianMultipoleOper<3u>, EmptySet>
@@ -153,8 +153,8 @@ typedef boost::mpl::list<
     Overlap_1_1_sh_y, Overlap_1_1_int_y, Overlap_1_1_sh_z, Overlap_1_1_int_z,
     Kinetic_1_1_sh, Kinetic_1_1_int, Kinetic_1_1_sh_x, Kinetic_1_1_int_x,
     Kinetic_1_1_sh_y, Kinetic_1_1_int_y, Kinetic_1_1_sh_z, Kinetic_1_1_int_z,
-    ElecPot_1_1_sh, ElecPot_1_1_int, σpVσp_1_1_sh, σpVσp_1_1_int, σpRσp_1_1_sh,
-    σpRσp_1_1_int, CMultipole_1_1_sh, CMultipole_1_1_int, CMultipole_1_1_sh_x,
+    ElecPot_1_1_sh, ElecPot_1_1_int, σpVσp_1_1_sh, σpVσp_1_1_int, σpeμσp_1_1_sh,
+    σpeμσp_1_1_int, CMultipole_1_1_sh, CMultipole_1_1_int, CMultipole_1_1_sh_x,
     CMultipole_1_1_sh_y, CMultipole_1_1_sh_z, CMultipole_1_1_int_x,
     CMultipole_1_1_int_y, CMultipole_1_1_int_z, SMultipole_1_1_sh,
 #endif

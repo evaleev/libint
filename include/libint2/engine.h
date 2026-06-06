@@ -197,7 +197,7 @@ enum class Operator {
   /// components (trace + 3 antisym), indexed as `4*k + q` with `k ∈ {x,y,z}`
   /// the dipole direction and `q ∈ {0=trace, 1=σ_x, 2=σ_y, 3=σ_z}` the Pauli
   /// piece. Origin set via `engine.set_params(std::array<double,3>)`.
-  oprop,
+  σpeμσp,
   /// \f$ \delta(\vec{r}_1 - \vec{r}_2) \f$
   delta,
   /// (2-body) Coulomb operator = \f$ r_{12}^{-1} \f$
@@ -250,7 +250,7 @@ enum class Operator {
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!keep this
   // updated!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   first_1body_oper = overlap,
-  last_1body_oper = oprop,
+  last_1body_oper = σpeμσp,
   first_2body_oper = delta,
   last_2body_oper = stg_x_coulomb,
   first_oper = first_1body_oper,
@@ -437,7 +437,7 @@ struct operator_traits<Operator::sphemultipole>
 };
 
 template <>
-struct operator_traits<Operator::oprop>
+struct operator_traits<Operator::σpeμσp>
     : public operator_traits<Operator::emultipole1> {
   static constexpr auto nopers = 12;
   static constexpr auto intrinsic_deriv_order = 2;

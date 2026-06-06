@@ -244,7 +244,7 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "W correctness",
 #endif  // LIBINT2_SUPPORT_ONEBODY
 }
 
-TEST_CASE_METHOD(libint2::unit::DefaultFixture, "σpRσp correctness",
+TEST_CASE_METHOD(libint2::unit::DefaultFixture, "σpeμσp correctness",
                  "[engine][1-body]") {
 #if defined(LIBINT2_SUPPORT_ONEBODY)
   if (LIBINT_SHGSHELL_ORDERING != LIBINT_SHGSHELL_ORDERING_STANDARD) return;
@@ -257,13 +257,13 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "σpRσp correctness",
       Shell{{1.0, 3.0}, {{0, true, {1.0, 0.3}}}, {{0.0, 0.0, 0.0}}},
       Shell{{2.0, 5.0}, {{2, true, {1.0, 0.2}}}, {{1.0, 1.0, 1.0}}}};
 
-  const auto lmax = std::min(2, LIBINT2_MAX_AM_oprop);
+  const auto lmax = std::min(2, LIBINT2_MAX_AM_opemuop);
   if (lmax < 2) return;
 
-  auto engine = Engine(Operator::oprop, 2, lmax);
+  auto engine = Engine(Operator::σpeμσp, 2, lmax);
   engine.set_params(std::array<double, 3>{{0.0, 0.0, 0.0}});
 
-  // (s|σpRσp|d) and (d|σpRσp|s)
+  // (s|σpeμσp|d) and (d|σpeμσp|s)
   engine.compute(obs[0], obs[1]);
   std::array<std::vector<double>, 12> ab;
   for (int c = 0; c < 12; ++c) {
@@ -280,7 +280,7 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "σpRσp correctness",
     ba[c].assign(buf, buf + (5 * 1));  // n_d_pure × n_s
   }
 
-  // Hermiticity check: σpRσp is Hermitian, but the Pauli identity routes the
+  // Hermiticity check: σpeμσp is Hermitian, but the Pauli identity routes the
   // imaginary i factor on the antisym pieces into a real-stored sign flip.
   //   q=0 trace: matrix is symmetric  ⇒  ab[0+k][i,j] ==  ba[0+k][j,i]
   //   q=1..3   : matrix is antisym    ⇒  ab[q+k][i,j] == -ba[q+k][j,i]

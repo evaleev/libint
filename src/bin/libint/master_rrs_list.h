@@ -28,7 +28,7 @@
 #include <comp_11_r12kr12lg12_11.h>
 #include <comp_11_tig12_11.h>
 #include <comp_11_σpσpCoulombσpσp_11.h>
-#include <comp_1_σpRσp_1.h>
+#include <comp_1_σpeμσp_1.h>
 #include <comp_1_σpVσp_1.h>
 #include <comp_deriv_gauss.h>
 #include <comp_deriv_gauss_v2.h>
@@ -183,8 +183,8 @@ typedef VRR_1_ElecPot_1<CGF, InKet> VRR_b_1_ElecPot_1_int;
 typedef CR_1_σpVσp_1<CGShell> CR_1_σpVσp_1_sh;
 typedef CR_1_σpVσp_1<CGF> CR_1_σpVσp_1_int;
 
-typedef CR_1_σpRσp_1<CGShell> CR_1_σpRσp_1_sh;
-typedef CR_1_σpRσp_1<CGF> CR_1_σpRσp_1_int;
+typedef CR_1_σpeμσp_1<CGShell> CR_1_σpeμσp_1_sh;
+typedef CR_1_σpeμσp_1<CGF> CR_1_σpeμσp_1_int;
 
 // TODO investigate whether need to stay away from HRR for now to be sure that
 // multipoles are computed as precisely as possible

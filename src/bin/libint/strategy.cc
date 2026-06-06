@@ -315,12 +315,12 @@ struct MasterStrategy<σpVσp_1_1_int> {
   typedef boost::mpl::list<CR_1_σpVσp_1_int> value;
 };
 template <>
-struct MasterStrategy<σpRσp_1_1_sh> {
-  typedef boost::mpl::list<CR_1_σpRσp_1_sh> value;
+struct MasterStrategy<σpeμσp_1_1_sh> {
+  typedef boost::mpl::list<CR_1_σpeμσp_1_sh> value;
 };
 template <>
-struct MasterStrategy<σpRσp_1_1_int> {
-  typedef boost::mpl::list<CR_1_σpRσp_1_int> value;
+struct MasterStrategy<σpeμσp_1_1_int> {
+  typedef boost::mpl::list<CR_1_σpeμσp_1_int> value;
 };
 template <>
 struct MasterStrategy<Kinetic_1_1_sh> {

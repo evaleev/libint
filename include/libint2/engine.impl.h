@@ -84,7 +84,7 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
             (sphemultipole,          /* sphemultipole */     \
              (opVop,                 /* opVop */             \
               (opVop,                /* op_q_gau_op */       \
-               (oprop,                /* oprop */            \
+               (opemuop,                /* opemuop */            \
                 (eri,                  /* delta */           \
                  (eri,                 /* coulomb */         \
                   (coulomb_opop,       /* coulomb_opop */    \
@@ -106,7 +106,7 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
 #define BOOST_PP_NBODY_OPERATOR_INDEX_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE)
 #define BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX \
-  13  // oprop, the 14th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last
+  13  // opemuop, the 14th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last
       // 1-body operator
 
 // make list of braket indices for n-body ints
@@ -1068,7 +1068,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   //  }
 
   if (oper_ == Operator::emultipole1 || oper_ == Operator::emultipole2 ||
-      oper_ == Operator::emultipole3 || oper_ == Operator::oprop) {
+      oper_ == Operator::emultipole3 || oper_ == Operator::σpeμσp) {
     const auto& O = any_cast<
         const operator_traits<Operator::emultipole1>::oper_params_type&>(
         params_);  // same as emultipoleX
@@ -1117,7 +1117,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
 
   if (oper_ == Operator::kinetic || (deriv_order_ > 0) ||
       oper_ == Operator::opVop || oper_ == Operator::op_q_gau_op ||
-      oper_ == Operator::oprop) {
+      oper_ == Operator::σpeμσp) {
 #if LIBINT2_DEFINED(eri, two_alpha0_bra)
     primdata.two_alpha0_bra[0] = 2.0 * alpha1;
 #endif

@@ -321,17 +321,17 @@ struct σpVσp_Descr : public Contractable<σpVσp_Descr> {
 };
 typedef GenOper<σpVσp_Descr> σpVσpOper;
 
-/** opRop: (μ σ·p | r | σ·p ν), one-body σ·p-on-both-sides analog of dipole.
+/** opemuop: (μ σ·p | r | σ·p ν), one-body σ·p-on-both-sides analog of dipole.
  *  σ_a σ_b = δ_ab + iε_abc σ_c folds the 9 raw σ_a∂_a r_k σ_b∂_b dyadics per
  *  dipole direction k down to 4 Pauli-quaternion components (trace + 3
  *  antisym), mirroring σpVσp's fold of σ·p V σ·p. 12 outputs total = 3 dipole
  *  directions × 4 Pauli components, indexed composite_index = 4·k + q.
  */
-struct σpRσp_Descr : public Contractable<σpRσp_Descr> {
+struct σpeμσp_Descr : public Contractable<σpeμσp_Descr> {
   typedef MultiplicativeODep1Body_Props Properties;
 
-  σpRσp_Descr() : composite_index_(0) {}
-  σpRσp_Descr(int composite_index) : composite_index_(composite_index) {
+  σpeμσp_Descr() : composite_index_(0) {}
+  σpeμσp_Descr(int composite_index) : composite_index_(composite_index) {
     assert(composite_index >= 0 && composite_index < 12);
   }
 
@@ -342,7 +342,7 @@ struct σpRσp_Descr : public Contractable<σpRσp_Descr> {
     static const char* pauli_lbl[] = {"0", "X", "Y", "Z"};
     const auto ci = composite_index();
     if (ci < 0 || ci >= 12) abort();
-    return std::string("opRop[") + dipole_lbl[ci / 4] + "," +
+    return std::string("opemuop[") + dipole_lbl[ci / 4] + "," +
            pauli_lbl[ci % 4] + "]";
   }
   std::string label() const { return description(); }
@@ -358,7 +358,7 @@ struct σpRσp_Descr : public Contractable<σpRσp_Descr> {
  private:
   const int composite_index_ = -1;
 };
-typedef GenOper<σpRσp_Descr> σpRσpOper;
+typedef GenOper<σpeμσp_Descr> σpeμσpOper;
 
 /// cartesian multipole operator in \c NDIM dimensions
 /// \f$ \hat{O}(\vec{k}) \equiv \vec{r}^{\cdot \vec{k}} = r_1^{k_1} r_2^{k_2}
