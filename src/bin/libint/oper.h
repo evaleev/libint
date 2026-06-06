@@ -476,6 +476,48 @@ struct Coulombσpσp_Descr : public Contractable<Coulombσpσp_Descr> {
 };
 typedef GenOper<Coulombσpσp_Descr> CoulombσpσpOper;
 
+/** Coulombσp is the 3-center single-σ·p ("DF-Gaunt") operator:
+ *  (P | 1/r_{12} | μ, σ·p ν), with the fitting function P a spectator and a
+ *  single σ·p acting on the 2nd ket AO function ν. Unlike Coulombσpσp (two σ·p
+ *  on the ket pair, folded via the Dirac identity into 4 quaternion
+ *  components), a single σ·p produces no σ·σ folding: the result is the bare
+ *  Cartesian gradient of ν, i.e. the SO(3) vector irrep with 3 components
+ *  (x=0, y=1, z=2). Each component is exactly one first-derivative ERI child;
+ *  the imaginary unit and Pauli matrix of σ·p are applied by the caller (MPQC).
+ */
+struct Coulombσp_Descr : public Contractable<Coulombσp_Descr> {
+  typedef MultiplicativeSymm2Body_Props Properties;
+
+  Coulombσp_Descr() : cartesian_index_(0) {}
+  Coulombσp_Descr(int cartesian_index) : cartesian_index_(cartesian_index) {
+    assert(cartesian_index >= 0 && cartesian_index <= 2);
+  }
+
+  static const unsigned int max_key = 3;
+  unsigned int key() const { return cartesian_index(); }
+  std::string description() const {
+    std::string descr("coulomb_op[");
+    if (cartesian_index() == 0)
+      descr += "X";
+    else if (cartesian_index() == 1)
+      descr += "Y";
+    else if (cartesian_index() == 2)
+      descr += "Z";
+    else
+      abort();
+    return descr + "]";
+  }
+  std::string label() const { return description(); }
+  int psymm(int i, int j) const { abort(); }
+  int hermitian(int i) const { return +1; }
+
+  int cartesian_index() const { return cartesian_index_; }
+
+ private:
+  const int cartesian_index_ = -1;
+};
+typedef GenOper<Coulombσp_Descr> CoulombσpOper;
+
 struct σpσpCoulombσpσp_Descr : public Contractable<σpσpCoulombσpσp_Descr> {
   typedef MultiplicativeSymm2Body_Props Properties;
 

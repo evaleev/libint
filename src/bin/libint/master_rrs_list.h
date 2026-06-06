@@ -21,6 +21,7 @@
 #ifndef _libint2_src_bin_libint_masterrrslist_h_
 #define _libint2_src_bin_libint_masterrrslist_h_
 
+#include <comp_11_Coulombσp_11.h>
 #include <comp_11_Coulombσpσp_11.h>
 #include <comp_11_DivG12prime_xTx_11.h>
 #include <comp_11_g12tig12_11.h>
@@ -327,6 +328,9 @@ typedef CR_11_σpσpCoulombσpσp_11<CGF> CR_11_σpσpCoulombσpσp_11_int;
 
 typedef CR_11_σpCoulombσp_11<CGShell> CR_11_σpCoulombσp_11_sh;
 typedef CR_11_σpCoulombσp_11<CGF> CR_11_σpCoulombσp_11_int;
+
+typedef CR_11_Coulombσp_11<CGShell> CR_11_Coulombσp_11_sh;
+typedef CR_11_Coulombσp_11<CGF> CR_11_Coulombσp_11_int;
 };  // namespace libint2
 
 #endif  // header guard

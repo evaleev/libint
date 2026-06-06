@@ -88,8 +88,9 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
                 (eri,                  /* delta */           \
                  (eri,                 /* coulomb */         \
                   (coulomb_opop,       /* coulomb_opop */    \
-                   (opop_coulomb_opop, /* opop_coulomb_opop */ \
-                    (op_coulomb_op,    /* op_coulomb_op */   \
+                   (coulomb_op,        /* coulomb_op */      \
+                    (opop_coulomb_opop, /* opop_coulomb_opop */ \
+                     (op_coulomb_op,    /* op_coulomb_op */   \
                      (eri,             /* cgtg */            \
                       (eri,            /* cgtg_x_coulomb */  \
                        (eri,           /* delcgtg2 */        \
@@ -99,7 +100,7 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
                            (eri,       /* erfx_coulomb */    \
                             (eri,      /* stg */             \
                              (eri,     /* yukawa */          \
-                              BOOST_PP_NIL))))))))))))))))))))))))))))
+                              BOOST_PP_NIL)))))))))))))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
@@ -1320,6 +1321,16 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   braket_ == BraKet::xx_xs;
     swap_tbra = false;
     swap_tket = false;
+  } else if (oper_ == Operator::coulomb_op) {
+    // Coulombσp (3-center single-σ·p): σ·p attaches to the 2nd ket function ν,
+    // so within-ket swap is NOT a symmetry (it would move σ·p onto μ). The
+    // kernel is generated for every (lc,ld), so no canonicalizing swap is
+    // needed. bra↔ket swap IS a symmetry of 1/r12 and leaves the 3 Cartesian
+    // components unchanged (the vector index is the ket-side σ·p direction
+    // only — no transpose, no sign flip). Only xx_xs needs a braket swap.
+    swap_braket = (braket_ == BraKet::xx_xs);
+    swap_tbra = false;
+    swap_tket = false;
   } else {
     swap_braket = ((braket_ == BraKet::xx_xx) &&
                    (tbra1.contr[0].l + tbra2.contr[0].l >
@@ -1360,6 +1371,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     const auto ket_total = tket1.contr[0].l + tket2.contr[0].l;
     swap_braket = ((braket_ == BraKet::xx_xx) && (bra_total < ket_total)) ||
                   braket_ == BraKet::xx_xs;
+    swap_tbra = false;
+    swap_tket = false;
+  } else if (oper_ == Operator::coulomb_op) {
+    // Coulombσp (3-center single-σ·p): see the STANDARD-ordering branch above.
+    // Within-ket swap is NOT a symmetry (σ·p attaches to ν); bra↔ket leaves
+    // the 3 Cartesian components unchanged. Only xx_xs needs a braket swap.
+    swap_braket = (braket_ == BraKet::xx_xs);
     swap_tbra = false;
     swap_tket = false;
   } else {
@@ -1581,6 +1599,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
               switch (oper_) {
                 LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb);
                 LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb_opop);
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb_op);
                 LIBINT2_SIMPLE_CORE_EVAL_CASE(opop_coulomb_opop);
                 LIBINT2_SIMPLE_CORE_EVAL_CASE(op_coulomb_op);
                 case Operator::cgtg_x_coulomb: {

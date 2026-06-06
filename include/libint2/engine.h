@@ -207,6 +207,12 @@ enum class Operator {
   /// (2-body) \f$ r_{12}^{-1} (σ.p_{k1})(σ.p_{k2})\f$ where k1  & k2 are
   /// centers of ket1 and ket2, respectively
   coulomb_opop,
+  /// (2-body) \f$ r_{12}^{-1} (σ.p_{k2}) \f$ where k2 is the center of ket2;
+  /// the 3-center single-σ·p "DF-Gaunt" B-factor (P | μ, σ·p ν). σ·p acts on
+  /// the 2nd ket AO function only. Produces 3 Cartesian components (x=0, y=1,
+  /// z=2) — the SO(3) vector irrep; no σ·σ folding (cf. coulomb_opop). The
+  /// fitting function sits on the bra (BraKet::xs_xx); 3-center only.
+  coulomb_op,
   /// (2-body) \f$ (σ.p_{b1})(σ.p_{b2}) r_{12}^{-1} (σ.p_{k1})(σ.p_{k2})\f$
   /// where b1 & b2 are centers of bra1 and bra2 and k1  & k2 are centers of
   /// ket1 and ket2, respectively
@@ -458,6 +464,14 @@ struct operator_traits<Operator::coulomb_opop>
     : public operator_traits<Operator::coulomb> {
   static constexpr auto nopers = 4;
   static constexpr auto intrinsic_deriv_order = 2;
+};
+template <>
+struct operator_traits<Operator::coulomb_op>
+    : public operator_traits<Operator::coulomb> {
+  /// 3 Cartesian components of the single σ·p applied to the 2nd ket function.
+  /// index = a, a ∈ {x=0, y=1, z=2}. One intrinsic derivative (σ·p = one ∇).
+  static constexpr auto nopers = 3;
+  static constexpr auto intrinsic_deriv_order = 1;
 };
 template <>
 struct operator_traits<Operator::opop_coulomb_opop>

@@ -651,8 +651,12 @@ void try_main(int argc, char* argv[]) {
   // that make sense in xs_xx geometry are listed (opop_coulomb_opop requires
   // σ·p on both bra and ket, which is incompatible with one side being a
   // dummy-s fitting shell; it is intentionally omitted).
-#define BOOST_PP_RKB_ERI3_TASK_TUPLE (3coulomb_opop)
-#define BOOST_PP_RKB_ERI3_TASK_OPER_TUPLE (CoulombσpσpOper)
+  //   - 3coulomb_opop (CoulombσpσpOper): two σ·p on the AO ket pair (4 comps)
+  //   - 3coulomb_op   (CoulombσpOper):   single σ·p on the 2nd AO ket function
+  //                                      ν (3 Cartesian comps, DF-Gaunt B). No
+  //                                      4-center sibling — 3-center only.
+#define BOOST_PP_RKB_ERI3_TASK_TUPLE (3coulomb_opop, 3coulomb_op)
+#define BOOST_PP_RKB_ERI3_TASK_OPER_TUPLE (CoulombσpσpOper, CoulombσpOper)
 #define BOOST_PP_RKB_ERI3_TASK_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_RKB_ERI3_TASK_TUPLE)
 #define BOOST_PP_RKB_ERI3_TASK_OPER_LIST \
@@ -1558,10 +1562,20 @@ static void build_TwoPRep_1b_2k(
   for (unsigned int lbra = 0; lbra <= lmax; lbra++) {
     for (unsigned int lc = 0; lc <= lmax_default; lc++) {
       for (unsigned int ld = 0; ld <= lmax_default; ld++) {
-        // eliminate some cases depending on the desired convention
-        if (!ShellTripletSetPredicate<static_cast<ShellSetType>(
-                LIBINT_SHELL_SET)>::value(lbra, lc, ld))
-          continue;
+        // eliminate some cases depending on the desired convention.
+        // The Standard/ORCA triangle (lc>=ld / lc<=ld) is valid only when the
+        // ket pair (μ,ν) is permutationally symmetric, so the engine can
+        // canonicalize by swapping μ↔ν. CoulombσpOper has a single σ·p on ν
+        // only, so that swap is NOT a symmetry — the engine never swaps and
+        // indexes the build table by the exact (l(μ),l(ν)); we must therefore
+        // emit the FULL (lc,ld) square. (Plain ERI3 and CoulombσpσpOper keep
+        // the triangle: ERI3's ket pair is symmetric, and Coulombσpσp carries
+        // σ·p on both ket functions so μ↔ν stays a symmetry.)
+        if constexpr (!std::is_same<OperType, CoulombσpOper>::value) {
+          if (!ShellTripletSetPredicate<static_cast<ShellSetType>(
+                  LIBINT_SHELL_SET)>::value(lbra, lc, ld))
+            continue;
+        }
 
         // I will use 4-center recurrence relations and integrals, and have one
         // center carry an s function unfortunately, depending on the direction
@@ -1581,10 +1595,14 @@ static void build_TwoPRep_1b_2k(
 #endif
 
         // operator components: 1 for plain TwoPRep, 4 for RKB CoulombσpσpOper
+        // (σ·p on both AO ket fns), 3 for RKB CoulombσpOper (single σ·p → x,y,z)
         std::vector<OperDescrType> descrs(1);
         if constexpr (std::is_same<OperType, CoulombσpσpOper>::value) {
           descrs.resize(0);
           for (int p = 0; p != 4; ++p) descrs.emplace_back(OperDescrType(p));
+        } else if constexpr (std::is_same<OperType, CoulombσpOper>::value) {
+          descrs.resize(0);
+          for (int p = 0; p != 3; ++p) descrs.emplace_back(OperDescrType(p));
         }
         const auto nopers = descrs.size();
 
@@ -2575,9 +2593,9 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
 
       {  // 2-body ints
 
-#define BOOST_PP_TWOBODY_TASKOPER_TUPLE                                    \
-  ("eri", "coulomb_opop", "opop_coulomb_opop", "op_coulomb_op", "r12kg12", \
-   "r12_0_g12", "r12_2_g12", "g12_T1_g12", "g12dkh")
+#define BOOST_PP_TWOBODY_TASKOPER_TUPLE                                     \
+  ("eri", "coulomb_opop", "coulomb_op", "opop_coulomb_opop", "op_coulomb_op", \
+   "r12kg12", "r12_0_g12", "r12_2_g12", "g12_T1_g12", "g12dkh")
 #define BOOST_PP_TWOBODY_TASKOPER_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_TWOBODY_TASKOPER_TUPLE)
 

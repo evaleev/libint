@@ -915,6 +915,114 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
       }
     }
   }
+
+  SECTION("Coulombσp 3-center xs_xx") {
+    // 3-center single-σ·p ("DF-Gaunt" B-factor) integral
+    //   (P | 1/r12 | μ, σ·p ν),
+    // with the fitting function P on the bra (BraKet::xs_xx) and a single σ·p
+    // acting on the 2nd ket AO function ν only. The 3 Cartesian components
+    // (x,y,z) are the bare gradient of ν, so the reference is the 3-center ERI
+    // with a *single first derivative on ν* (the shell that carries σ·p) — the
+    // other geometric derivatives are not needed.
+    //
+    // The 3-center ERI is evaluated with the primitive eri() reference by
+    // placing a unit s-shell (alpha=0, at the origin) at the dummy bra-2
+    // position, exactly as the engine does internally via Shell::unit(): the
+    // 3-arg compute(df, μ, ν) maps to the 4-center order (df, unit, μ, ν) =
+    // (A,B,C,D), so σ·p on ν is the derivative on center D (der_idx slots
+    // 9..11). See the "Coulombσpσp and σpσpCoulombσpσp" SECTION for the
+    // (un-derivatived) primitive-eri reference pattern.
+
+    Shell dfsh{{1.5}, {{0, false, {1.0}}}, {{-1.0, 0.5, 0.0}}};
+    std::vector<Shell> dfs{dfsh};
+
+    Engine engine_3c;
+    try {
+      engine_3c = Engine(Operator::coulomb_op,
+                         std::max(max_nprim, libint2::max_nprim(dfs)),
+                         std::max(max_l, libint2::max_l(dfs)), 0);
+      engine_3c.set(BraKet::xs_xx);
+    } catch (Engine::lmax_exceeded &) {
+      // skip if libint not configured with -DLIBINT2_ENABLE_RKB_ERI3 >= 0
+      return;
+    }
+
+    // unit (dummy) shell at the bra-2 position: alpha=0, l=0, at the origin.
+    LIBINT2_REF_REALTYPE Bref[3] = {0.0, 0.0, 0.0};
+    const LIBINT2_REF_REALTYPE alpha_unit = 0.0;
+
+    const auto nshell = obs.size();
+    for (int sa = 0; sa != nshell; ++sa) {
+      for (int sb = 0; sb != nshell; ++sb) {
+        const auto &results_3c = engine_3c.compute(dfsh, obs[sa], obs[sb]);
+        assert(results_3c.size() == 3);
+
+        LIBINT2_REF_REALTYPE Aref[3], Cref[3], Dref[3];
+        for (int i = 0; i < 3; ++i) Aref[i] = dfsh.O[i];
+        for (int i = 0; i < 3; ++i) Cref[i] = obs[sa].O[i];
+        for (int i = 0; i < 3; ++i) Dref[i] = obs[sb].O[i];
+
+        int ijk = 0;
+
+        int l0, m0, n0;
+        FOR_CART(l0, m0, n0, dfsh.contr[0].l)     // P (fitting, s)
+        int l2, m2, n2;
+        FOR_CART(l2, m2, n2, obs[sa].contr[0].l)  // μ
+        int l3, m3, n3;
+        FOR_CART(l3, m3, n3, obs[sb].contr[0].l)  // ν (σ·p acts here)
+
+        std::array<LIBINT2_REF_REALTYPE, 3> ref_coulomb_op{0.0, 0.0, 0.0};
+
+        for (uint p0 = 0; p0 < dfsh.nprim(); p0++) {
+          for (uint p2 = 0; p2 < obs[sa].nprim(); p2++) {
+            for (uint p3 = 0; p3 < obs[sb].nprim(); p3++) {
+              const LIBINT2_REF_REALTYPE alpha0 = dfsh.alpha[p0];
+              const LIBINT2_REF_REALTYPE alpha2 = obs[sa].alpha[p2];
+              const LIBINT2_REF_REALTYPE alpha3 = obs[sb].alpha[p3];
+              const LIBINT2_REF_REALTYPE c0 = dfsh.contr[0].coeff[p0];
+              const LIBINT2_REF_REALTYPE c2 = obs[sa].contr[0].coeff[p2];
+              const LIBINT2_REF_REALTYPE c3 = obs[sb].contr[0].coeff[p3];
+              const LIBINT2_REF_REALTYPE c023 = c0 * c2 * c3;  // unit coeff = 1
+
+              // single first derivative on ν (center D), direction k.
+              auto eri_dD = [&](int k) {
+                der_idx d = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                d[9 + k] = 1;  // slots 9,10,11 = D_x, D_y, D_z
+                return eri(d.data(), l0, m0, n0, alpha0, Aref, 0, 0, 0,
+                           alpha_unit, Bref, l2, m2, n2, alpha2, Cref, l3, m3,
+                           n3, alpha3, Dref, 0);
+              };
+
+              for (int k = 0; k < 3; ++k) ref_coulomb_op[k] += c023 * eri_dD(k);
+            }
+          }
+        }
+
+        const double ABS_TOL = 5.0E-14;
+        const double REL_TOL = 1.0E-9;
+        for (auto comp = 0; comp < 3; ++comp) {
+          const auto v_3c = results_3c[comp][ijk];
+          const auto v_ref = ref_coulomb_op[comp];
+          const auto abs_err = std::abs(v_3c - v_ref);
+          const auto rel_err =
+              std::abs(v_ref) > 1e-30 ? std::abs(abs_err / v_ref) : 0.0;
+          bool not_ok = rel_err > REL_TOL && abs_err > ABS_TOL;
+          if (not_ok) {
+            std::cout << "(df | sa=" << sa << " sb=" << sb << ") comp=" << comp
+                      << " elem=" << ijk << ": 3c=" << v_3c << " ref=" << v_ref
+                      << " abs_err=" << abs_err << " rel_err=" << rel_err
+                      << std::endl;
+          }
+          REQUIRE(!not_ok);
+        }
+
+        ++ijk;
+        END_FOR_CART
+        END_FOR_CART
+        END_FOR_CART
+      }
+    }
+  }
 }
 
 TEST_CASE("Erfx_Coulomb integrals", "[engine][2-body]") {
