@@ -614,12 +614,19 @@ inline constexpr int rank(BraKet braket) {
 /// @return the default braket for @c oper
 /// @throw std::logic_error if invalid @c oper given
 inline constexpr BraKet default_braket(Operator oper) {
-  return (rank(oper) == 1)
-             ? BraKet::x_x
-             : ((rank(oper) == 2)
-                    ? BraKet::xx_xx
-                    : throw std::logic_error(
-                          "default_braket(Operator): invalid operator given"));
+  // coulomb_op (3-center single-σ·p DF-Gaunt) has no 4-center kernel; its only
+  // valid geometry is the 3-center xs_xx braket. Default to that rather than the
+  // rank-based xx_xx, which has no generated kernel and would silently dispatch
+  // to the plain-Coulomb `default` task (wrong integrals, no error in release).
+  return (oper == Operator::coulomb_op)
+             ? BraKet::xs_xx
+             : ((rank(oper) == 1)
+                    ? BraKet::x_x
+                    : ((rank(oper) == 2)
+                           ? BraKet::xx_xx
+                           : throw std::logic_error(
+                                 "default_braket(Operator): invalid operator "
+                                 "given")));
 }
 
 constexpr size_t nopers_2body = static_cast<int>(Operator::last_2body_oper) -

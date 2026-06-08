@@ -28,6 +28,8 @@
 #include <task.h>
 #include <twoprep_11_11.h>
 
+#include <stdexcept>
+
 namespace libint2 {
 
 /**
@@ -153,6 +155,13 @@ class CR_11_Coulombσpσp_11
       def << "src0[hsi] + src1[hsi] + src2[hsi]";
     } else if (nc == 2) {
       def << "src0[hsi] - src1[hsi]";
+    } else {
+      // Sign pattern is keyed on the child count (3 or 2). If canonicalization
+      // ever changes the count, the branches above would emit a wrong or empty
+      // target expression; fail the export loudly instead of emitting it.
+      throw std::logic_error(
+          "Coulombσpσp generate_code(): unexpected num_children() (expected 3 "
+          "or 2)");
     }
     def << ";\n}\n";
     unsigned int nflops = (nc > 1) ? nc - 1 : 0;

@@ -28,6 +28,8 @@
 #include <task.h>
 #include <twoprep_11_11.h>
 
+#include <stdexcept>
+
 namespace libint2 {
 
 /**
@@ -199,6 +201,14 @@ class CR_11_σpσpCoulombσpσp_11
     } else if (nc == 4) {
       // XX,XY,...,ZZ: -src0 + src1 + src2 - src3
       def << "- src0[hsi] + src1[hsi] + src2[hsi] - src3[hsi]";
+    } else {
+      // The σ·σ-fold sign pattern is keyed on the child count (9/6/4). If
+      // particle-swap canonicalization ever deduplicates children to a
+      // different count, the branches above would emit a wrong or empty target
+      // expression; fail the export loudly instead of generating broken code.
+      throw std::logic_error(
+          "σpσpCoulombσpσp generate_code(): unexpected num_children() (expected "
+          "9, 6, or 4)");
     }
     def << ";\n}\n";
     unsigned int nflops = (nc > 1) ? nc - 1 : 0;
