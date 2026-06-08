@@ -2001,7 +2001,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
   // compute directly (ss|ss)
   const auto compute_directly =
-      lmax == 0 && deriv_order_ == 0 & intrinsic_deriv_order() == 0;
+      lmax == 0 && deriv_order_ == 0 && intrinsic_deriv_order() == 0;
 
   if (compute_directly) {
 #ifdef LIBINT2_ENGINE_TIMERS
