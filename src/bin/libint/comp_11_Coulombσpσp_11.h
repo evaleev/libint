@@ -53,7 +53,10 @@ class CR_11_Coulombσpσp_11
       ParentType;
   friend class GenericRecurrenceRelation<ThisType, BasisFunctionType,
                                          TargetType>;
-  static const unsigned int max_nchildren = 100;  // TODO figure out
+  // children_.reserve() hint only (see generic_rr.h). The densest component
+  // sums 3 deriv-ERI children (the 2-component case uses 2), so 3 is the true
+  // upper bound across the 4 components.
+  static const unsigned int max_nchildren = 3;
 
   using ParentType::Instance;
 

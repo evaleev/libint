@@ -937,11 +937,21 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
     std::vector<Shell> dfs{dfsh};
 
     Engine engine_3c;
+    Engine engine_3c_default;
     try {
       engine_3c = Engine(Operator::coulomb_op,
                          std::max(max_nprim, libint2::max_nprim(dfs)),
                          std::max(max_l, libint2::max_l(dfs)), 0);
       engine_3c.set(BraKet::xs_xx);
+      // Regression (review finding #1): coulomb_op has no 4-center kernel, so a
+      // forgotten set() must NOT silently dispatch to the plain-Coulomb
+      // `default` task. default_braket(coulomb_op) must be the 3-center xs_xx,
+      // so engine_3c_default — built WITHOUT an explicit set() — must produce
+      // results identical to engine_3c.
+      CHECK(default_braket(Operator::coulomb_op) == BraKet::xs_xx);
+      engine_3c_default = Engine(Operator::coulomb_op,
+                                 std::max(max_nprim, libint2::max_nprim(dfs)),
+                                 std::max(max_l, libint2::max_l(dfs)), 0);
     } catch (Engine::lmax_exceeded &) {
       // skip if libint not configured with -DLIBINT2_ENABLE_RKB_ERI3 >= 0
       return;
@@ -956,6 +966,10 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
       for (int sb = 0; sb != nshell; ++sb) {
         const auto &results_3c = engine_3c.compute(dfsh, obs[sa], obs[sb]);
         assert(results_3c.size() == 3);
+        // default-braket engine (no set()) must match the explicit-xs_xx engine
+        const auto &results_3c_default =
+            engine_3c_default.compute(dfsh, obs[sa], obs[sb]);
+        REQUIRE(results_3c_default.size() == 3);
 
         LIBINT2_REF_REALTYPE Aref[3], Cref[3], Dref[3];
         for (int i = 0; i < 3; ++i) Aref[i] = dfsh.O[i];
@@ -1002,6 +1016,7 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
         const double REL_TOL = 1.0E-9;
         for (auto comp = 0; comp < 3; ++comp) {
           const auto v_3c = results_3c[comp][ijk];
+          CHECK(results_3c_default[comp][ijk] == v_3c);
           const auto v_ref = ref_coulomb_op[comp];
           const auto abs_err = std::abs(v_3c - v_ref);
           const auto rel_err =

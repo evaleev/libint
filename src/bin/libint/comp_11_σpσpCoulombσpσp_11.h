@@ -81,7 +81,10 @@ class CR_11_σpσpCoulombσpσp_11
       ParentType;
   friend class GenericRecurrenceRelation<ThisType, BasisFunctionType,
                                          TargetType>;
-  static const unsigned int max_nchildren = 100;  // TODO figure out
+  // children_.reserve() hint only (see generic_rr.h). The densest component is
+  // the SS scalar (σ·σ trace), which sums 9 deriv-ERI children; all others use
+  // 6 or 4. So 9 is the true upper bound across the 16 components.
+  static const unsigned int max_nchildren = 9;
 
   using ParentType::Instance;
 
