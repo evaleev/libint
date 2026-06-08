@@ -28,6 +28,8 @@
 #include <task.h>
 #include <twoprep_11_11.h>
 
+#include <rkb_fold_codegen.h>
+
 #include <stdexcept>
 
 namespace libint2 {
@@ -114,35 +116,12 @@ class CR_11_σpσpCoulombσpσp_11
   std::string spfunction_call(
       const std::shared_ptr<CodeContext>& context,
       const std::shared_ptr<ImplicitDimensions>& dims) const override {
-    std::ostringstream os;
-    os << context->label_to_function_name(this->label()) << "(inteval, "
-       << context->value_to_pointer(this->rr_target()->symbol());
-    const unsigned int nc = this->num_children();
-    for (unsigned int c = 0; c < nc; c++) {
-      os << ", " << context->value_to_pointer(this->rr_child(c)->symbol());
-    }
-    // total_dim = product of all shell dims (all 4 shells are spectators)
-    unsigned int total_dim = 1;
-    for (unsigned int p = 0; p < 2; p++) {
-      SubIterator* si = target_->bra().member_subiter(p, 0);
-      total_dim *= si->num_iter();
-      delete si;
-      si = target_->ket().member_subiter(p, 0);
-      total_dim *= si->num_iter();
-      delete si;
-    }
-    os << "," << total_dim;
-    LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-    taskmgr.current().params()->max_hrr_hsrank(total_dim);
-    os << ")" << context->end_of_stat() << std::endl;
-    return os.str();
+    return rkb_fold_spfunction_call(*this, target_, context);
   }
 
   std::shared_ptr<ImplicitDimensions> adapt_dims_(
       const std::shared_ptr<ImplicitDimensions>& dims) const override {
-    auto high_dim = std::make_shared<RTimeEntity<EntityTypes::Int>>("highdim");
-    return std::make_shared<ImplicitDimensions>(high_dim, dims->low(),
-                                                dims->vecdim());
+    return rkb_fold_adapt_dims(dims);
   }
 
   /// Hand-emit a simple element-wise loop function.
@@ -153,57 +132,28 @@ class CR_11_σpσpCoulombσpσp_11
                      const std::shared_ptr<ImplicitDimensions>& dims,
                      const std::string& funcname, std::ostream& decl,
                      std::ostream& def) override {
-    // declare_function lives in dg.cc
-    extern std::string declare_function(
-        const std::shared_ptr<CodeContext>& context,
-        const std::shared_ptr<ImplicitDimensions>& dims,
-        const std::shared_ptr<CodeSymbols>& args, const std::string& tlabel,
-        const std::string& function_descr, std::ostream& decl);
-
-    std::shared_ptr<ImplicitDimensions> localdims = adapt_dims_(dims);
-    // inline assign_symbols_: set symbol names on target/children and
-    // populate CodeSymbols
-    std::shared_ptr<CodeSymbols> symbols(new CodeSymbols);
-    this->rr_target()->set_symbol("target");
-    symbols->append_symbol("target");
-    for (unsigned int c = 0; c < this->num_children(); c++) {
-      std::string symb = "src" + std::to_string(c);
-      this->rr_child(c)->set_symbol(symb);
-      symbols->append_symbol(symb);
-    }
-    LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-    const std::string tlabel = taskmgr.current().label();
-    const std::string func_decl =
-        declare_function(context, localdims, symbols, tlabel, funcname, decl);
-    def << context->std_header();
-    def << "#include <" << context->label_to_name(funcname) << ".h>\n\n";
-    def << context->code_prefix();
-    def << func_decl << context->open_block() << std::endl;
-    def << context->std_function_header();
     // Sign patterns for each component, indexed by child order in constructor.
     // comp 0 (SS): 9 children, all +1
     // comp 1-3 (SX,SY,SZ): 6 children, alternating +1,-1
     // comp 4,8,12 (XS,YS,ZS): 6 children, alternating +1,-1
     // comp 5-7,9-11,13-15 (XX..ZZ): 4 children, pattern -1,+1,+1,-1
     const unsigned int nc = this->num_children();
-    def << "#ifdef __INTEL_COMPILER\n#pragma ivdep\n#endif\n";
-    def << "for(int hsi = 0; hsi<highdim; hsi++) {\n";
-    def << "target[hsi] = ";
+    std::ostringstream rhs;
     if (nc == 9) {
       // SS component: all positive
       for (unsigned int c = 0; c < 9; c++) {
-        if (c > 0) def << " + ";
-        def << "src" << c << "[hsi]";
+        if (c > 0) rhs << " + ";
+        rhs << "src" << c << "[hsi]";
       }
     } else if (nc == 6) {
       // SX,SY,SZ,XS,YS,ZS: alternating +/-
       for (unsigned int c = 0; c < 6; c++) {
-        def << ((c % 2 == 0) ? " + " : " - ");
-        def << "src" << c << "[hsi]";
+        rhs << ((c % 2 == 0) ? " + " : " - ");
+        rhs << "src" << c << "[hsi]";
       }
     } else if (nc == 4) {
       // XX,XY,...,ZZ: -src0 + src1 + src2 - src3
-      def << "- src0[hsi] + src1[hsi] + src2[hsi] - src3[hsi]";
+      rhs << "- src0[hsi] + src1[hsi] + src2[hsi] - src3[hsi]";
     } else {
       // The σ·σ-fold sign pattern is keyed on the child count (9/6/4). If
       // particle-swap canonicalization ever deduplicates children to a
@@ -213,11 +163,9 @@ class CR_11_σpσpCoulombσpσp_11
           "σpσpCoulombσpσp generate_code(): unexpected num_children() (expected "
           "9, 6, or 4)");
     }
-    def << ";\n}\n";
-    unsigned int nflops = (nc > 1) ? nc - 1 : 0;
-    def << "/** Number of flops = " << nflops << " */\n";
-    def << context->close_block() << std::endl;
-    def << context->code_postfix();
+    const unsigned int nflops = (nc > 1) ? nc - 1 : 0;
+    rkb_fold_generate_code(*this, context, dims, funcname, decl, def, rhs.str(),
+                           nflops);
   }
 };
 

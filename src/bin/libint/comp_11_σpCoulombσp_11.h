@@ -28,6 +28,8 @@
 #include <task.h>
 #include <twoprep_11_11.h>
 
+#include <rkb_fold_codegen.h>
+
 namespace libint2 {
 
 /**
@@ -85,35 +87,12 @@ class CR_11_σpCoulombσp_11
   std::string spfunction_call(
       const std::shared_ptr<CodeContext>& context,
       const std::shared_ptr<ImplicitDimensions>& dims) const override {
-    std::ostringstream os;
-    os << context->label_to_function_name(this->label()) << "(inteval, "
-       << context->value_to_pointer(this->rr_target()->symbol());
-    const unsigned int nc = this->num_children();
-    for (unsigned int c = 0; c < nc; c++) {
-      os << ", " << context->value_to_pointer(this->rr_child(c)->symbol());
-    }
-    // total_dim = product of all shell dims (all 4 shells are spectators)
-    unsigned int total_dim = 1;
-    for (unsigned int p = 0; p < 2; p++) {
-      SubIterator* si = target_->bra().member_subiter(p, 0);
-      total_dim *= si->num_iter();
-      delete si;
-      si = target_->ket().member_subiter(p, 0);
-      total_dim *= si->num_iter();
-      delete si;
-    }
-    os << "," << total_dim;
-    LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-    taskmgr.current().params()->max_hrr_hsrank(total_dim);
-    os << ")" << context->end_of_stat() << std::endl;
-    return os.str();
+    return rkb_fold_spfunction_call(*this, target_, context);
   }
 
   std::shared_ptr<ImplicitDimensions> adapt_dims_(
       const std::shared_ptr<ImplicitDimensions>& dims) const override {
-    auto high_dim = std::make_shared<RTimeEntity<EntityTypes::Int>>("highdim");
-    return std::make_shared<ImplicitDimensions>(high_dim, dims->low(),
-                                                dims->vecdim());
+    return rkb_fold_adapt_dims(dims);
   }
 
   /// Hand-emit the per-component irrep linear combination over deriv-ERI
@@ -122,33 +101,6 @@ class CR_11_σpCoulombσp_11
                      const std::shared_ptr<ImplicitDimensions>& dims,
                      const std::string& funcname, std::ostream& decl,
                      std::ostream& def) override {
-    extern std::string declare_function(
-        const std::shared_ptr<CodeContext>& context,
-        const std::shared_ptr<ImplicitDimensions>& dims,
-        const std::shared_ptr<CodeSymbols>& args, const std::string& tlabel,
-        const std::string& function_descr, std::ostream& decl);
-
-    std::shared_ptr<ImplicitDimensions> localdims = adapt_dims_(dims);
-    std::shared_ptr<CodeSymbols> symbols(new CodeSymbols);
-    this->rr_target()->set_symbol("target");
-    symbols->append_symbol("target");
-    for (unsigned int c = 0; c < this->num_children(); c++) {
-      std::string symb = "src" + std::to_string(c);
-      this->rr_child(c)->set_symbol(symb);
-      symbols->append_symbol(symb);
-    }
-    LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-    const std::string tlabel = taskmgr.current().label();
-    const std::string func_decl =
-        declare_function(context, localdims, symbols, tlabel, funcname, decl);
-    def << context->std_header();
-    def << "#include <" << context->label_to_name(funcname) << ".h>\n\n";
-    def << context->code_prefix();
-    def << func_decl << context->open_block() << std::endl;
-    def << context->std_function_header();
-    def << "#ifdef __INTEL_COMPILER\n#pragma ivdep\n#endif\n";
-    def << "for(int hsi = 0; hsi<highdim; hsi++) {\n";
-
     const int comp = this->target_->oper()->descr().component_index();
     std::string rhs;
     unsigned int nflops = 0;
@@ -178,10 +130,8 @@ class CR_11_σpCoulombσp_11
         throw std::runtime_error(
             "CR_11_σpCoulombσp_11::generate_code: invalid component index");
     }
-    def << "target[hsi] = " << rhs << ";\n}\n";
-    def << "/** Number of flops = " << nflops << " */\n";
-    def << context->close_block() << std::endl;
-    def << context->code_postfix();
+    rkb_fold_generate_code(*this, context, dims, funcname, decl, def, rhs,
+                           nflops);
   }
 };
 
