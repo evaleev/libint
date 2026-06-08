@@ -219,10 +219,13 @@ enum class Operator {
   opop_coulomb_opop,
   /// (2-body) \f$ (σ.p_{b2}) r_{12}^{-1} (σ.p_{k2}) \f$ where b2 is the center
   /// of bra2 and k2 is the center of ket2; Gaunt LS "bilinear" integral.
-  /// Produces 9 components (outer product of two Cartesian directions),
-  /// indexed as `3*a + b` with `a` = bra-side direction, `b` = ket-side
-  /// direction, and `a,b ∈ {x=0, y=1, z=2}`. Unlike coulomb_opop, the 9
-  /// components are NOT contracted via σ·σ — all are kept independent.
+  /// Produces 9 components: the SO(3) irreducible decomposition of the 3×3
+  /// derivative dyadic T_ab (a = bra-side ∇, b = ket-side ∇), NOT a raw
+  /// `3*a + b` Cartesian dyadic. Component order matches
+  /// `σpCoulombσp_Descr::Component`: Scalar trace (0); antisymmetric (curl-curl)
+  /// AntisymX,Y,Z (1–3); symmetric-traceless SymTLDiagA,SymTLDiagB (4,5) and
+  /// SymTLOffXY,SymTLOffXZ,SymTLOffYZ (6–8). Unlike coulomb_opop, these
+  /// components are not σ·σ-folded.
   op_coulomb_op,
   /// contracted Gaussian geminal
   cgtg,

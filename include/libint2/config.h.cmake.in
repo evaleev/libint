@@ -147,7 +147,8 @@
 /* Max optimized AM for ERI and its derivatives */
 #cmakedefine LIBINT_RKB_ERI_OPT_AM_LIST "@LIBINT_RKB_ERI_OPT_AM_LIST@"
 
-/* Max AM for 3-center RKB ERI fitting center (same for all derivatives; if not defined see LIBINT_RKB_ERI3_MAX_AM_LIST).
+/* Max AM for the 3-center RKB ERI density fitting (auxiliary/DF) basis on the single fitting center
+   (same for all derivatives; if not defined see LIBINT_RKB_ERI3_MAX_AM_LIST).
    The paired AO centers (on which σ·p acts) use LIBINT_MAX_AM. */
 #cmakedefine LIBINT_RKB_ERI3_MAX_AM @LIBINT_RKB_ERI3_MAX_AM@
 
@@ -160,7 +161,8 @@
 /* Max optimized AM for 3-center RKB ERI and its derivatives */
 #cmakedefine LIBINT_RKB_ERI3_OPT_AM_LIST "@LIBINT_RKB_ERI3_OPT_AM_LIST@"
 
-/* Max AM for 3-center ERI (same for all derivatives; if not defined see LIBINT_ERI3_MAX_AM_LIST) */
+/* Max AM for the 3-center ERI density fitting (auxiliary/DF) basis on the single fitting center
+   (same for all derivatives; if not defined see LIBINT_ERI3_MAX_AM_LIST). The paired AO centers use LIBINT_MAX_AM. */
 #cmakedefine LIBINT_ERI3_MAX_AM @LIBINT_ERI3_MAX_AM@
 
 /* Max AM for 3-center ERI and its derivatives */

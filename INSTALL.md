@@ -169,6 +169,8 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * `LIBINT2_ENABLE_ERI` - G - Compile with support for up to N-th derivatives of 4-center electron repulsion integrals. Use -1 for OFF. [Default=0]
 * `LIBINT2_ENABLE_ERI3` - G - Compile with support for up to N-th derivatives of 3-center electron repulsion integrals. Use -1 for OFF. [Default=-1]
 * `LIBINT2_ENABLE_ERI2` - G - Compile with support for up to N-th derivatives of 2-center electron repulsion integrals. Use -1 for OFF. [Default=-1]
+* `LIBINT2_ENABLE_RKB_ERI` - G - Compile with support for up to N-th derivatives of relativistic restricted kinetic balance (RKB) 4-center electron repulsion integrals. Use -1 for OFF. [Default=0]
+* `LIBINT2_ENABLE_RKB_ERI3` - G - Compile with support for up to N-th derivatives of relativistic restricted kinetic balance (RKB) 3-center electron repulsion integrals. Use -1 for OFF. σ·p acts on the two paired (AO) centers; the unpaired/fitting (density-fitting/auxiliary) center is a spectator. [Default=-1]
 * `LIBINT2_ENABLE_G12` - G - Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
 * `LIBINT2_ENABLE_G12DKH` - G - Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
 
@@ -254,6 +256,12 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 * `LIBINT2_ERI2_MAX_AM` - G - Support 2-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `LIBINT2_MAX_AM`]
 * `LIBINT2_ERI2_OPT_AM` - G - Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `LIBINT2_OPT_AM`]
 * `LIBINT2_ERI2_PURE_SH` - G - Assume the 2-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
+
+* `LIBINT2_RKB_ERI_MAX_AM` - G - Support RKB 4-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `LIBINT2_MAX_AM`]
+* `LIBINT2_RKB_ERI_OPT_AM` - G - Optimize RKB 4-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `LIBINT2_OPT_AM`]
+
+* `LIBINT2_RKB_ERI3_MAX_AM` - G - Support RKB 3-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. This option sets the AM of the density-fitting (auxiliary) basis on the single fitting center; the paired (AO) centers, on which σ·p acts, use LIBINT2_MAX_AM. [Default=-1 -> `LIBINT2_MAX_AM`]
+* `LIBINT2_RKB_ERI3_OPT_AM` - G - Optimize RKB 3-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `LIBINT2_OPT_AM`]
 
 * `LIBINT2_G12_MAX_AM` - G - Support integrals for G12 methods of angular momentum up to N. No specification with per-derivative list. [Default=-1 -> `LIBINT2_MAX_AM`]
 * `LIBINT2_G12_OPT_AM` - G - Optimize G12 integrals for up to angular momentum N (N <= max-am). No specification with per-derivative list. [Default=-1 `LIBINT2_OPT_AM`]

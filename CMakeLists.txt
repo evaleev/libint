@@ -235,7 +235,7 @@ option_with_default(LIBINT2_RKB_ERI_OPT_AM
 option_with_default(LIBINT2_RKB_ERI3_MAX_AM
         "Support relativistic restricted kinetic balance (RKB) 3-center ERIs for Gaussians of angular momentum up to N.
    Can specify values for each derivative level as a semicolon-separated string. (default: max_am)
-   This option controls only the single fitting center. The paired centers (on which σ·p acts) use LIBINT2_MAX_AM." -1)
+   This sets the max AM of the density fitting (auxiliary/DF) basis on the single fitting center. The paired AO centers (on which σ·p acts) use LIBINT2_MAX_AM." -1)
 option_with_default(LIBINT2_RKB_ERI3_OPT_AM
         "Optimize relativistic restricted kinetic balance (RKB) 3-center ERIs maximally for up to angular momentum N (N <= max-am).
    Can specify values for each derivative level as a semicolon-separated string (default: (max_am/2)+1)" -1)
@@ -244,7 +244,7 @@ option_with_default(LIBINT2_RKB_ERI3_OPT_AM
 option_with_default(LIBINT2_ERI3_MAX_AM
         "Support 3-center ERIs for Gaussians of angular momentum up to N.
    Can specify values for each derivative level as a semicolon-separated string. (default: max_am)
-   This option controls only the single fitting center. The paired centers use LIBINT2_MAX_AM." -1)
+   This sets the max AM of the density fitting (auxiliary/DF) basis on the single fitting center. The paired AO centers use LIBINT2_MAX_AM." -1)
 option_with_default(LIBINT2_ERI3_OPT_AM
         "Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am).
    Can specify values for each derivative level as a semicolon-separated string. (default: (max_am/2)+1)" -1)
