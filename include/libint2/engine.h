@@ -487,9 +487,11 @@ struct operator_traits<Operator::opop_coulomb_opop>
 template <>
 struct operator_traits<Operator::op_coulomb_op>
     : public operator_traits<Operator::coulomb> {
-  /// 9 components: Cartesian dyadic of the two (σ·p) directions.
-  /// index = 3 * a + b, with a = bra-side direction, b = ket-side direction,
-  /// a,b ∈ {x=0, y=1, z=2}.
+  /// 9 components: the SO(3) irreducible decomposition of the 3×3 derivative
+  /// dyadic T_ab (NOT a raw `3*a + b` Cartesian dyadic). Order matches
+  /// `σpCoulombσp_Descr::Component`: Scalar trace (0); antisymmetric
+  /// AntisymX,Y,Z (1–3); symmetric-traceless SymTLDiagA,SymTLDiagB (4,5) and
+  /// SymTLOffXY,SymTLOffXZ,SymTLOffYZ (6–8).
   static constexpr auto nopers = 9;
   static constexpr auto intrinsic_deriv_order = 2;
 };
