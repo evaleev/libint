@@ -120,9 +120,9 @@ set(LIBINT2_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}"
         CACHE PATH "LIBINT2 INCLUDE install directory")
 set(LIBINT2_INSTALL_LIBDIR "${CMAKE_INSTALL_LIBDIR}"
         CACHE PATH "LIBINT2 LIB install directory")
-set(LIBINT2_INSTALL_DATADIR "share/libint/${LIBINT_VERSION}"
+set(LIBINT2_INSTALL_DATADIR "${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}"
         CACHE PATH "LIBINT2 DATA install directory")
-set(LIBINT2_INSTALL_CMAKEDIR "lib/cmake/libint2"
+set(LIBINT2_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/libint2"
         CACHE PATH "LIBINT2 CMAKE install directory")
 
 
@@ -366,6 +366,7 @@ if (L2_BUILD_SHARED_LIBS)
         Libint2_VERSION "${LIBINT_VERSION}"
         Libint2_MAX_AM_ERI "${Libint2_MAX_AM_ERI}"
         Libint2_CONFIGURATION "${Libint2_CONFIG_COMPONENTS}"
+        SOVERSION "${LIBINT_MAJOR_SO_VERSION}"
       )
     set_property(TARGET int-shared APPEND PROPERTY EXPORT_PROPERTIES "${export_properties}")
     if (APPLE)
@@ -781,13 +782,16 @@ install(
   DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}/libint2"
   )
 
-# install basis.h at install time so LIBINT_DATADIR_ABSOLUTE reflects any --prefix override
+# install basis.h at install time so LIBINT_DATADIR_ABSOLUTE reflects
+# any --prefix override. $ENV{DESTDIR} must be prepended manually
+# here: install(CODE) runs custom code and does not get the automatic
+# DESTDIR handling that install(FILES) etc. have.
 install(CODE "
   set(LIBINT_VERSION \"${LIBINT_VERSION}\")
   set(LIBINT_DATADIR_ABSOLUTE \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}\")
   configure_file(
     \"${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in\"
-    \"\${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_INCLUDEDIR}/libint2/basis.h\"
+    \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_INCLUDEDIR}/libint2/basis.h\"
     @ONLY)
 ")
 

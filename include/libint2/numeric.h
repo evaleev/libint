@@ -198,6 +198,22 @@ inline int get_max_digits10(const Real& value) {
   return std::numeric_limits<Real>::max_digits10;
 }
 
+namespace detail {
+template <typename To>
+typename std::enable_if<std::is_constructible<To, const char*>::value, To>::type
+sstream_convert_extract(std::stringstream& ss) {
+  return To(ss.str().c_str());
+}
+
+template <typename To>
+typename std::enable_if<!std::is_constructible<To, const char*>::value, To>::type
+sstream_convert_extract(std::stringstream& ss) {
+  To to;
+  ss >> to;
+  return to;
+}
+}  // namespace detail
+
 template <typename To, typename From>
 typename std::enable_if<!std::is_same<typename std::decay<To>::type,
                                       typename std::decay<From>::type>::value,
@@ -205,8 +221,7 @@ typename std::enable_if<!std::is_same<typename std::decay<To>::type,
 sstream_convert(From&& from) {
   std::stringstream ss;
   ss << std::scientific << std::setprecision(get_max_digits10(from)) << from;
-  To to(ss.str().c_str());
-  return to;
+  return detail::sstream_convert_extract<To>(ss);
 }
 
 template <typename To>
