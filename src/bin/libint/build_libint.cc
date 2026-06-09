@@ -653,8 +653,8 @@ void try_main(int argc, char* argv[]) {
   // dummy-s fitting shell; it is intentionally omitted).
   //   - 3coulomb_opop (CoulombσpσpOper): two σ·p on the AO ket pair (4 comps)
   //   - 3coulomb_op   (CoulombσpOper):   single σ·p on the 2nd AO ket function
-  //                                      ν (3 Cartesian comps, DF-Gaunt B). No
-  //                                      4-center sibling — 3-center only.
+  //                                      ν (3 Cartesian comps). No 4-center
+  //                                      sibling — 3-center only.
 #define BOOST_PP_RKB_ERI3_TASK_TUPLE (3coulomb_opop, 3coulomb_op)
 #define BOOST_PP_RKB_ERI3_TASK_OPER_TUPLE (CoulombσpσpOper, CoulombσpOper)
 #define BOOST_PP_RKB_ERI3_TASK_LIST \

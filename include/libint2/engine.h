@@ -211,7 +211,7 @@ enum class Operator {
   /// centers of ket1 and ket2, respectively
   coulomb_opop,
   /// (2-body) \f$ r_{12}^{-1} (σ.p_{k2}) \f$ where k2 is the center of ket2;
-  /// the 3-center single-σ·p "DF-Gaunt" B-factor (P | μ, σ·p ν). σ·p acts on
+  /// the 3-center single-σ·p integral (P | μ, σ·p ν). σ·p acts on
   /// the 2nd ket AO function only. Produces 3 Cartesian components (x=0, y=1,
   /// z=2) — the SO(3) vector irrep; no σ·σ folding (cf. coulomb_opop). The
   /// fitting function sits on the bra (BraKet::xs_xx); 3-center only.
@@ -617,7 +617,7 @@ inline constexpr int rank(BraKet braket) {
 /// @return the default braket for @c oper
 /// @throw std::logic_error if invalid @c oper given
 inline constexpr BraKet default_braket(Operator oper) {
-  // coulomb_op (3-center single-σ·p DF-Gaunt) has no 4-center kernel; its only
+  // coulomb_op (3-center single-σ·p) has no 4-center kernel; its only
   // valid geometry is the 3-center xs_xx braket. Default to that rather than the
   // rank-based xx_xx, which has no generated kernel and would silently dispatch
   // to the plain-Coulomb `default` task (wrong integrals, no error in release).

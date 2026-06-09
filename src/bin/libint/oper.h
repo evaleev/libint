@@ -476,14 +476,14 @@ struct Coulombσpσp_Descr : public Contractable<Coulombσpσp_Descr> {
 };
 typedef GenOper<Coulombσpσp_Descr> CoulombσpσpOper;
 
-/** Coulombσp is the 3-center single-σ·p ("DF-Gaunt") operator:
+/** Coulombσp is the 3-center single-σ·p operator:
  *  (P | 1/r_{12} | μ, σ·p ν), with the fitting function P a spectator and a
  *  single σ·p acting on the 2nd ket AO function ν. Unlike Coulombσpσp (two σ·p
  *  on the ket pair, folded via the Dirac identity into 4 quaternion
  *  components), a single σ·p produces no σ·σ folding: the result is the bare
  *  Cartesian gradient of ν, i.e. the SO(3) vector irrep with 3 components
  *  (x=0, y=1, z=2). Each component is exactly one first-derivative ERI child;
- *  the imaginary unit and Pauli matrix of σ·p are applied by the caller (MPQC).
+ *  the imaginary unit and Pauli matrix of σ·p are applied by the caller.
  */
 struct Coulombσp_Descr : public Contractable<Coulombσp_Descr> {
   typedef MultiplicativeSymm2Body_Props Properties;

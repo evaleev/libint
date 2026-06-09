@@ -33,7 +33,7 @@
 namespace libint2 {
 
 /**
- * this computes the 3-center single-σ·p ("DF-Gaunt") integral
+ * this computes the 3-center single-σ·p integral
  * \f$ \frac{1}{r_{12}} \, \sigma \cdot \hat{p}_2 \f$ acting on the 2nd ket
  * function ν, by rewriting it as the bare Cartesian gradient of ν, i.e. one
  * first-derivative integral over \f$ \frac{1}{r_{12}} \f$ per Cartesian

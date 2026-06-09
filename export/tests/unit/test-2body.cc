@@ -926,7 +926,7 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
 
 #if LIBINT2_TASK_EXISTS_3coulomb_op
   SECTION("Coulombσp 3-center xs_xx") {
-    // 3-center single-σ·p ("DF-Gaunt" B-factor) integral
+    // 3-center single-σ·p integral
     //   (P | 1/r12 | μ, σ·p ν),
     // with the fitting function P on the bra (BraKet::xs_xx) and a single σ·p
     // acting on the 2nd ket AO function ν only. The 3 Cartesian components
