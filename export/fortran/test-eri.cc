@@ -257,130 +257,130 @@ void compute_eri_c(int &contrdepth, int &deriv_order, int &am1, double *c1,
 
           const int am_tot = am + deriv_order;
 
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_0
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_0
           if (am_tot >= 0)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_0[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_0[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 0];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_1
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_1
           if (am_tot >= 1)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_1[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_1[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 1];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_2
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_2
           if (am_tot >= 2)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_2[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_2[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 2];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_3
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_3
           if (am_tot >= 3)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_3[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_3[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 3];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_4
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_4
           if (am_tot >= 4)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_4[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_4[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 4];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_5
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_5
           if (am_tot >= 5)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_5[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_5[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 5];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_6
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_6
           if (am_tot >= 6)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_6[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_6[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 6];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_7
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_7
           if (am_tot >= 7)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_7[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_7[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 7];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_8
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_8
           if (am_tot >= 8)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_8[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_8[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 8];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_9
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_9
           if (am_tot >= 9)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_9[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_9[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 9];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_10
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_10
           if (am_tot >= 10)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_10[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_10[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 10];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_11
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_11
           if (am_tot >= 11)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_11[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_11[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 11];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_12
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_12
           if (am_tot >= 12)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_12[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_12[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 12];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_13
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_13
           if (am_tot >= 13)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_13[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_13[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 13];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_14
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_14
           if (am_tot >= 14)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_14[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_14[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 14];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_15
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_15
           if (am_tot >= 15)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_15[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_15[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 15];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_16
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_16
           if (am_tot >= 16)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_16[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_16[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 16];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_17
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_17
           if (am_tot >= 17)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_17[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_17[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 17];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_18
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_18
           if (am_tot >= 18)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_18[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_18[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 18];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_19
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_19
           if (am_tot >= 19)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_19[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_19[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 19];
 #endif
-#ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_20
+#ifdef LIBINT2_DEFINED__aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_20
           if (am_tot >= 20)
             erieval[p0123]
-                ._aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_20[0] =
+                ._aB_s____0__s____1___TwoPRep_s____0__s____1___Ab__up_20[0] =
                 c1234 * pfac * F[p0123 * (am_tot + 1) + 20];
 #endif
 
