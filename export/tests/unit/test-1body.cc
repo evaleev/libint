@@ -260,7 +260,7 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "σpeμσp correctness",
   const auto lmax = std::min(2, LIBINT2_MAX_AM_opemuop);
   if (lmax < 2) return;
 
-  auto engine = Engine(Operator::σpeμσp, 2, lmax);
+  auto engine = Engine(Operator::opemuop, 2, lmax);
   engine.set_params(std::array<double, 3>{{0.0, 0.0, 0.0}});
 
   // (s|σpeμσp|d) and (d|σpeμσp|s)

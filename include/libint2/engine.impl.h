@@ -1069,7 +1069,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   //  }
 
   if (oper_ == Operator::emultipole1 || oper_ == Operator::emultipole2 ||
-      oper_ == Operator::emultipole3 || oper_ == Operator::σpeμσp) {
+      oper_ == Operator::emultipole3 || oper_ == Operator::opemuop) {
     const auto& O = any_cast<
         const operator_traits<Operator::emultipole1>::oper_params_type&>(
         params_);  // same as emultipoleX
@@ -1118,7 +1118,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
 
   if (oper_ == Operator::kinetic || (deriv_order_ > 0) ||
       oper_ == Operator::opVop || oper_ == Operator::op_q_gau_op ||
-      oper_ == Operator::σpeμσp) {
+      oper_ == Operator::opemuop) {
 #if LIBINT2_DEFINED(eri, two_alpha0_bra)
     primdata.two_alpha0_bra[0] = 2.0 * alpha1;
 #endif
