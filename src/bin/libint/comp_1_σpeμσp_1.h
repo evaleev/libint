@@ -22,6 +22,7 @@
 #define LIBINT_COMP_1_ΣPRΣP_1_H
 
 #include <generic_rr.h>
+#include <rkb_fold_1body.h>
 
 namespace libint2 {
 
@@ -80,79 +81,23 @@ CR_1_σpeμσp_1<F>::CR_1_σpeμσp_1(const std::shared_ptr<TargetType> &Tint,
   // operator r_k for primitive Gaussians only
   if (a.contracted() || b.contracted()) return;
 
-  using namespace libint2::algebra;
-  using namespace libint2::prefactor;
-  using libint2::algebra::operator*;
-
   ChildFactory<ThisType,
                GenIntegralSet_1_1<BasisFunctionType, CartesianMultipoleOper<3u>,
                                   EmptySet>>
       factory(this);
-
-  constexpr auto x = 0;
-  constexpr auto y = 1;
-  constexpr auto z = 2;
-
-  F Dx_a{a};
-  Dx_a.deriv().inc(x);
-  F Dx_b{b};
-  Dx_b.deriv().inc(x);
-  F Dy_a{a};
-  Dy_a.deriv().inc(y);
-  F Dy_b{b};
-  Dy_b.deriv().inc(y);
-  F Dz_a{a};
-  Dz_a.deriv().inc(z);
-  F Dz_b{b};
-  Dz_b.deriv().inc(z);
 
   // Build the dipole multipole descriptor for direction k.
   const auto k = oper->descr().dipole_dir();
   CartesianMultipole_Descr<3u> mu_k;
   mu_k.inc(k, 1);  // r_k = (kx,ky,kz) with k_k = 1, others 0
 
-  // Pauli quaternion fold per (k, q):
-  //   q=0: trace δ_ab → Σ_a (∂_a μ | r_k | ∂_a ν)
-  //   q=1: σ_x antisym → (∂_y μ | r_k | ∂_z ν) − (∂_z μ | r_k | ∂_y ν)
-  //   q=2: σ_y antisym → (∂_z μ | r_k | ∂_x ν) − (∂_x μ | r_k | ∂_z ν)
-  //   q=3: σ_z antisym → (∂_x μ | r_k | ∂_y ν) − (∂_y μ | r_k | ∂_x ν)
-  switch (oper->descr().quaternion_index()) {
-    case 0: {
-      auto Dx_a_R_Dx_b = factory.make_child(Dx_a, Dx_b, EmptySet(), mu_k);
-      auto Dy_a_R_Dy_b = factory.make_child(Dy_a, Dy_b, EmptySet(), mu_k);
-      auto Dz_a_R_Dz_b = factory.make_child(Dz_a, Dz_b, EmptySet(), mu_k);
-      if (is_simple()) {
-        expr_ = Dx_a_R_Dx_b + Dy_a_R_Dy_b + Dz_a_R_Dz_b;
-        nflops_ += 2;
-      }
-    } break;
-    case 1: {
-      auto Dy_a_R_Dz_b = factory.make_child(Dy_a, Dz_b, EmptySet(), mu_k);
-      auto Dz_a_R_Dy_b = factory.make_child(Dz_a, Dy_b, EmptySet(), mu_k);
-      if (is_simple()) {
-        expr_ = Dy_a_R_Dz_b - Dz_a_R_Dy_b;
-        nflops_ += 1;
-      }
-    } break;
-    case 2: {
-      auto Dz_a_R_Dx_b = factory.make_child(Dz_a, Dx_b, EmptySet(), mu_k);
-      auto Dx_a_R_Dz_b = factory.make_child(Dx_a, Dz_b, EmptySet(), mu_k);
-      if (is_simple()) {
-        expr_ = Dz_a_R_Dx_b - Dx_a_R_Dz_b;
-        nflops_ += 1;
-      }
-    } break;
-    case 3: {
-      auto Dx_a_R_Dy_b = factory.make_child(Dx_a, Dy_b, EmptySet(), mu_k);
-      auto Dy_a_R_Dx_b = factory.make_child(Dy_a, Dx_b, EmptySet(), mu_k);
-      if (is_simple()) {
-        expr_ = Dx_a_R_Dy_b - Dy_a_R_Dx_b;
-        nflops_ += 1;
-      }
-    } break;
-    default:
-      throw std::runtime_error("CR_1_σpeμσp_1: invalid quaternionic index");
-  }
+  // σ·p r_k σ·p fold: inner child is the Cartesian-dipole integral
+  // (Da | r_k | Db). Shared structure lives in sigma_p_1body_fold().
+  sigma_p_1body_fold(
+      a, b, oper->descr().quaternion_index(), is_simple(), expr_, nflops_,
+      [&](const F &Da, const F &Db) {
+        return factory.make_child(Da, Db, EmptySet(), mu_k);
+      });
 
 }  // CR_1_σpeμσp_1<F>::CR_1_σpeμσp_1
 
