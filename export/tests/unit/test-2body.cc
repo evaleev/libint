@@ -775,6 +775,13 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
     }
   }
 
+// The 3-center RKB sections below exercise kernels that exist only when
+// LIBINT2_ENABLE_RKB_ERI3 >= 0. The 4-center coulomb_opop engine still
+// constructs successfully without them (so the lmax_exceeded catch does not
+// fire), but compute() on the 3-center braket would dispatch to the absent
+// kernel and abort in the `default` task. Guard at compile time on the
+// generated task-exists macro.
+#if LIBINT2_TASK_EXISTS_3coulomb_opop
   SECTION("Coulombσpσp 3-center xs_xx") {
     // 3-center RKB Coulombσpσp integral, (P | σ·p_μ σ·p_ν / r12) with P on
     // the bra (fitting/DF) and σ·p acting on the AO pair (μ,ν) on the ket.
@@ -915,7 +922,9 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
       }
     }
   }
+#endif  // LIBINT2_TASK_EXISTS_3coulomb_opop
 
+#if LIBINT2_TASK_EXISTS_3coulomb_op
   SECTION("Coulombσp 3-center xs_xx") {
     // 3-center single-σ·p ("DF-Gaunt" B-factor) integral
     //   (P | 1/r12 | μ, σ·p ν),
@@ -1038,6 +1047,7 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
       }
     }
   }
+#endif  // LIBINT2_TASK_EXISTS_3coulomb_op
 }
 
 TEST_CASE("Erfx_Coulomb integrals", "[engine][2-body]") {
