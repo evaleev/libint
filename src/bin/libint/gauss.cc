@@ -119,7 +119,11 @@ std::string CGF::label() const {
   std::ostringstream oss;
 
   // Some OSs can have case-insensitive filesystem e.g., MacOS. So here we add
-  // additional identifier for primitive function labels
+  // additional identifier for primitive function labels.
+  // TODO: this underscore leaks into the C identifiers derived from label()
+  // (struct members, macros, symbols), not just the generated filenames it is
+  // meant to disambiguate. Prefer a case-injective funcname->filename mapping so
+  // label() stays identifier-clean and external consumers don't depend on it.
   if (!this->contracted()) {
     am_string += "_";
   }
@@ -233,7 +237,11 @@ std::string CGShell::label() const {
   std::string am_symbol = am_to_symbol(qn_[0], contracted());
 
   // Some OSs can have case-insensitive filesystem e.g., MacOS. So here we add
-  // additional identifier for primitive shell labels
+  // additional identifier for primitive shell labels.
+  // TODO: this underscore leaks into the C identifiers derived from label()
+  // (struct members, macros, symbols), not just the generated filenames it is
+  // meant to disambiguate. Prefer a case-injective funcname->filename mapping so
+  // label() stays identifier-clean and external consumers don't depend on it.
   if (!this->contracted()) {
     am_symbol += "_";
   }

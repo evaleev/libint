@@ -119,6 +119,10 @@ struct MasterStrategy<TwoPRep_11_11_int> {
 };
 #endif
 
+// TODO: each RKB operator adds a fixed set of MasterStrategy specializations
+// that only name its composite recurrence (CR_11_*). A generic specialization
+// keyed on the operator's composite-RR trait would remove this per-operator
+// boilerplate and scale to new RKB operators without edits here.
 template <>
 struct MasterStrategy<Coulombσpσp_11_11_sq> {
   typedef boost::mpl::list<CR_11_Coulombσpσp_11_sh> value;

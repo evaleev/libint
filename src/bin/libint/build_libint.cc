@@ -1285,6 +1285,12 @@ static void build_TwoPRep_2b_2k(
   // orderings (within-side swap is NOT a symmetry — σ·p attaches to one
   // specific function per side, and IBP cannot recover the sign across the
   // 1/r12 coupling).
+  // TODO: the per-operator swappability/component-count rules are spread across
+  // many std::is_same<OperType, ...> branches here (and the descriptor loops and
+  // strategy specializations). These are properties of the operator descriptor;
+  // expose them as descriptor traits (e.g. ncomponents(), p1p2_swappable(),
+  // bra_ket_coswappable()) and query generically so a new operator needs no edit
+  // here.
   bool p1_p2_swappable = !std::is_same<OperType, CoulombσpσpOper>::value;
   bool bra_ket_coswappable = std::is_same<OperType, σpσpCoulombσpσpOper>::value;
 

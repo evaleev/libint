@@ -2259,7 +2259,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                     tgt_ptr + tgt_col_idx, nr1_tgt, nr2_tgt,
                     Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
                         nr2_tgt * ncol_tgt, ncol_tgt));
-                // Coupled swap sign correction for multi-component operators
+                // Coupled swap sign correction for multi-component operators.
+                // TODO: the per-component swap phase and the component remap
+                // below are hardcoded per operator (op_coulomb_op,
+                // opop_coulomb_opop, ...). These belong with the operator
+                // definition; expose them as traits (e.g. swap_phase(s),
+                // swap_remap(s)) so new multi-component operators need no new
+                // branch here.
                 Shell::real_t oper_cart_component_phase = 1.0;
                 if (swap_tket && oper_ == Operator::opop_coulomb_opop) {
                   const bool bra_is_spin = (s / 4) > 0;
