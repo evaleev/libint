@@ -367,56 +367,6 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
   der_idx d_xy = {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0};
   der_idx d_yx = {0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0};
 
-  // deriv indices for (SS|SS)
-  // 0th component
-  der_idx xxxx = {1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0};
-  der_idx yyxx = {0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0};
-  der_idx zzxx = {0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0};
-  der_idx yxyx = {0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0};
-  der_idx xyyx = {1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0};
-  der_idx yxxy = {0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0};
-  der_idx xyxy = {1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0};
-  der_idx xxyy = {1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0};
-  der_idx yyyy = {0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0};
-  der_idx zzyy = {0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0};
-  der_idx xxzz = {1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1};
-  der_idx yyzz = {0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1};
-  der_idx zzzz = {0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1};
-
-  // x-component
-  der_idx zxzx = {0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0};
-  der_idx xzzx = {1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0};
-  der_idx zyzy = {0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0};
-  der_idx yzzy = {0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0};
-  der_idx zxxz = {0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1};
-  der_idx xzxz = {1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1};
-  der_idx zyyz = {0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1};
-  der_idx yzyz = {0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1};
-
-  // y-component
-  der_idx zyzx = {0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0};
-  der_idx yzzx = {0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0};
-  der_idx zxzy = {0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0};
-  der_idx xzzy = {1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0};
-  der_idx zyxz = {0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1};
-  der_idx yzxz = {0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1};
-  der_idx zxyz = {0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1};
-  der_idx xzyz = {1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1};
-
-  // z-component
-  der_idx yxxx = {0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0};
-  der_idx xyxx = {1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0};
-  der_idx xxyx = {1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0};
-  der_idx yyyx = {0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0};
-  der_idx zzyx = {0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0};
-  der_idx xxxy = {1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0};
-  der_idx yyxy = {0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0};
-  der_idx zzxy = {0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0};
-  der_idx yxyy = {0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0};
-  der_idx xyyy = {1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0};
-  der_idx yxzz = {0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1};
-  der_idx xyzz = {1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1};
-
   SECTION("Coulombσpσp and σpσpCoulombσpσp") {
     Engine engine_llss, engine_ssss;
     try {
