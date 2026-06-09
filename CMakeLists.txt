@@ -239,6 +239,8 @@ option_with_default(LIBINT2_RKB_ERI3_MAX_AM
 option_with_default(LIBINT2_RKB_ERI3_OPT_AM
         "Optimize relativistic restricted kinetic balance (RKB) 3-center ERIs maximally for up to angular momentum N (N <= max-am).
    Can specify values for each derivative level as a semicolon-separated string (default: (max_am/2)+1)" -1)
+option_with_print(LIBINT2_RKB_ERI3_PURE_SH
+        "Assume the 'unpaired' (density fitting/auxiliary) center of 3-center RKB ERIs will be transformed to pure solid harmonics" OFF)
 
 
 option_with_default(LIBINT2_ERI3_MAX_AM
@@ -336,6 +338,7 @@ if (cxx_std_11 IN_LIST CMAKE_CXX_COMPILE_FEATURES)
 endif ()
 
 booleanize01(LIBINT2_ERI3_PURE_SH)
+booleanize01(LIBINT2_RKB_ERI3_PURE_SH)
 booleanize01(LIBINT2_ERI2_PURE_SH)
 booleanize01(LIBINT2_USE_COMPOSITE_EVALUATORS)
 booleanize01(LIBINT2_SINGLE_EVALTYPE)
@@ -406,7 +409,7 @@ configure_file(
 #   library build time.
 set(_EXPORT_MODE 0)
 # convert user-facing LIBINT2_ variables to LIBINT_ internal variables
-foreach (_var API_PREFIX;ERI3_PURE_SH;ERI2_PURE_SH;DISABLE_ONEBODY_PROPERTY_DERIVS;ENABLE_UNROLLING;ENABLE_GENERIC_CODE;VECTOR_LENGTH;VECTOR_METHOD;ALIGN_SIZE;USER_DEFINED_REAL;USER_DEFINED_REAL_INCLUDES;GENERATE_FMA;ACCUM_INTS;FLOP_COUNT;PROFILE;CONTRACTED_INTS;SINGLE_EVALTYPE;USE_COMPOSITE_EVALUATORS;ERI_STRATEGY;MULTIPOLE_MAX_ORDER)
+foreach (_var API_PREFIX;ERI3_PURE_SH;RKB_ERI3_PURE_SH;ERI2_PURE_SH;DISABLE_ONEBODY_PROPERTY_DERIVS;ENABLE_UNROLLING;ENABLE_GENERIC_CODE;VECTOR_LENGTH;VECTOR_METHOD;ALIGN_SIZE;USER_DEFINED_REAL;USER_DEFINED_REAL_INCLUDES;GENERATE_FMA;ACCUM_INTS;FLOP_COUNT;PROFILE;CONTRACTED_INTS;SINGLE_EVALTYPE;USE_COMPOSITE_EVALUATORS;ERI_STRATEGY;MULTIPOLE_MAX_ORDER)
     if (DEFINED LIBINT2_${_var})
         if (DEFINED LIBINT_${_var})
             message(FATAL_ERROR "renaming user-facing LIBINT2_${_var} variable but internal variable LIBINT_${_var} already exists")

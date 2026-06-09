@@ -177,6 +177,9 @@
 /* If 1, assume will transform the "unpaired" center (e.g. a in (a|cd)) to solid harmonics */
 #cmakedefine LIBINT_ERI3_PURE_SH @LIBINT_ERI3_PURE_SH@
 
+/* If 1, assume will transform the "unpaired" (density fitting/auxiliary) center of 3-center RKB ERIs to solid harmonics */
+#cmakedefine LIBINT_RKB_ERI3_PURE_SH @LIBINT_RKB_ERI3_PURE_SH@
+
 /* Max AM for 2-center ERI (same for all derivatives; if not defined see LIBINT_ERI2_MAX_AM_LIST) */
 #cmakedefine LIBINT_ERI2_MAX_AM @LIBINT_ERI2_MAX_AM@
 
