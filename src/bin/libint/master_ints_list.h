@@ -21,12 +21,15 @@
 #ifndef _libint2_src_bin_libint_masterintslist_h_
 #define _libint2_src_bin_libint_masterintslist_h_
 
-// need extra-long mpl list
+// need extra-long mpl list — split across two sub-lists and joined via
+// boost::mpl::joint_view, since boost only ships pre-generated list headers up
+// to size 50.
 #define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
 #define BOOST_MPL_LIMIT_LIST_SIZE 50
 #include <bfset.h>
 #include <oper.h>
 
+#include <boost/mpl/joint_view.hpp>
 #include <boost/mpl/list.hpp>
 #if LIBINT_SUPPORT_ONEBODYINTS
 #include <integral_1_1.h>
@@ -47,6 +50,8 @@ typedef GenIntegralSet_1_1<CGShell, ElecPotOper, mType> ElecPot_1_1_sh;
 typedef GenIntegralSet_1_1<CGF, ElecPotOper, mType> ElecPot_1_1_int;
 typedef GenIntegralSet_1_1<CGShell, σpVσpOper, EmptySet> σpVσp_1_1_sh;
 typedef GenIntegralSet_1_1<CGF, σpVσpOper, EmptySet> σpVσp_1_1_int;
+typedef GenIntegralSet_1_1<CGShell, σpeμσpOper, EmptySet> σpeμσp_1_1_sh;
+typedef GenIntegralSet_1_1<CGF, σpeμσpOper, EmptySet> σpeμσp_1_1_int;
 typedef GenIntegralSet_1_1<CGShell, CartesianMultipoleOper<3u>, EmptySet>
     CMultipole_1_1_sh;
 typedef GenIntegralSet_1_1<CGF, CartesianMultipoleOper<3u>, EmptySet>
@@ -106,6 +111,18 @@ typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_Z>, CartesianMultipoleOper<1u>,
 //////////////////////////
 typedef GenIntegralSet_11_11<CGShell, TwoPRep, mType> TwoPRep_11_11_sq;
 typedef GenIntegralSet_11_11<CGF, TwoPRep, mType> TwoPRep_11_11_int;
+typedef GenIntegralSet_11_11<CGShell, CoulombσpσpOper, mType>
+    Coulombσpσp_11_11_sq;
+typedef GenIntegralSet_11_11<CGF, CoulombσpσpOper, mType> Coulombσpσp_11_11_int;
+typedef GenIntegralSet_11_11<CGShell, σpσpCoulombσpσpOper, mType>
+    σpσpCoulombσpσp_11_11_sq;
+typedef GenIntegralSet_11_11<CGF, σpσpCoulombσpσpOper, mType>
+    σpσpCoulombσpσp_11_11_int;
+typedef GenIntegralSet_11_11<CGShell, σpCoulombσpOper, mType>
+    σpCoulombσp_11_11_sq;
+typedef GenIntegralSet_11_11<CGF, σpCoulombσpOper, mType> σpCoulombσp_11_11_int;
+typedef GenIntegralSet_11_11<CGShell, CoulombσpOper, mType> Coulombσp_11_11_sq;
+typedef GenIntegralSet_11_11<CGF, CoulombσpOper, mType> Coulombσp_11_11_int;
 typedef GenIntegralSet_11_11<CGShell, R12kG12, mType> R12kG12_11_11_sq;
 typedef GenIntegralSet_11_11<CGF, R12kG12, mType> R12kG12_11_11_int;
 typedef GenIntegralSet_11_11<CGShell, R12kR12lG12, EmptySet>
@@ -138,17 +155,25 @@ typedef boost::mpl::list<
     Overlap_1_1_sh_y, Overlap_1_1_int_y, Overlap_1_1_sh_z, Overlap_1_1_int_z,
     Kinetic_1_1_sh, Kinetic_1_1_int, Kinetic_1_1_sh_x, Kinetic_1_1_int_x,
     Kinetic_1_1_sh_y, Kinetic_1_1_int_y, Kinetic_1_1_sh_z, Kinetic_1_1_int_z,
-    ElecPot_1_1_sh, ElecPot_1_1_int, σpVσp_1_1_sh, σpVσp_1_1_int,
-    CMultipole_1_1_sh, CMultipole_1_1_int, CMultipole_1_1_sh_x,
+    ElecPot_1_1_sh, ElecPot_1_1_int, σpVσp_1_1_sh, σpVσp_1_1_int, σpeμσp_1_1_sh,
+    σpeμσp_1_1_int, CMultipole_1_1_sh, CMultipole_1_1_int, CMultipole_1_1_sh_x,
     CMultipole_1_1_sh_y, CMultipole_1_1_sh_z, CMultipole_1_1_int_x,
     CMultipole_1_1_int_y, CMultipole_1_1_int_z, SMultipole_1_1_sh,
-    SMultipole_1_1_int,
 #endif
-    TwoPRep_11_11_sq, TwoPRep_11_11_int, R12kG12_11_11_sq, R12kG12_11_11_int,
-    R12kR12lG12_11_11_sq, R12kR12lG12_11_11_int, TiG12_11_11_sq,
-    TiG12_11_11_int, G12TiG12_11_11_sq, G12TiG12_11_11_int,
+    SMultipole_1_1_int>
+    MasterIntegralTypeList_1body_part;
+typedef boost::mpl::list<
+    TwoPRep_11_11_sq, TwoPRep_11_11_int, Coulombσpσp_11_11_sq,
+    Coulombσpσp_11_11_int, σpσpCoulombσpσp_11_11_sq, σpσpCoulombσpσp_11_11_int,
+    σpCoulombσp_11_11_sq, σpCoulombσp_11_11_int, Coulombσp_11_11_sq,
+    Coulombσp_11_11_int, R12kG12_11_11_sq,
+    R12kG12_11_11_int, R12kR12lG12_11_11_sq, R12kR12lG12_11_11_int,
+    TiG12_11_11_sq, TiG12_11_11_int, G12TiG12_11_11_sq, G12TiG12_11_11_int,
     DivG12prime_xTx_11_11_sq, DivG12prime_xTx_11_11_int,
     DummySymmIntegral_11_11_sq, DummySymmIntegral_11_11_int>
+    MasterIntegralTypeList_2body_part;
+typedef boost::mpl::joint_view<MasterIntegralTypeList_1body_part,
+                               MasterIntegralTypeList_2body_part>
     MasterIntegralTypeList;
 
 };  // namespace libint2

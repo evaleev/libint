@@ -192,12 +192,44 @@ enum class Operator {
   /// \sa operator_traits<Operator::op_q_gau_op>
   /// \sa Surjuse, Deng, Asadchev, Valeev, arXiv:2603.16989 (2025)
   op_q_gau_op,
+  /// (1-body) σp . r . σp, the σ·p-on-both-sides analog of the dipole moment.
+  /// Produces 12 components = 3 dipole directions × 4 Pauli quaternion
+  /// components (trace + 3 antisym), indexed as `4*k + q` with `k ∈ {x,y,z}`
+  /// the dipole direction and `q ∈ {0=trace, 1=σ_x, 2=σ_y, 3=σ_z}` the Pauli
+  /// piece. Origin set via `engine.set_params(std::array<double,3>)`.
+  ///
+  /// Engine-enum names are ASCII (`op` = σ·p); the σ·p·r·σ·p math name σpeμσp
+  /// lives on the compiler side (σpeμσp_Descr) and in the codegen label.
+  opemuop,
   /// \f$ \delta(\vec{r}_1 - \vec{r}_2) \f$
   delta,
   /// (2-body) Coulomb operator = \f$ r_{12}^{-1} \f$
   coulomb,
   /// alias for Operator::coulomb
   r12_m1 = coulomb,
+  /// (2-body) \f$ r_{12}^{-1} (σ.p_{k1})(σ.p_{k2})\f$ where k1  & k2 are
+  /// centers of ket1 and ket2, respectively
+  coulomb_opop,
+  /// (2-body) \f$ r_{12}^{-1} (σ.p_{k2}) \f$ where k2 is the center of ket2;
+  /// the 3-center single-σ·p integral (P | μ, σ·p ν). σ·p acts on
+  /// the 2nd ket AO function only. Produces 3 Cartesian components (x=0, y=1,
+  /// z=2) — the SO(3) vector irrep; no σ·σ folding (cf. coulomb_opop). The
+  /// fitting function sits on the bra (BraKet::xs_xx); 3-center only.
+  coulomb_op,
+  /// (2-body) \f$ (σ.p_{b1})(σ.p_{b2}) r_{12}^{-1} (σ.p_{k1})(σ.p_{k2})\f$
+  /// where b1 & b2 are centers of bra1 and bra2 and k1  & k2 are centers of
+  /// ket1 and ket2, respectively
+  opop_coulomb_opop,
+  /// (2-body) \f$ (σ.p_{b2}) r_{12}^{-1} (σ.p_{k2}) \f$ where b2 is the center
+  /// of bra2 and k2 is the center of ket2; Gaunt LS "bilinear" integral.
+  /// Produces 9 components: the SO(3) irreducible decomposition of the 3×3
+  /// derivative dyadic T_ab (a = bra-side ∇, b = ket-side ∇), NOT a raw
+  /// `3*a + b` Cartesian dyadic. Component order matches
+  /// `σpCoulombσp_Descr::Component`: Scalar trace (0); antisymmetric (curl-curl)
+  /// AntisymX,Y,Z (1–3); symmetric-traceless SymTLDiagA,SymTLDiagB (4,5) and
+  /// SymTLOffXY,SymTLOffXZ,SymTLOffYZ (6–8). Unlike coulomb_opop, these
+  /// components are not σ·σ-folded.
+  op_coulomb_op,
   /// contracted Gaussian geminal
   cgtg,
   /// contracted Gaussian geminal times Coulomb
@@ -230,7 +262,7 @@ enum class Operator {
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!keep this
   // updated!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   first_1body_oper = overlap,
-  last_1body_oper = op_q_gau_op,
+  last_1body_oper = opemuop,
   first_2body_oper = delta,
   last_2body_oper = stg_x_coulomb,
   first_oper = first_1body_oper,
@@ -291,6 +323,7 @@ struct operator_traits<Operator::nuclear>
   typedef const libint2::FmEval_Reference<scalar_type> core_eval_type;
 #endif
 };
+
 /// opVop: 4 quaternionic components (scalar, x, y, z) of (σ·p)V(σ·p).
 /// Inherits point-charge params from nuclear; uses Boys function core eval.
 template <>
@@ -416,6 +449,13 @@ struct operator_traits<Operator::sphemultipole>
 };
 
 template <>
+struct operator_traits<Operator::opemuop>
+    : public operator_traits<Operator::emultipole1> {
+  static constexpr auto nopers = 12;
+  static constexpr auto intrinsic_deriv_order = 2;
+};
+
+template <>
 struct operator_traits<Operator::coulomb>
     : public detail::default_operator_traits {
 #ifndef LIBINT_USER_DEFINED_REAL
@@ -424,6 +464,41 @@ struct operator_traits<Operator::coulomb>
   typedef const libint2::FmEval_Reference<scalar_type> core_eval_type;
 #endif
 };
+
+template <>
+struct operator_traits<Operator::coulomb_opop>
+    : public operator_traits<Operator::coulomb> {
+  static constexpr auto nopers = 4;
+  static constexpr auto intrinsic_deriv_order = 2;
+};
+template <>
+struct operator_traits<Operator::coulomb_op>
+    : public operator_traits<Operator::coulomb> {
+  /// 3 Cartesian components of the single σ·p applied to the 2nd ket function.
+  /// index = a, a ∈ {x=0, y=1, z=2}. One intrinsic derivative (σ·p = one ∇).
+  static constexpr auto nopers = 3;
+  static constexpr auto intrinsic_deriv_order = 1;
+};
+template <>
+struct operator_traits<Operator::opop_coulomb_opop>
+    : public operator_traits<Operator::coulomb> {
+  /// 16 components: tensor product of two independent spin-space quaternions
+  /// index = 4 * bra_spin + ket_spin, where spin in {S=0, X=1, Y=2, Z=3}
+  static constexpr auto nopers = 16;
+  static constexpr auto intrinsic_deriv_order = 4;
+};
+template <>
+struct operator_traits<Operator::op_coulomb_op>
+    : public operator_traits<Operator::coulomb> {
+  /// 9 components: the SO(3) irreducible decomposition of the 3×3 derivative
+  /// dyadic T_ab (NOT a raw `3*a + b` Cartesian dyadic). Order matches
+  /// `σpCoulombσp_Descr::Component`: Scalar trace (0); antisymmetric
+  /// AntisymX,Y,Z (1–3); symmetric-traceless SymTLDiagA,SymTLDiagB (4,5) and
+  /// SymTLOffXY,SymTLOffXZ,SymTLOffYZ (6–8).
+  static constexpr auto nopers = 9;
+  static constexpr auto intrinsic_deriv_order = 2;
+};
+
 namespace detail {
 template <int K>
 struct cgtg_operator_traits : public detail::default_operator_traits {
@@ -542,12 +617,19 @@ inline constexpr int rank(BraKet braket) {
 /// @return the default braket for @c oper
 /// @throw std::logic_error if invalid @c oper given
 inline constexpr BraKet default_braket(Operator oper) {
-  return (rank(oper) == 1)
-             ? BraKet::x_x
-             : ((rank(oper) == 2)
-                    ? BraKet::xx_xx
-                    : throw std::logic_error(
-                          "default_braket(Operator): invalid operator given"));
+  // coulomb_op (3-center single-σ·p) has no 4-center kernel; its only
+  // valid geometry is the 3-center xs_xx braket. Default to that rather than the
+  // rank-based xx_xx, which has no generated kernel and would silently dispatch
+  // to the plain-Coulomb `default` task (wrong integrals, no error in release).
+  return (oper == Operator::coulomb_op)
+             ? BraKet::xs_xx
+             : ((rank(oper) == 1)
+                    ? BraKet::x_x
+                    : ((rank(oper) == 2)
+                           ? BraKet::xx_xx
+                           : throw std::logic_error(
+                                 "default_braket(Operator): invalid operator "
+                                 "given")));
 }
 
 constexpr size_t nopers_2body = static_cast<int>(Operator::last_2body_oper) -
@@ -917,16 +999,16 @@ class Engine {
       const Shell& ket2, const ShellPair* spbra, const ShellPair* spket);
 
   // clang-format off
-  /** this specifies target precision for computing the integrals, i.e.
-   *  the target absolute (i.e., not relative) error of the integrals.
-   *  It is used to screen out primitive integrals. For some screening
-   *  methods precision can be almost guaranteed (due to finite precision
-   *  of the precomputed interpolation tables used to evaluate the core integrals
-   *  it is not in general possible to guarantee precision rigorously).
-   *
-   *  @param[in] prec the target precision
-   *  @sa ScreeningMethod
-   */
+ /** this specifies target precision for computing the integrals, i.e.
+  *  the target absolute (i.e., not relative) error of the integrals.
+  *  It is used to screen out primitive integrals. For some screening
+  *  methods precision can be almost guaranteed (due to finite precision
+  *  of the precomputed interpolation tables used to evaluate the core integrals
+  *  it is not in general possible to guarantee precision rigorously).
+  *
+  *  @param[in] prec the target precision
+  *  @sa ScreeningMethod
+  */
   // clang-format on
   Engine& set_precision(scalar_type prec) {
     if (prec <= 0.) {

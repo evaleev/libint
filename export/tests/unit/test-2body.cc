@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2024 Edward F. Valeev
+ *  Copyright (C) 2004-2026 Edward F. Valeev
  *
  *  This file is part of Libint library.
  *
@@ -344,6 +344,662 @@ TEST_CASE("eri geometric derivatives", "[engine][2-body]") {
   }
 }
 
+TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
+  std::vector<Shell> obs{// pseudorandom s
+                         Shell{{1.0}, {{0, false, {1.0}}}, {{0.0, 0.0, 0.0}}},
+                         // pseudorandom p
+                         Shell{{2.0}, {{1, false, {1.0}}}, {{1.0, 1.0, 1.0}}}};
+
+  const auto max_nprim = libint2::max_nprim(obs);
+  const auto max_l = libint2::max_l(obs);
+  typedef std::array<unsigned int, 12> der_idx;
+
+  // e.g. d_xx maps the derivative index of derivative w.r.t x
+  // coord of ket1 and x coord of ket2 in Chemist notation.
+  // deriv indices for (LL|SS)
+  der_idx d_xx = {0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0};
+  der_idx d_yy = {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0};
+  der_idx d_zz = {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1};
+  der_idx d_yz = {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1};
+  der_idx d_zy = {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0};
+  der_idx d_zx = {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0};
+  der_idx d_xz = {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+  der_idx d_xy = {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0};
+  der_idx d_yx = {0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0};
+
+  SECTION("Coulombσpσp and σpσpCoulombσpσp") {
+    Engine engine_llss, engine_ssss;
+    try {
+      engine_llss = Engine(Operator::coulomb_opop, max_nprim, max_l, 0);
+      engine_ssss = Engine(Operator::opop_coulomb_opop, max_nprim, max_l, 0);
+      // TODO: need another unit test for derivatives of RKB ERIs
+    } catch (
+        Engine::lmax_exceeded &) {  // skip the test if lmax exceeded or libint2
+                                    // not configured with RKB support
+      return;
+    }
+
+    const auto nshell = obs.size();
+    for (int s0 = 0; s0 != nshell; ++s0) {
+      for (int s1 = 0; s1 != nshell; ++s1) {
+        for (int s2 = 0; s2 != nshell; ++s2) {
+          for (int s3 = 0; s3 != nshell; ++s3) {
+            const auto &results_llss =
+                engine_llss.compute(obs[s0], obs[s1], obs[s2], obs[s3]);
+            const auto &results_ssss =
+                engine_ssss.compute(obs[s0], obs[s1], obs[s2], obs[s3]);
+            assert(results_llss.size() ==
+                   4);  // 4 buffers for single-spin quaternion components
+
+            LIBINT2_REF_REALTYPE Aref[3];
+            for (int i = 0; i < 3; ++i) Aref[i] = obs[s0].O[i];
+            LIBINT2_REF_REALTYPE Bref[3];
+            for (int i = 0; i < 3; ++i) Bref[i] = obs[s1].O[i];
+            LIBINT2_REF_REALTYPE Cref[3];
+            for (int i = 0; i < 3; ++i) Cref[i] = obs[s2].O[i];
+            LIBINT2_REF_REALTYPE Dref[3];
+            for (int i = 0; i < 3; ++i) Dref[i] = obs[s3].O[i];
+
+            int ijkl = 0;
+
+            int l0, m0, n0;
+            FOR_CART(l0, m0, n0, obs[s0].contr[0].l)
+
+            int l1, m1, n1;
+            FOR_CART(l1, m1, n1, obs[s1].contr[0].l)
+
+            int l2, m2, n2;
+            FOR_CART(l2, m2, n2, obs[s2].contr[0].l)
+
+            int l3, m3, n3;
+            FOR_CART(l3, m3, n3, obs[s3].contr[0].l)
+
+            std::array<LIBINT2_REF_REALTYPE, 4> ref_coulomb_opop{0.0, 0.0, 0.0,
+                                                                 0.0};
+            std::array<LIBINT2_REF_REALTYPE, 16> ref_opop_coulomb_opop{};
+            ref_opop_coulomb_opop.fill(0.0);
+            uint p0123 = 0;
+            for (uint p0 = 0; p0 < obs[s0].nprim(); p0++) {
+              for (uint p1 = 0; p1 < obs[s1].nprim(); p1++) {
+                for (uint p2 = 0; p2 < obs[s2].nprim(); p2++) {
+                  for (uint p3 = 0; p3 < obs[s3].nprim(); p3++, p0123++) {
+                    const LIBINT2_REF_REALTYPE alpha0 = obs[s0].alpha[p0];
+                    const LIBINT2_REF_REALTYPE alpha1 = obs[s1].alpha[p1];
+                    const LIBINT2_REF_REALTYPE alpha2 = obs[s2].alpha[p2];
+                    const LIBINT2_REF_REALTYPE alpha3 = obs[s3].alpha[p3];
+
+                    const LIBINT2_REF_REALTYPE c0 = obs[s0].contr[0].coeff[p0];
+                    const LIBINT2_REF_REALTYPE c1 = obs[s1].contr[0].coeff[p1];
+                    const LIBINT2_REF_REALTYPE c2 = obs[s2].contr[0].coeff[p2];
+                    const LIBINT2_REF_REALTYPE c3 = obs[s3].contr[0].coeff[p3];
+                    const LIBINT2_REF_REALTYPE c0123 = c0 * c1 * c2 * c3;
+
+                    auto eri_drrrr = [&](der_idx d_rrrr) {
+                      return eri(d_rrrr.data(), l0, m0, n0, alpha0, Aref, l1,
+                                 m1, n1, alpha1, Bref, l2, m2, n2, alpha2, Cref,
+                                 l3, m3, n3, alpha3, Dref, 0);
+                    };
+
+                    // helper: build der_idx from 4 derivative directions
+                    // (0=x, 1=y, 2=z) for centers A, B, C, D
+                    constexpr int X = 0, Y = 1, Z = 2;
+                    auto didx = [](int a, int b, int c, int d) -> der_idx {
+                      der_idx r = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                      r[a] = 1;
+                      r[3 + b] = 1;
+                      r[6 + c] = 1;
+                      r[9 + d] = 1;
+                      return r;
+                    };
+                    // shorthand: evaluate derivative ERI from 4 directions
+                    auto D = [&](int a, int b, int c, int d) {
+                      return eri_drrrr(didx(a, b, c, d));
+                    };
+
+                    // (LL|SS)
+                    ref_coulomb_opop[0] +=
+                        c0123 *
+                        (eri_drrrr(d_xx) + eri_drrrr(d_yy) + eri_drrrr(d_zz));
+                    ref_coulomb_opop[1] +=
+                        c0123 * (eri_drrrr(d_yz) - eri_drrrr(d_zy));
+                    ref_coulomb_opop[2] +=
+                        c0123 * (eri_drrrr(d_zx) - eri_drrrr(d_xz));
+                    ref_coulomb_opop[3] +=
+                        c0123 * (eri_drrrr(d_xy) - eri_drrrr(d_yx));
+
+                    // (SS|SS) — 16 components, Option A: index = 4*bra + ket
+                    // 0:SS  1:SX  2:SY  3:SZ
+                    ref_opop_coulomb_opop[0] +=
+                        c0123 * (D(X, X, X, X) + D(X, X, Y, Y) + D(X, X, Z, Z) +
+                                 D(Y, Y, X, X) + D(Y, Y, Y, Y) + D(Y, Y, Z, Z) +
+                                 D(Z, Z, X, X) + D(Z, Z, Y, Y) + D(Z, Z, Z, Z));
+                    ref_opop_coulomb_opop[1] +=
+                        c0123 * (D(X, X, Y, Z) - D(X, X, Z, Y) + D(Y, Y, Y, Z) -
+                                 D(Y, Y, Z, Y) + D(Z, Z, Y, Z) - D(Z, Z, Z, Y));
+                    ref_opop_coulomb_opop[2] +=
+                        c0123 * (D(X, X, Z, X) - D(X, X, X, Z) + D(Y, Y, Z, X) -
+                                 D(Y, Y, X, Z) + D(Z, Z, Z, X) - D(Z, Z, X, Z));
+                    ref_opop_coulomb_opop[3] +=
+                        c0123 * (D(X, X, X, Y) - D(X, X, Y, X) + D(Y, Y, X, Y) -
+                                 D(Y, Y, Y, X) + D(Z, Z, X, Y) - D(Z, Z, Y, X));
+                    // 4:XS  5:XX  6:XY  7:XZ
+                    ref_opop_coulomb_opop[4] +=
+                        c0123 * (D(Y, Z, X, X) - D(Z, Y, X, X) + D(Y, Z, Y, Y) -
+                                 D(Z, Y, Y, Y) + D(Y, Z, Z, Z) - D(Z, Y, Z, Z));
+                    ref_opop_coulomb_opop[5] +=
+                        c0123 * (-D(Y, Z, Y, Z) + D(Y, Z, Z, Y) +
+                                 D(Z, Y, Y, Z) - D(Z, Y, Z, Y));
+                    ref_opop_coulomb_opop[6] +=
+                        c0123 * (-D(Y, Z, Z, X) + D(Y, Z, X, Z) +
+                                 D(Z, Y, Z, X) - D(Z, Y, X, Z));
+                    ref_opop_coulomb_opop[7] +=
+                        c0123 * (-D(Y, Z, X, Y) + D(Y, Z, Y, X) +
+                                 D(Z, Y, X, Y) - D(Z, Y, Y, X));
+                    // 8:YS  9:YX  10:YY  11:YZ
+                    ref_opop_coulomb_opop[8] +=
+                        c0123 * (D(Z, X, X, X) - D(X, Z, X, X) + D(Z, X, Y, Y) -
+                                 D(X, Z, Y, Y) + D(Z, X, Z, Z) - D(X, Z, Z, Z));
+                    ref_opop_coulomb_opop[9] +=
+                        c0123 * (-D(Z, X, Y, Z) + D(Z, X, Z, Y) +
+                                 D(X, Z, Y, Z) - D(X, Z, Z, Y));
+                    ref_opop_coulomb_opop[10] +=
+                        c0123 * (-D(Z, X, Z, X) + D(Z, X, X, Z) +
+                                 D(X, Z, Z, X) - D(X, Z, X, Z));
+                    ref_opop_coulomb_opop[11] +=
+                        c0123 * (-D(Z, X, X, Y) + D(Z, X, Y, X) +
+                                 D(X, Z, X, Y) - D(X, Z, Y, X));
+                    // 12:ZS  13:ZX  14:ZY  15:ZZ
+                    ref_opop_coulomb_opop[12] +=
+                        c0123 * (D(X, Y, X, X) - D(Y, X, X, X) + D(X, Y, Y, Y) -
+                                 D(Y, X, Y, Y) + D(X, Y, Z, Z) - D(Y, X, Z, Z));
+                    ref_opop_coulomb_opop[13] +=
+                        c0123 * (-D(X, Y, Y, Z) + D(X, Y, Z, Y) +
+                                 D(Y, X, Y, Z) - D(Y, X, Z, Y));
+                    ref_opop_coulomb_opop[14] +=
+                        c0123 * (-D(X, Y, Z, X) + D(X, Y, X, Z) +
+                                 D(Y, X, Z, X) - D(Y, X, X, Z));
+                    ref_opop_coulomb_opop[15] +=
+                        c0123 * (-D(X, Y, X, Y) + D(X, Y, Y, X) +
+                                 D(Y, X, X, Y) - D(Y, X, Y, X));
+                  }
+                }
+              }
+            }
+
+            const double ABSOLUTE_DEVIATION_THRESHOLD = 5.0E-14;
+            const double RELATIVE_DEVIATION_THRESHOLD =
+                1.0E-9;  // For more detail on choice of these thresholds, see
+                         // the comments in the TEST_CASE "eri geometric
+                         // derivatives"
+
+            std::array<LIBINT2_REF_REALTYPE, 4> abs_errs_llss;
+            std::array<LIBINT2_REF_REALTYPE, 4> rel_abs_errs_llss;
+
+            // (LL|SS) has 4 components
+            for (auto comp = 0; comp < 4; ++comp) {
+              abs_errs_llss[comp] =
+                  abs(ref_coulomb_opop[comp] - results_llss[comp][ijkl]);
+              rel_abs_errs_llss[comp] =
+                  abs(abs_errs_llss[comp] / ref_coulomb_opop[comp]);
+
+              bool llss_not_ok =
+                  rel_abs_errs_llss[comp] > RELATIVE_DEVIATION_THRESHOLD &&
+                  abs_errs_llss[comp] > ABSOLUTE_DEVIATION_THRESHOLD;
+
+              if (llss_not_ok) {
+                std::cout << "(l0 l1| l2 l3) = "
+                          << "(" << s0 << " " << s1 << " | " << s2 << " " << s3
+                          << ") "
+                          << "Elem " << ijkl << " comp= " << comp
+                          << " : ref = " << ref_coulomb_opop[comp]
+                          << " libint = " << results_llss[comp][ijkl]
+                          << " relabs_error = " << rel_abs_errs_llss[comp]
+                          << " abs_error = " << abs_errs_llss[comp]
+                          << std::endl;
+              }
+              REQUIRE(!llss_not_ok);
+            }
+
+            // (SS|SS) has 16 components (two independent spin spaces)
+            for (auto comp = 0; comp < 16; ++comp) {
+              auto abs_err_ssss =
+                  abs(ref_opop_coulomb_opop[comp] - results_ssss[comp][ijkl]);
+              auto rel_abs_err_ssss =
+                  abs(abs_err_ssss / ref_opop_coulomb_opop[comp]);
+
+              bool ssss_not_ok =
+                  rel_abs_err_ssss > RELATIVE_DEVIATION_THRESHOLD &&
+                  abs_err_ssss > ABSOLUTE_DEVIATION_THRESHOLD;
+
+              if (ssss_not_ok) {
+                std::cout << "(l0 l1| l2 l3) = "
+                          << "(" << s0 << " " << s1 << " | " << s2 << " " << s3
+                          << ") "
+                          << "Elem " << ijkl << " comp= " << comp
+                          << " : ref = " << ref_opop_coulomb_opop[comp]
+                          << " libint = " << results_ssss[comp][ijkl]
+                          << " relabs_error = " << rel_abs_err_ssss
+                          << " abs_error = " << abs_err_ssss << std::endl;
+              }
+              REQUIRE(!ssss_not_ok);
+            }
+
+            ++ijkl;
+            END_FOR_CART
+            END_FOR_CART
+            END_FOR_CART
+            END_FOR_CART
+          }
+        }
+      }
+    }
+  }
+
+  SECTION("op_coulomb_op") {
+    Engine engine_opCop;
+    try {
+      engine_opCop = Engine(Operator::op_coulomb_op, max_nprim, max_l, 0);
+    } catch (Engine::lmax_exceeded &) {
+      return;
+    }
+
+    const auto nshell = obs.size();
+    for (int s0 = 0; s0 != nshell; ++s0) {
+      for (int s1 = 0; s1 != nshell; ++s1) {
+        for (int s2 = 0; s2 != nshell; ++s2) {
+          for (int s3 = 0; s3 != nshell; ++s3) {
+            const auto &results =
+                engine_opCop.compute(obs[s0], obs[s1], obs[s2], obs[s3]);
+            assert(results.size() == 9);
+
+            LIBINT2_REF_REALTYPE Aref[3], Bref[3], Cref[3], Dref[3];
+            for (int i = 0; i < 3; ++i) Aref[i] = obs[s0].O[i];
+            for (int i = 0; i < 3; ++i) Bref[i] = obs[s1].O[i];
+            for (int i = 0; i < 3; ++i) Cref[i] = obs[s2].O[i];
+            for (int i = 0; i < 3; ++i) Dref[i] = obs[s3].O[i];
+
+            int ijkl = 0;
+
+            int l0, m0, n0;
+            FOR_CART(l0, m0, n0, obs[s0].contr[0].l)
+            int l1, m1, n1;
+            FOR_CART(l1, m1, n1, obs[s1].contr[0].l)
+            int l2, m2, n2;
+            FOR_CART(l2, m2, n2, obs[s2].contr[0].l)
+            int l3, m3, n3;
+            FOR_CART(l3, m3, n3, obs[s3].contr[0].l)
+
+            // Raw 3x3 dyadic T_{ab} = (a b∂_a | c d∂_b), accumulated in
+            // chemist-notation index 3*a+b. After the primitive loop we
+            // project into the 9 SO(3) irreducible components that the engine
+            // returns: Scalar, AntisymX/Y/Z, SymTLDiagA/B, SymTLOffXY/XZ/YZ.
+            std::array<LIBINT2_REF_REALTYPE, 9> ref_raw{};
+            ref_raw.fill(0.0);
+
+            for (uint p0 = 0; p0 < obs[s0].nprim(); p0++) {
+              for (uint p1 = 0; p1 < obs[s1].nprim(); p1++) {
+                for (uint p2 = 0; p2 < obs[s2].nprim(); p2++) {
+                  for (uint p3 = 0; p3 < obs[s3].nprim(); p3++) {
+                    const LIBINT2_REF_REALTYPE alpha0 = obs[s0].alpha[p0];
+                    const LIBINT2_REF_REALTYPE alpha1 = obs[s1].alpha[p1];
+                    const LIBINT2_REF_REALTYPE alpha2 = obs[s2].alpha[p2];
+                    const LIBINT2_REF_REALTYPE alpha3 = obs[s3].alpha[p3];
+                    const LIBINT2_REF_REALTYPE c0 = obs[s0].contr[0].coeff[p0];
+                    const LIBINT2_REF_REALTYPE c1 = obs[s1].contr[0].coeff[p1];
+                    const LIBINT2_REF_REALTYPE c2 = obs[s2].contr[0].coeff[p2];
+                    const LIBINT2_REF_REALTYPE c3 = obs[s3].contr[0].coeff[p3];
+                    const LIBINT2_REF_REALTYPE c0123 = c0 * c1 * c2 * c3;
+
+                    // Deriv on ν (center B, index 1) and on λ (center D, idx
+                    // 3).
+                    auto didx_bd = [](int a, int b) -> der_idx {
+                      der_idx r = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                      r[3 + a] = 1;
+                      r[9 + b] = 1;
+                      return r;
+                    };
+                    auto D = [&](int a, int b) {
+                      auto di = didx_bd(a, b);
+                      return eri(di.data(), l0, m0, n0, alpha0, Aref, l1, m1,
+                                 n1, alpha1, Bref, l2, m2, n2, alpha2, Cref, l3,
+                                 m3, n3, alpha3, Dref, 0);
+                    };
+                    for (int a = 0; a < 3; ++a)
+                      for (int b = 0; b < 3; ++b)
+                        ref_raw[3 * a + b] += c0123 * D(a, b);
+                  }
+                }
+              }
+            }
+
+            // Project raw dyadic into the 9 SO(3) irrep components used by
+            // op_coulomb_op (must match σpCoulombσp_Descr::Component order).
+            const auto Txx = ref_raw[0];
+            const auto Txy = ref_raw[1];
+            const auto Txz = ref_raw[2];
+            const auto Tyx = ref_raw[3];
+            const auto Tyy = ref_raw[4];
+            const auto Tyz = ref_raw[5];
+            const auto Tzx = ref_raw[6];
+            const auto Tzy = ref_raw[7];
+            const auto Tzz = ref_raw[8];
+            std::array<LIBINT2_REF_REALTYPE, 9> ref_op_coulomb_op{
+                Txx + Tyy + Tzz,        // Scalar
+                Tyz - Tzy,              // AntisymX
+                Tzx - Txz,              // AntisymY
+                Txy - Tyx,              // AntisymZ
+                Txx - Tyy,              // SymTLDiagA
+                2.0 * Tzz - Txx - Tyy,  // SymTLDiagB
+                Txy + Tyx,              // SymTLOffXY
+                Txz + Tzx,              // SymTLOffXZ
+                Tyz + Tzy,              // SymTLOffYZ
+            };
+
+            const double ABSOLUTE_DEVIATION_THRESHOLD = 5.0E-14;
+            const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-9;
+            for (auto comp = 0; comp < 9; ++comp) {
+              auto abs_err = abs(ref_op_coulomb_op[comp] - results[comp][ijkl]);
+              auto rel_abs_err = abs(abs_err / ref_op_coulomb_op[comp]);
+              bool not_ok = rel_abs_err > RELATIVE_DEVIATION_THRESHOLD &&
+                            abs_err > ABSOLUTE_DEVIATION_THRESHOLD;
+              if (not_ok) {
+                std::cout << "(l0 l1| l2 l3) = (" << s0 << " " << s1 << " | "
+                          << s2 << " " << s3 << ") Elem " << ijkl
+                          << " comp= " << comp
+                          << " : ref = " << ref_op_coulomb_op[comp]
+                          << " libint = " << results[comp][ijkl]
+                          << " relabs_error = " << rel_abs_err
+                          << " abs_error = " << abs_err << std::endl;
+              }
+              REQUIRE(!not_ok);
+            }
+
+            ++ijkl;
+            END_FOR_CART
+            END_FOR_CART
+            END_FOR_CART
+            END_FOR_CART
+          }
+        }
+      }
+    }
+  }
+
+// The 3-center RKB sections below exercise kernels that exist only when
+// LIBINT2_ENABLE_RKB_ERI3 >= 0. The 4-center coulomb_opop engine still
+// constructs successfully without them (so the lmax_exceeded catch does not
+// fire), but compute() on the 3-center braket would dispatch to the absent
+// kernel and abort in the `default` task. Guard at compile time on the
+// generated task-exists macro.
+#if LIBINT2_TASK_EXISTS_3coulomb_opop
+  SECTION("Coulombσpσp 3-center xs_xx") {
+    // 3-center RKB Coulombσpσp integral, (P | σ·p_μ σ·p_ν / r12) with P on
+    // the bra (fitting/DF) and σ·p acting on the AO pair (μ,ν) on the ket.
+    //
+    // Reference: the same operator and BraKet computed via the 4-center
+    // engine with Shell::unit() at the dummy bra position. The 4-center
+    // engine path is already validated by the "Coulombσpσp and
+    // σpσpCoulombσpσp" SECTION above against a primitive-eri reference, so
+    // by transitivity the 4-center engine is a trustworthy reference for the
+    // 3-center engine. Both code paths share the dummy-shell trick
+    // internally, but they are independently generated (different task
+    // labels, different dispatch tables), so this catches dispatch-table /
+    // codegen wiring mistakes in the new 3-center path.
+
+    Shell dfsh{{1.5}, {{0, false, {1.0}}}, {{-1.0, 0.5, 0.0}}};
+    std::vector<Shell> dfs{dfsh};
+    const auto &unitshell = libint2::Shell::unit();
+
+    Engine engine_3c, engine_4c_ref;
+    try {
+      engine_3c = Engine(Operator::coulomb_opop,
+                         std::max(max_nprim, libint2::max_nprim(dfs)),
+                         std::max(max_l, libint2::max_l(dfs)), 0);
+      engine_3c.set(BraKet::xs_xx);
+      // 4-center reference — same operator, default BraKet::xx_xx
+      engine_4c_ref = Engine(Operator::coulomb_opop,
+                             std::max(max_nprim, libint2::max_nprim(dfs)),
+                             std::max(max_l, libint2::max_l(dfs)), 0);
+    } catch (Engine::lmax_exceeded &) {
+      // skip if libint not configured with -DLIBINT2_ENABLE_RKB_ERI3 >= 0
+      // (or the 4-center RKB ERI was disabled)
+      return;
+    }
+
+    const auto nshell = obs.size();
+    for (int sa = 0; sa != nshell; ++sa) {
+      for (int sb = 0; sb != nshell; ++sb) {
+        const auto &results_3c =
+            engine_3c.compute(dfsh, obs[sa], obs[sb]);
+        // 4-center reference: (dfsh, unit | sh_a, sh_b). σ·p still acts on
+        // (C, D) = (sh_a, sh_b), matching the 3-center xs_xx mapping.
+        const auto &results_4c_ref =
+            engine_4c_ref.compute(dfsh, unitshell, obs[sa], obs[sb]);
+        assert(results_3c.size() == 4);
+        assert(results_4c_ref.size() == 4);
+
+        const auto n_df = dfsh.size();
+        const auto n_a = obs[sa].size();
+        const auto n_b = obs[sb].size();
+        const auto n_total = n_df * n_a * n_b;
+        // 4-center buffer is (df, unit, sa, sb); n_unit = 1; so the linear
+        // layout coincides with the 3-center (df, sa, sb) layout.
+
+        const double ABS_TOL = 5.0E-14;
+        const double REL_TOL = 1.0E-9;
+        for (auto comp = 0; comp < 4; ++comp) {
+          for (size_t k = 0; k < n_total; ++k) {
+            const auto v_3c = results_3c[comp][k];
+            const auto v_ref = results_4c_ref[comp][k];
+            const auto abs_err = std::abs(v_3c - v_ref);
+            const auto rel_err =
+                std::abs(v_ref) > 1e-30 ? std::abs(abs_err / v_ref) : 0.0;
+            bool not_ok = rel_err > REL_TOL && abs_err > ABS_TOL;
+            if (not_ok) {
+              std::cout << "(df | sa=" << sa << " sb=" << sb
+                        << ") comp=" << comp << " elem=" << k
+                        << ": 3c=" << v_3c << " 4c_ref=" << v_ref
+                        << " abs_err=" << abs_err << " rel_err=" << rel_err
+                        << std::endl;
+            }
+            REQUIRE(!not_ok);
+          }
+        }
+      }
+    }
+  }
+
+  SECTION("Coulombσpσp 3-center xx_xs alias") {
+    // The xx_xs braket re-routes through the same xs_xx kernel via the
+    // Engine::compute2 bra↔ket swap. Verify the alias yields the same
+    // integral values, with the output buffer in the user-requested
+    // (sh_a, sh_b | dfsh) index layout.
+
+    Shell dfsh{{1.5}, {{0, false, {1.0}}}, {{-1.0, 0.5, 0.0}}};
+    std::vector<Shell> dfs{dfsh};
+
+    Engine eng_xs, eng_xxs;
+    try {
+      eng_xs = Engine(Operator::coulomb_opop,
+                      std::max(max_nprim, libint2::max_nprim(dfs)),
+                      std::max(max_l, libint2::max_l(dfs)), 0);
+      eng_xs.set(BraKet::xs_xx);
+      eng_xxs = Engine(Operator::coulomb_opop,
+                       std::max(max_nprim, libint2::max_nprim(dfs)),
+                       std::max(max_l, libint2::max_l(dfs)), 0);
+      eng_xxs.set(BraKet::xx_xs);
+    } catch (Engine::lmax_exceeded &) {
+      return;
+    }
+
+    for (size_t sa = 0; sa != obs.size(); ++sa) {
+      for (size_t sb = 0; sb != obs.size(); ++sb) {
+        const auto n_df = dfsh.size();
+        const auto n_a = obs[sa].size();
+        const auto n_b = obs[sb].size();
+
+        const auto &res_xs = eng_xs.compute(dfsh, obs[sa], obs[sb]);
+        // re-set xs braket each loop in case Catch2 SECTION re-entry resets
+        eng_xxs.set(BraKet::xx_xs);
+        const auto &res_xxs = eng_xxs.compute(obs[sa], obs[sb], dfsh);
+
+        for (auto c = 0; c < 4; ++c) {
+          for (size_t i_df = 0; i_df < n_df; ++i_df) {
+            for (size_t i_a = 0; i_a < n_a; ++i_a) {
+              for (size_t i_b = 0; i_b < n_b; ++i_b) {
+                const auto v_xs =
+                    res_xs[c][i_df * n_a * n_b + i_a * n_b + i_b];
+                const auto v_xxs =
+                    res_xxs[c][i_a * n_b * n_df + i_b * n_df + i_df];
+                const auto abs_err = abs(v_xs - v_xxs);
+                const auto rel_err = std::abs(v_xs) > 1e-30
+                                         ? double(abs(abs_err / v_xs))
+                                         : 0.0;
+                bool not_ok = rel_err > 1.0E-9 && abs_err > 5.0E-14;
+                if (not_ok) {
+                  std::cout << "xx_xs alias mismatch: (sa=" << sa
+                            << " sb=" << sb << ") comp=" << c
+                            << " idx(df=" << i_df << ",a=" << i_a
+                            << ",b=" << i_b << "): xs=" << v_xs
+                            << " xxs=" << v_xxs << " abs_err=" << abs_err
+                            << std::endl;
+                }
+                REQUIRE(!not_ok);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+#endif  // LIBINT2_TASK_EXISTS_3coulomb_opop
+
+#if LIBINT2_TASK_EXISTS_3coulomb_op
+  SECTION("Coulombσp 3-center xs_xx") {
+    // 3-center single-σ·p integral
+    //   (P | 1/r12 | μ, σ·p ν),
+    // with the fitting function P on the bra (BraKet::xs_xx) and a single σ·p
+    // acting on the 2nd ket AO function ν only. The 3 Cartesian components
+    // (x,y,z) are the bare gradient of ν, so the reference is the 3-center ERI
+    // with a *single first derivative on ν* (the shell that carries σ·p) — the
+    // other geometric derivatives are not needed.
+    //
+    // The 3-center ERI is evaluated with the primitive eri() reference by
+    // placing a unit s-shell (alpha=0, at the origin) at the dummy bra-2
+    // position, exactly as the engine does internally via Shell::unit(): the
+    // 3-arg compute(df, μ, ν) maps to the 4-center order (df, unit, μ, ν) =
+    // (A,B,C,D), so σ·p on ν is the derivative on center D (der_idx slots
+    // 9..11). See the "Coulombσpσp and σpσpCoulombσpσp" SECTION for the
+    // (un-derivatived) primitive-eri reference pattern.
+
+    Shell dfsh{{1.5}, {{0, false, {1.0}}}, {{-1.0, 0.5, 0.0}}};
+    std::vector<Shell> dfs{dfsh};
+
+    Engine engine_3c;
+    Engine engine_3c_default;
+    try {
+      engine_3c = Engine(Operator::coulomb_op,
+                         std::max(max_nprim, libint2::max_nprim(dfs)),
+                         std::max(max_l, libint2::max_l(dfs)), 0);
+      engine_3c.set(BraKet::xs_xx);
+      // Regression (review finding #1): coulomb_op has no 4-center kernel, so a
+      // forgotten set() must NOT silently dispatch to the plain-Coulomb
+      // `default` task. default_braket(coulomb_op) must be the 3-center xs_xx,
+      // so engine_3c_default — built WITHOUT an explicit set() — must produce
+      // results identical to engine_3c.
+      CHECK(default_braket(Operator::coulomb_op) == BraKet::xs_xx);
+      engine_3c_default = Engine(Operator::coulomb_op,
+                                 std::max(max_nprim, libint2::max_nprim(dfs)),
+                                 std::max(max_l, libint2::max_l(dfs)), 0);
+    } catch (Engine::lmax_exceeded &) {
+      // skip if libint not configured with -DLIBINT2_ENABLE_RKB_ERI3 >= 0
+      return;
+    }
+
+    // unit (dummy) shell at the bra-2 position: alpha=0, l=0, at the origin.
+    LIBINT2_REF_REALTYPE Bref[3] = {0.0, 0.0, 0.0};
+    const LIBINT2_REF_REALTYPE alpha_unit = 0.0;
+
+    const auto nshell = obs.size();
+    for (int sa = 0; sa != nshell; ++sa) {
+      for (int sb = 0; sb != nshell; ++sb) {
+        const auto &results_3c = engine_3c.compute(dfsh, obs[sa], obs[sb]);
+        assert(results_3c.size() == 3);
+        // default-braket engine (no set()) must match the explicit-xs_xx engine
+        const auto &results_3c_default =
+            engine_3c_default.compute(dfsh, obs[sa], obs[sb]);
+        REQUIRE(results_3c_default.size() == 3);
+
+        LIBINT2_REF_REALTYPE Aref[3], Cref[3], Dref[3];
+        for (int i = 0; i < 3; ++i) Aref[i] = dfsh.O[i];
+        for (int i = 0; i < 3; ++i) Cref[i] = obs[sa].O[i];
+        for (int i = 0; i < 3; ++i) Dref[i] = obs[sb].O[i];
+
+        int ijk = 0;
+
+        int l0, m0, n0;
+        FOR_CART(l0, m0, n0, dfsh.contr[0].l)     // P (fitting, s)
+        int l2, m2, n2;
+        FOR_CART(l2, m2, n2, obs[sa].contr[0].l)  // μ
+        int l3, m3, n3;
+        FOR_CART(l3, m3, n3, obs[sb].contr[0].l)  // ν (σ·p acts here)
+
+        std::array<LIBINT2_REF_REALTYPE, 3> ref_coulomb_op{0.0, 0.0, 0.0};
+
+        for (uint p0 = 0; p0 < dfsh.nprim(); p0++) {
+          for (uint p2 = 0; p2 < obs[sa].nprim(); p2++) {
+            for (uint p3 = 0; p3 < obs[sb].nprim(); p3++) {
+              const LIBINT2_REF_REALTYPE alpha0 = dfsh.alpha[p0];
+              const LIBINT2_REF_REALTYPE alpha2 = obs[sa].alpha[p2];
+              const LIBINT2_REF_REALTYPE alpha3 = obs[sb].alpha[p3];
+              const LIBINT2_REF_REALTYPE c0 = dfsh.contr[0].coeff[p0];
+              const LIBINT2_REF_REALTYPE c2 = obs[sa].contr[0].coeff[p2];
+              const LIBINT2_REF_REALTYPE c3 = obs[sb].contr[0].coeff[p3];
+              const LIBINT2_REF_REALTYPE c023 = c0 * c2 * c3;  // unit coeff = 1
+
+              // single first derivative on ν (center D), direction k.
+              auto eri_dD = [&](int k) {
+                der_idx d = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                d[9 + k] = 1;  // slots 9,10,11 = D_x, D_y, D_z
+                return eri(d.data(), l0, m0, n0, alpha0, Aref, 0, 0, 0,
+                           alpha_unit, Bref, l2, m2, n2, alpha2, Cref, l3, m3,
+                           n3, alpha3, Dref, 0);
+              };
+
+              for (int k = 0; k < 3; ++k) ref_coulomb_op[k] += c023 * eri_dD(k);
+            }
+          }
+        }
+
+        const double ABS_TOL = 5.0E-14;
+        const double REL_TOL = 1.0E-9;
+        for (auto comp = 0; comp < 3; ++comp) {
+          const auto v_3c = results_3c[comp][ijk];
+          CHECK(results_3c_default[comp][ijk] == v_3c);
+          const auto v_ref = ref_coulomb_op[comp];
+          const auto abs_err = std::abs(v_3c - v_ref);
+          const auto rel_err =
+              std::abs(v_ref) > 1e-30 ? std::abs(abs_err / v_ref) : 0.0;
+          bool not_ok = rel_err > REL_TOL && abs_err > ABS_TOL;
+          if (not_ok) {
+            std::cout << "(df | sa=" << sa << " sb=" << sb << ") comp=" << comp
+                      << " elem=" << ijk << ": 3c=" << v_3c << " ref=" << v_ref
+                      << " abs_err=" << abs_err << " rel_err=" << rel_err
+                      << std::endl;
+          }
+          REQUIRE(!not_ok);
+        }
+
+        ++ijk;
+        END_FOR_CART
+        END_FOR_CART
+        END_FOR_CART
+      }
+    }
+  }
+#endif  // LIBINT2_TASK_EXISTS_3coulomb_op
+}
+
 TEST_CASE("Erfx_Coulomb integrals", "[engine][2-body]") {
   // pseudorandom s shells
   std::vector<Shell> obs{
@@ -374,12 +1030,12 @@ TEST_CASE("Erfx_Coulomb integrals", "[engine][2-body]") {
       REQUIRE(results[0] != nullptr);
       switch (k) {
         /* VALIDATION WOLFRAM CODE:
-(* Integral of Coulomb kernel damped by (\[Lambda] Erf[\[Omega] r] + \
-\[Sigma] Erfc[\[Omega] r]), over unit-normalized s functions, \
-see Eq 52 in DOI 10.1039/b605188j *)
-F0[T_] := If[T == 0, 1, Sqrt[\[Pi]/T]*Erf[Sqrt[T]]/2];
-sN[a_] := ((2 a)/\[Pi])^(3/4);
-VVeeErfx[\[Alpha]1_, A1_List, \[Alpha]2_, A2_List, \[Beta]1_,
+ (* Integral of Coulomb kernel damped by (\[Lambda] Erf[\[Omega] r] + \
+ \[Sigma] Erfc[\[Omega] r]), over unit-normalized s functions, \
+ see Eq 52 in DOI 10.1039/b605188j *)
+ F0[T_] := If[T == 0, 1, Sqrt[\[Pi]/T]*Erf[Sqrt[T]]/2];
+ sN[a_] := ((2 a)/\[Pi])^(3/4);
+ VVeeErfx[\[Alpha]1_, A1_List, \[Alpha]2_, A2_List, \[Beta]1_,
    B1_List, \[Beta]2_, B2_List, \[Omega]_, \[Lambda]_, \[Sigma]_] :=
   Module[{\[Gamma]1, \[Gamma]2, P1, P2, K1, K2, T, result, \[Rho]},
    \[Gamma]1 = \[Alpha]1 + \[Beta]1;
@@ -397,13 +1053,13 @@ VVeeErfx[\[Alpha]1_, A1_List, \[Alpha]2_, A2_List, \[Beta]1_,
            T]) sN[\[Alpha]1] sN[\[Alpha]2] sN[\[Beta]1] sN[\[Beta]2];
    Return[result];
    ];
-Print[CForm[
+ Print[CForm[
   N[VVeeErfx[1, {0, 0, 0},  3, {2, 2, 2}, 2, {1, 1, 1}, 4, {3, 3, 3},
     1.1, 1, 0], 20]]]
-Print[CForm[
+ Print[CForm[
   N[VVeeErfx[1, {0, 0, 0},  3, {2, 2, 2}, 2, {1, 1, 1}, 4, {3, 3, 3},
     1.1, 0, 1], 20]]]
-Print[CForm[
+ Print[CForm[
   N[VVeeErfx[1, {0, 0, 0},  3, {2, 2, 2}, 2, {1, 1, 1}, 4, {3, 3, 3},
     1.1, 2, 3], 20]]]
          */

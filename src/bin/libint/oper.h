@@ -289,23 +289,22 @@ BOOST_PP_LIST_FOR_EACH(BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR,
 struct σpVσp_Descr : public Contractable<σpVσp_Descr> {
   typedef MultiplicativeODep1Body_Props Properties;
 
-  σpVσp_Descr() : quaternionic_index_(0) {}
-  σpVσp_Descr(int quaternionic_index)
-      : quaternionic_index_(quaternionic_index) {
-    assert(quaternionic_index <= 3);
+  σpVσp_Descr() : quaternion_index_(0) {}
+  σpVσp_Descr(int quaternion_index) : quaternion_index_(quaternion_index) {
+    assert(quaternion_index <= 3);
   }
 
   static const unsigned int max_key = 4;
-  unsigned int key() const { return quaternionic_index(); }
+  unsigned int key() const { return quaternion_index(); }
   std::string description() const {
     std::string descr("opVop[");
-    if (quaternionic_index() == 0)
+    if (quaternion_index() == 0)
       descr += "0";
-    else if (quaternionic_index() == 1)
+    else if (quaternion_index() == 1)
       descr += "X";
-    else if (quaternionic_index() == 2)
+    else if (quaternion_index() == 2)
       descr += "Y";
-    else if (quaternionic_index() == 3)
+    else if (quaternion_index() == 3)
       descr += "Z";
     else
       abort();
@@ -315,12 +314,51 @@ struct σpVσp_Descr : public Contractable<σpVσp_Descr> {
   int psymm(int i, int j) const { abort(); }
   int hermitian(int i) const { return +1; }
 
-  int quaternionic_index() const { return quaternionic_index_; }
+  int quaternion_index() const { return quaternion_index_; }
 
  private:
-  const int quaternionic_index_ = -1;
+  const int quaternion_index_ = -1;
 };
 typedef GenOper<σpVσp_Descr> σpVσpOper;
+
+/** opemuop: (μ σ·p | r | σ·p ν), one-body σ·p-on-both-sides analog of dipole.
+ *  σ_a σ_b = δ_ab + iε_abc σ_c folds the 9 raw σ_a∂_a r_k σ_b∂_b dyadics per
+ *  dipole direction k down to 4 Pauli-quaternion components (trace + 3
+ *  antisym), mirroring σpVσp's fold of σ·p V σ·p. 12 outputs total = 3 dipole
+ *  directions × 4 Pauli components, indexed composite_index = 4·k + q.
+ */
+struct σpeμσp_Descr : public Contractable<σpeμσp_Descr> {
+  typedef MultiplicativeODep1Body_Props Properties;
+
+  σpeμσp_Descr() : composite_index_(0) {}
+  σpeμσp_Descr(int composite_index) : composite_index_(composite_index) {
+    assert(composite_index >= 0 && composite_index < 12);
+  }
+
+  static const unsigned int max_key = 12;
+  unsigned int key() const { return composite_index(); }
+  std::string description() const {
+    static const char* dipole_lbl[] = {"x", "y", "z"};
+    static const char* pauli_lbl[] = {"0", "X", "Y", "Z"};
+    const auto ci = composite_index();
+    if (ci < 0 || ci >= 12) abort();
+    return std::string("opemuop[") + dipole_lbl[ci / 4] + "," +
+           pauli_lbl[ci % 4] + "]";
+  }
+  std::string label() const { return description(); }
+  int psymm(int i, int j) const { abort(); }
+  int hermitian(int i) const { return +1; }
+
+  int composite_index() const { return composite_index_; }
+  /// dipole direction ∈ {0=x, 1=y, 2=z}
+  int dipole_dir() const { return composite_index_ / 4; }
+  /// Pauli quaternion ∈ {0=trace, 1=σ_x, 2=σ_y, 3=σ_z}
+  int quaternion_index() const { return composite_index_ % 4; }
+
+ private:
+  const int composite_index_ = -1;
+};
+typedef GenOper<σpeμσp_Descr> σpeμσpOper;
 
 /// cartesian multipole operator in \c NDIM dimensions
 /// \f$ \hat{O}(\vec{k}) \equiv \vec{r}^{\cdot \vec{k}} = r_1^{k_1} r_2^{k_2}
@@ -399,6 +437,188 @@ struct TwoPRep_Descr : public Contractable<TwoPRep_Descr> {
   int hermitian(int i) const { return +1; }
 };
 typedef GenOper<TwoPRep_Descr> TwoPRep;
+
+/** Coulombσpσp is the two-body repulsion operator.
+ */
+struct Coulombσpσp_Descr : public Contractable<Coulombσpσp_Descr> {
+  typedef MultiplicativeSymm2Body_Props Properties;
+
+  Coulombσpσp_Descr() : quaternion_index_(0) {}
+  Coulombσpσp_Descr(int quaternion_index)
+      : quaternion_index_(quaternion_index) {
+    assert(quaternion_index <= 3);
+  }
+
+  static const unsigned int max_key = 4;
+  unsigned int key() const { return quaternion_index(); }
+  std::string description() const {
+    std::string descr("coulomb_opop[");
+    if (quaternion_index() == 0)
+      descr += "0";
+    else if (quaternion_index() == 1)
+      descr += "X";
+    else if (quaternion_index() == 2)
+      descr += "Y";
+    else if (quaternion_index() == 3)
+      descr += "Z";
+    else
+      abort();
+    return descr + "]";
+  }
+  std::string label() const { return description(); }
+  int psymm(int i, int j) const { abort(); }
+  int hermitian(int i) const { return +1; }
+
+  int quaternion_index() const { return quaternion_index_; }
+
+ private:
+  const int quaternion_index_ = -1;
+};
+typedef GenOper<Coulombσpσp_Descr> CoulombσpσpOper;
+
+/** Coulombσp is the 3-center single-σ·p operator:
+ *  (P | 1/r_{12} | μ, σ·p ν), with the fitting function P a spectator and a
+ *  single σ·p acting on the 2nd ket AO function ν. Unlike Coulombσpσp (two σ·p
+ *  on the ket pair, folded via the Dirac identity into 4 quaternion
+ *  components), a single σ·p produces no σ·σ folding: the result is the bare
+ *  Cartesian gradient of ν, i.e. the SO(3) vector irrep with 3 components
+ *  (x=0, y=1, z=2). Each component is exactly one first-derivative ERI child;
+ *  the imaginary unit and Pauli matrix of σ·p are applied by the caller.
+ */
+struct Coulombσp_Descr : public Contractable<Coulombσp_Descr> {
+  typedef MultiplicativeSymm2Body_Props Properties;
+
+  Coulombσp_Descr() : cartesian_index_(0) {}
+  Coulombσp_Descr(int cartesian_index) : cartesian_index_(cartesian_index) {
+    assert(cartesian_index >= 0 && cartesian_index <= 2);
+  }
+
+  static const unsigned int max_key = 3;
+  unsigned int key() const { return cartesian_index(); }
+  std::string description() const {
+    std::string descr("coulomb_op[");
+    if (cartesian_index() == 0)
+      descr += "X";
+    else if (cartesian_index() == 1)
+      descr += "Y";
+    else if (cartesian_index() == 2)
+      descr += "Z";
+    else
+      abort();
+    return descr + "]";
+  }
+  std::string label() const { return description(); }
+  int psymm(int i, int j) const { abort(); }
+  int hermitian(int i) const { return +1; }
+
+  int cartesian_index() const { return cartesian_index_; }
+
+ private:
+  const int cartesian_index_ = -1;
+};
+typedef GenOper<Coulombσp_Descr> CoulombσpOper;
+
+struct σpσpCoulombσpσp_Descr : public Contractable<σpσpCoulombσpσp_Descr> {
+  typedef MultiplicativeSymm2Body_Props Properties;
+
+  σpσpCoulombσpσp_Descr() : quaternion_index_(0) {}
+  σpσpCoulombσpσp_Descr(int quaternion_index)
+      : quaternion_index_(quaternion_index) {
+    assert(quaternion_index >= 0 && quaternion_index <= 15);
+  }
+
+  /// 16 components from tensor product of two independent spin spaces:
+  /// index = 4 * bra_spin_index + ket_spin_index
+  /// where spin indices are: 0=S (scalar), 1=X, 2=Y, 3=Z (cross product)
+  static const unsigned int max_key = 16;
+  unsigned int key() const { return quaternion_index(); }
+  std::string description() const {
+    // clang-format off
+    // Option A (tensor product order): index = 4 * bra_spin + ket_spin
+    static const char* labels[] = {
+        "SS", "SX", "SY", "SZ",
+        "XS", "XX", "XY", "XZ",
+        "YS", "YX", "YY", "YZ",
+        "ZS", "ZX", "ZY", "ZZ"
+    };
+    // clang-format on
+    const auto qi = quaternion_index();
+    if (qi > 15) abort();
+    return std::string("opop_coulomb_opop[") + labels[qi] + "]";
+  }
+  std::string label() const { return description(); }
+  int psymm(int i, int j) const { abort(); }
+  int hermitian(int i) const { return +1; }
+
+  int quaternion_index() const { return quaternion_index_; }
+
+ private:
+  const int quaternion_index_ = -1;
+};
+typedef GenOper<σpσpCoulombσpσp_Descr> σpσpCoulombσpσpOper;
+
+/** σpCoulombσp: (μ σ·p ν | 1/r_{12} | κ σ·p λ).
+ *  Gaunt LS "bilinear" operator with one σ·p on each side.
+ *  Outputs the SO(3) irreducible decomposition of the 3×3 gradient-gradient
+ *  tensor T_{ab} = ∂_a ∂_b (μν|κλ): 1 scalar trace + 3 antisymmetric
+ *  (curl-curl) + 5 symmetric-traceless = 9 components. Same storage as the
+ *  raw dyadic, but indexed by physics-meaningful irreps so consumers do not
+ *  need to hand-build trace/antisym/sym-TL combinations at every contraction
+ *  site.
+ */
+struct σpCoulombσp_Descr : public Contractable<σpCoulombσp_Descr> {
+  typedef MultiplicativeSymm2Body_Props Properties;
+
+  /// SO(3) irreducible components of the rank-2 Cartesian tensor T_{ab}.
+  enum Component : int {
+    Scalar = 0,      ///< T_xx + T_yy + T_zz (trace, ∇·∇)
+    AntisymX = 1,    ///< T_yz − T_zy = (∇×∇)_x
+    AntisymY = 2,    ///< T_zx − T_xz = (∇×∇)_y
+    AntisymZ = 3,    ///< T_xy − T_yx = (∇×∇)_z
+    SymTLDiagA = 4,  ///< T_xx − T_yy
+    SymTLDiagB = 5,  ///< 2·T_zz − T_xx − T_yy
+    SymTLOffXY = 6,  ///< T_xy + T_yx
+    SymTLOffXZ = 7,  ///< T_xz + T_zx
+    SymTLOffYZ = 8,  ///< T_yz + T_zy
+  };
+
+  σpCoulombσp_Descr() : component_index_(0) {}
+  σpCoulombσp_Descr(int component_index) : component_index_(component_index) {
+    assert(component_index >= 0 && component_index <= 8);
+  }
+
+  static const unsigned int max_key = 9;
+  unsigned int key() const { return component_index(); }
+  std::string description() const {
+    static const char* labels[] = {
+        "scalar",       "antisym_x",    "antisym_y",
+        "antisym_z",    "symtl_diag_a", "symtl_diag_b",
+        "symtl_off_xy", "symtl_off_xz", "symtl_off_yz",
+    };
+    const auto ci = component_index();
+    if (ci > 8) abort();
+    return std::string("op_coulomb_op[") + labels[ci] + "]";
+  }
+  std::string label() const { return description(); }
+  int psymm(int i, int j) const { abort(); }
+  int hermitian(int i) const { return +1; }
+
+  int component_index() const { return component_index_; }
+
+  bool is_scalar() const { return component_index_ == Scalar; }
+  bool is_antisym() const {
+    return component_index_ >= AntisymX && component_index_ <= AntisymZ;
+  }
+  bool is_sym_tl() const {
+    return component_index_ >= SymTLDiagA && component_index_ <= SymTLOffYZ;
+  }
+  /// for antisym components: 0=x, 1=y, 2=z (only valid if is_antisym())
+  int antisym_cart() const { return component_index_ - AntisymX; }
+
+ private:
+  const int component_index_ = -1;
+};
+typedef GenOper<σpCoulombσp_Descr> σpCoulombσpOper;
 
 /** GTG_1d is the two-body 1-dimensional Gaussian geminal
  */

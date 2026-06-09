@@ -30,12 +30,56 @@
 #include <libint2/config.h>
 #include <strategy.h>
 
+#include <chrono>
 #include <deque>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <sstream>
 #include <string>
+
+/// Progress tracker for code generation.
+struct CodeGenProgress {
+  unsigned int done = 0;
+  std::string current_task;
+  std::chrono::steady_clock::time_point start_time;
+  bool started = false;
+
+  void start() {
+    start_time = std::chrono::steady_clock::now();
+    started = true;
+  }
+
+  void print() const {
+    if (!started) return;
+    static const char spinner[] = "|/-\\";
+    const auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+                             std::chrono::steady_clock::now() - start_time)
+                             .count();
+    const auto mins = elapsed / 60;
+    const auto secs = elapsed % 60;
+    std::cerr << "\r  " << spinner[done % 4] << "  " << std::setfill('0')
+              << std::setw(2) << mins << ":" << std::setw(2) << secs
+              << std::setfill(' ') << "  [" << done << " functions generated]  "
+              << current_task << "                    " << std::flush;
+  }
+
+  void finish() {
+    if (!started) return;
+    const auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+                             std::chrono::steady_clock::now() - start_time)
+                             .count();
+    const auto mins = elapsed / 60;
+    const auto secs = elapsed % 60;
+    std::cerr << "\r  done  " << std::setfill('0') << std::setw(2) << mins
+              << ":" << std::setw(2) << secs << std::setfill(' ') << "  ["
+              << done << " functions generated]"
+              << "                                        " << std::endl;
+    started = false;
+  }
+};
+extern CodeGenProgress g_progress;
 
 namespace libint2 {
 
@@ -263,7 +307,6 @@ void GenerateCode(const std::shared_ptr<DirectedGraph>& dg,
   // if there are missing prerequisites -- make a list of them
   PrerequisitesExtractor pe;
   if (dg->missing_prerequisites()) {
-    // std::cout << "missing some prerequisites!" << std::endl;
     dg->foreach (pe);
   }
   std::deque<std::shared_ptr<DGVertex> > prereq_list = pe.vertices;
@@ -295,6 +338,11 @@ void GenerateCode(const std::shared_ptr<DirectedGraph>& dg,
 
   // extract all external symbols
   extract_symbols(dg);
+
+  // Update progress
+  ++g_progress.done;
+  g_progress.current_task = label;
+  g_progress.print();
 
 #if PRINT_DAG_GRAPHVIZ
   {

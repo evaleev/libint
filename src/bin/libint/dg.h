@@ -22,6 +22,7 @@
 #define _libint2_src_bin_libint_dg_h_
 
 #include <dgvertex.h>
+#include <dims.h>
 #include <exception.h>
 #include <global_macros.h>
 #include <key.h>
@@ -253,7 +254,9 @@ class DirectedGraph : public std::enable_shared_from_this<DirectedGraph> {
       optimized away. optimize_rr_out() will replace all simple recurrence
      relations with code representing them.
    */
-  void optimize_rr_out(const std::shared_ptr<CodeContext>& context);
+  void optimize_rr_out(const std::shared_ptr<CodeContext>& context,
+                       const std::shared_ptr<ImplicitDimensions>& dims =
+                           ImplicitDimensions::default_dims());
 
   /** after all apply's have been called, traverse()
       construct a heuristic order of traversal for the graph.
@@ -438,7 +441,9 @@ class DirectedGraph : public std::enable_shared_from_this<DirectedGraph> {
   to their equivalents (such as (ss|ss) shell quartet can only be connected to
   (ss|ss) integral)
    */
-  void handle_trivial_nodes(const std::shared_ptr<CodeContext>& context);
+  void handle_trivial_nodes(const std::shared_ptr<CodeContext>& context,
+                            const std::shared_ptr<ImplicitDimensions>& dims =
+                                ImplicitDimensions::default_dims());
   /// This functions removes vertices not connected to other vertices
   void remove_disconnected_vertices();
   /** Finds (binary) subtrees. The subtrees correspond to a single-line code (no

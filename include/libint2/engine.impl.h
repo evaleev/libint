@@ -70,40 +70,45 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
 /// These MUST appear in the same order as in Operator.
 /// You must also update BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX when you add
 /// one-body ints
-#define BOOST_PP_NBODY_OPERATOR_LIST                \
-  (overlap,                    /* overlap */        \
-   (kinetic,                   /* kinetic */        \
-    (elecpot,                  /* nuclear */        \
-     (elecpot,                 /* erf_nuclear */    \
-      (elecpot,                /* erfc_nuclear */   \
-       (elecpot,               /* erfx_nuclear */   \
-        (elecpot,              /* q_gau */          \
-         (1emultipole,         /* emultipole1 */    \
-          (2emultipole,        /* emultipole2 */    \
-           (3emultipole,       /* emultipole3 */    \
-            (sphemultipole,    /* sphemultipole */  \
-             (opVop,           /* opVop */          \
-              (opVop,          /* op_q_gau_op */    \
-               (eri,           /* delta */          \
-                (eri,          /* coulomb */        \
-                 (eri,         /* cgtg */           \
-                  (eri,        /* cgtg_x_coulomb */ \
-                   (eri,       /* delcgtg2 */       \
-                    (eri,      /* r12 */            \
-                     (eri,     /* erf_coulomb */    \
-                      (eri,    /* erfc_coulomb */   \
-                       (eri,   /* erfx_coulomb */   \
-                        (eri,  /* stg */            \
-                         (eri, /* yukawa */         \
-                          BOOST_PP_NIL))))))))))))))))))))))))
+#define BOOST_PP_NBODY_OPERATOR_LIST                         \
+  (overlap,                          /* overlap */           \
+   (kinetic,                         /* kinetic */           \
+    (elecpot,                        /* nuclear */           \
+     (elecpot,                       /* erf_nuclear */       \
+      (elecpot,                      /* erfc_nuclear */      \
+       (elecpot,                     /* erfx_nuclear */      \
+        (elecpot,                    /* q_gau */             \
+         (1emultipole,               /* emultipole1 */       \
+          (2emultipole,              /* emultipole2 */       \
+           (3emultipole,             /* emultipole3 */       \
+            (sphemultipole,          /* sphemultipole */     \
+             (opVop,                 /* opVop */             \
+              (opVop,                /* op_q_gau_op */       \
+               (opemuop,                /* opemuop */            \
+                (eri,                  /* delta */           \
+                 (eri,                 /* coulomb */         \
+                  (coulomb_opop,       /* coulomb_opop */    \
+                   (coulomb_op,        /* coulomb_op */      \
+                    (opop_coulomb_opop, /* opop_coulomb_opop */ \
+                     (op_coulomb_op,    /* op_coulomb_op */   \
+                     (eri,             /* cgtg */            \
+                      (eri,            /* cgtg_x_coulomb */  \
+                       (eri,           /* delcgtg2 */        \
+                        (eri,          /* r12 */             \
+                         (eri,         /* erf_coulomb */     \
+                          (eri,        /* erfc_coulomb */    \
+                           (eri,       /* erfx_coulomb */    \
+                            (eri,      /* stg */             \
+                             (eri,     /* yukawa */          \
+                              BOOST_PP_NIL)))))))))))))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
 #define BOOST_PP_NBODY_OPERATOR_INDEX_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE)
 #define BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX \
-  12  // op_q_gau_op, the 13th member of BOOST_PP_NBODY_OPERATOR_LIST, is the
-      // last 1-body operator
+  13  // opemuop, the 14th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last
+      // 1-body operator
 
 // make list of braket indices for n-body ints
 #define BOOST_PP_NBODY_BRAKET_INDEX_TUPLE \
@@ -170,9 +175,22 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
     if (nargs == 2)
       return (this->*compute_ptr)(shells[0], Shell::unit(), shells[1],
                                   Shell::unit(), nullptr, nullptr);
-    if (nargs == 3)
+    if (nargs == 3) {
+      // The 3-arg user form depends on which 3-center BraKet was set:
+      //   xs_xx — bra = (fitting, unit), ket = (AO, AO).
+      //           User passes (fitting, AO, AO), kernel sees
+      //           (fitting, unit, AO, AO).
+      //   xx_xs — bra = (AO, AO),       ket = (fitting, unit).
+      //           User passes (AO, AO, fitting), kernel sees
+      //           (AO, AO, fitting, unit).
+      // The non-xx_xs branch is the default (covers xs_xx and any future
+      // 3-center variants that follow the xs_xx convention).
+      if (braket_ == BraKet::xx_xs)
+        return (this->*compute_ptr)(shells[0], shells[1], shells[2],
+                                    Shell::unit(), nullptr, nullptr);
       return (this->*compute_ptr)(shells[0], Shell::unit(), shells[1],
                                   shells[2], nullptr, nullptr);
+    }
     if (nargs == 4)
       return (this->*compute_ptr)(shells[0], shells[1], shells[2], shells[3],
                                   nullptr, nullptr);
@@ -668,23 +686,23 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
   // validate braket
 #ifndef LIBINT_INCLUDE_ONEBODY
   assert(braket_ != BraKet::x_x &&
-         "this braket type not supported by the library; give --enable-1body "
-         "to configure");
+         "this braket type not supported by the library; configure with "
+         "-DLIBINT2_ENABLE_ONEBODY >= 0");
 #endif
 #ifndef LIBINT_INCLUDE_ERI
   assert(braket_ != BraKet::xx_xx &&
-         "this braket type not supported by the library; give --enable-eri to "
-         "configure");
+         "this braket type not supported by the library; configure with "
+         "-DLIBINT2_ENABLE_ERI >= 0");
 #endif
 #ifndef LIBINT_INCLUDE_ERI3
   assert((braket_ != BraKet::xs_xx && braket_ != BraKet::xx_xs) &&
-         "this braket type not supported by the library; give --enable-eri3 to "
-         "configure");
+         "this braket type not supported by the library; configure with "
+         "-DLIBINT2_ENABLE_ERI3 >= 0");
 #endif
 #ifndef LIBINT_INCLUDE_ERI2
   assert(braket_ != BraKet::xs_xs &&
-         "this braket type not supported by the library; give --enable-eri2 to "
-         "configure");
+         "this braket type not supported by the library; configure with "
+         "-DLIBINT2_ENABLE_ERI2 >= 0");
 #endif
 
   // make sure it's no default initialized
@@ -706,6 +724,7 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
     // target indices.
     const auto permutable_targets =
         deriv_order_ > 0 &&
+
         (braket_ == BraKet::xx_xx || braket_ == BraKet::xs_xx ||
          braket_ == BraKet::xx_xs);
     if (permutable_targets)
@@ -1050,7 +1069,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   //  }
 
   if (oper_ == Operator::emultipole1 || oper_ == Operator::emultipole2 ||
-      oper_ == Operator::emultipole3) {
+      oper_ == Operator::emultipole3 || oper_ == Operator::opemuop) {
     const auto& O = any_cast<
         const operator_traits<Operator::emultipole1>::oper_params_type&>(
         params_);  // same as emultipoleX
@@ -1098,7 +1117,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   primdata._0_Overlap_0_z[0] = ovlp_ss_z;
 
   if (oper_ == Operator::kinetic || (deriv_order_ > 0) ||
-      oper_ == Operator::opVop || oper_ == Operator::op_q_gau_op) {
+      oper_ == Operator::opVop || oper_ == Operator::op_q_gau_op ||
+      oper_ == Operator::opemuop) {
 #if LIBINT2_DEFINED(eri, two_alpha0_bra)
     primdata.two_alpha0_bra[0] = 2.0 * alpha1;
 #endif
@@ -1262,21 +1282,113 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
 #if LIBINT2_SHELLQUARTET_SET == \
     LIBINT2_SHELLQUARTET_SET_STANDARD  // standard angular momentum ordering
-  const auto swap_tbra = (tbra1.contr[0].l < tbra2.contr[0].l);
-  const auto swap_tket = (tket1.contr[0].l < tket2.contr[0].l);
-  const auto swap_braket =
-      ((braket_ == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l >
-                                      tket1.contr[0].l + tket2.contr[0].l)) ||
-      braket_ == BraKet::xx_xs;
+  bool swap_braket;
+  bool swap_tbra, swap_tket;
+  if (oper_ == Operator::opop_coulomb_opop) {
+    // For σpσpCoulombσpσp: (ab|cd) = (cd|ab) = (ba|dc)* = (dc|ba)*
+    // Canonical form: lc >= ld (or la >= lb when lc == ld),
+    // la+lb <= lc+ld (or max(la,lb) <= lc when sums equal)
+    const auto bra_total = tbra1.contr[0].l + tbra2.contr[0].l;
+    const auto ket_total = tket1.contr[0].l + tket2.contr[0].l;
+    const auto bra_max = std::max(tbra1.contr[0].l, tbra2.contr[0].l);
+    const auto ket_max = std::max(tket1.contr[0].l, tket2.contr[0].l);
+    swap_braket = ((braket_ == BraKet::xx_xx) &&
+                   (bra_total > ket_total ||
+                    (bra_total == ket_total && bra_max > ket_max))) ||
+                  braket_ == BraKet::xx_xs;
+    // Coupled swap: after braket swap, sort the pair that ends up in ket
+    // position to ensure lc >= ld; when lc == ld, also sort bra (la >= lb)
+    if (swap_braket) {
+      // After braket swap: new ket = original bra, new bra = original ket.
+      // Coupled swap sorts new ket (ensure lc >= ld).
+      const bool swap_p1p2 = (tbra1.contr[0].l < tbra2.contr[0].l);
+      swap_tbra = swap_tket = swap_p1p2;
+    } else {
+      // No braket swap: ket stays as original ket.
+      // Coupled swap sorts ket (ensure lc >= ld).
+      const bool swap_p1p2 = (tket1.contr[0].l < tket2.contr[0].l);
+      swap_tbra = swap_tket = swap_p1p2;
+    }
+  } else if (oper_ == Operator::op_coulomb_op) {
+    // σpCoulombσp: only bra↔ket (particle 1↔2) swap is a symmetry (with
+    // (a,b)↔(b,a) component remap). Within-side swap is NOT a symmetry
+    // because σ·p attaches to one specific function per side; moving it to
+    // the other function changes the integral in a way IBP cannot recover
+    // across electrons. Canonical form: la+lb <= lc+ld only.
+    const auto bra_total = tbra1.contr[0].l + tbra2.contr[0].l;
+    const auto ket_total = tket1.contr[0].l + tket2.contr[0].l;
+    swap_braket = ((braket_ == BraKet::xx_xx) && (bra_total > ket_total)) ||
+                  braket_ == BraKet::xx_xs;
+    swap_tbra = false;
+    swap_tket = false;
+  } else if (oper_ == Operator::coulomb_op) {
+    // Coulombσp (3-center single-σ·p): σ·p attaches to the 2nd ket function ν,
+    // so within-ket swap is NOT a symmetry (it would move σ·p onto μ). The
+    // kernel is generated for every (lc,ld), so no canonicalizing swap is
+    // needed. bra↔ket swap IS a symmetry of 1/r12 and leaves the 3 Cartesian
+    // components unchanged (the vector index is the ket-side σ·p direction
+    // only — no transpose, no sign flip). Only xx_xs needs a braket swap.
+    swap_braket = (braket_ == BraKet::xx_xs);
+    swap_tbra = false;
+    swap_tket = false;
+  } else {
+    swap_braket = ((braket_ == BraKet::xx_xx) &&
+                   (tbra1.contr[0].l + tbra2.contr[0].l >
+                    tket1.contr[0].l + tket2.contr[0].l) &&
+                   (oper_ != Operator::coulomb_opop)) ||
+                  braket_ == BraKet::xx_xs;
+    swap_tbra = (tbra1.contr[0].l < tbra2.contr[0].l);
+    swap_tket = (tket1.contr[0].l < tket2.contr[0].l);
+  }
+
+  // N.B. cannot swap bra and ket for coulomb_opop since the ket is mutated by
+  // this operator
 #else  // orca angular momentum ordering
-  const auto swap_tbra = (tbra1.contr[0].l > tbra2.contr[0].l);
-  const auto swap_tket = (tket1.contr[0].l > tket2.contr[0].l);
-  const auto swap_braket =
-      ((braket_ == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l <
-                                      tket1.contr[0].l + tket2.contr[0].l)) ||
-      braket_ == BraKet::xx_xs;
-  assert(false && "feature not implemented");
-  abort();
+  bool swap_braket;
+  bool swap_tbra, swap_tket;
+  if (oper_ == Operator::opop_coulomb_opop) {
+    // ORCA canonical for σpσpCoulombσpσp: lc <= ld (or la <= lb when lc == ld),
+    // la+lb >= lc+ld (or min(la,lb) >= lc when sums equal)
+    const auto bra_total = tbra1.contr[0].l + tbra2.contr[0].l;
+    const auto ket_total = tket1.contr[0].l + tket2.contr[0].l;
+    const auto bra_min = std::min(tbra1.contr[0].l, tbra2.contr[0].l);
+    const auto ket_min = std::min(tket1.contr[0].l, tket2.contr[0].l);
+    swap_braket = ((braket_ == BraKet::xx_xx) &&
+                   (bra_total < ket_total ||
+                    (bra_total == ket_total && bra_min < ket_min))) ||
+                  braket_ == BraKet::xx_xs;
+    if (swap_braket) {
+      const bool swap_p1p2 = (tbra1.contr[0].l > tbra2.contr[0].l);
+      swap_tbra = swap_tket = swap_p1p2;
+    } else {
+      const bool swap_p1p2 = (tket1.contr[0].l > tket2.contr[0].l);
+      swap_tbra = swap_tket = swap_p1p2;
+    }
+  } else if (oper_ == Operator::op_coulomb_op) {
+    // σpCoulombσp: only bra↔ket swap is a symmetry (with (a,b)↔(b,a) remap).
+    // ORCA canonical form: la+lb >= lc+ld only.
+    const auto bra_total = tbra1.contr[0].l + tbra2.contr[0].l;
+    const auto ket_total = tket1.contr[0].l + tket2.contr[0].l;
+    swap_braket = ((braket_ == BraKet::xx_xx) && (bra_total < ket_total)) ||
+                  braket_ == BraKet::xx_xs;
+    swap_tbra = false;
+    swap_tket = false;
+  } else if (oper_ == Operator::coulomb_op) {
+    // Coulombσp (3-center single-σ·p): see the STANDARD-ordering branch above.
+    // Within-ket swap is NOT a symmetry (σ·p attaches to ν); bra↔ket leaves
+    // the 3 Cartesian components unchanged. Only xx_xs needs a braket swap.
+    swap_braket = (braket_ == BraKet::xx_xs);
+    swap_tbra = false;
+    swap_tket = false;
+  } else {
+    swap_tbra = (tbra1.contr[0].l > tbra2.contr[0].l);
+    swap_tket = (tket1.contr[0].l > tket2.contr[0].l);
+    swap_braket = ((braket_ == BraKet::xx_xx) &&
+                   (tbra1.contr[0].l + tbra2.contr[0].l <
+                    tket1.contr[0].l + tket2.contr[0].l) &&
+                   (oper_ != Operator::coulomb_opop)) ||
+                  braket_ == BraKet::xx_xs;
+  }
 #endif
   const auto& bra1 =
       swap_braket ? (swap_tket ? tket2 : tket1) : (swap_tbra ? tbra2 : tbra1);
@@ -1471,17 +1583,25 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             const scalar_type rho = gammap * gammaq * oogammapq;
             const scalar_type T = PQ2 * rho;
             auto* gm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
-            const auto mmax = l + deriv_order_;
+            const auto mmax = l + deriv_order_ + intrinsic_deriv_order();
 
             if (!skip_core_ints) {
+// Simple core-eval dispatch: just `core_eval_ptr->eval(gm_ptr, T, mmax)`.
+// Applies to Coulomb-family operators whose core integral is the bare Fm.
+#define LIBINT2_SIMPLE_CORE_EVAL_CASE(OP)                           \
+  case Operator::OP: {                                              \
+    const auto& core_eval_ptr =                                     \
+        any_cast<const detail::core_eval_pack_type<Operator::OP>&>( \
+            core_eval_pack_)                                        \
+            .first();                                               \
+    core_eval_ptr->eval(gm_ptr, T, mmax);                           \
+  } break
               switch (oper_) {
-                case Operator::coulomb: {
-                  const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<
-                          Operator::coulomb>&>(core_eval_pack_)
-                          .first();
-                  core_eval_ptr->eval(gm_ptr, T, mmax);
-                } break;
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb);
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb_opop);
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb_op);
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(opop_coulomb_opop);
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(op_coulomb_op);
                 case Operator::cgtg_x_coulomb: {
                   const auto& core_eval_ptr =
                       any_cast<const detail::core_eval_pack_type<
@@ -1600,6 +1720,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   assert(false && "missing case in a switch");  // unreachable
                   abort();
               }
+#undef LIBINT2_SIMPLE_CORE_EVAL_CASE
             }
 
             for (auto m = 0; m != mmax + 1; ++m) {
@@ -1701,7 +1822,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
               const auto Wz =
                   (gammap_o_gammapgammaq * P[2] + gammaq_o_gammapgammaq * Q[2]);
 
-              if (deriv_order_ > 0 || lmax_bra > 0) {
+              if (deriv_order_ + intrinsic_deriv_order() > 0 || lmax_bra > 0) {
 #if LIBINT2_DEFINED(eri, WP_x)
                 primdata.WP_x[0] = Wx - P[0];
 #endif
@@ -1712,7 +1833,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 primdata.WP_z[0] = Wz - P[2];
 #endif
               }
-              if (deriv_order_ > 0 || lmax_ket > 0) {
+              if (deriv_order_ + intrinsic_deriv_order() > 0 || lmax_ket > 0) {
 #if LIBINT2_DEFINED(eri, WQ_x)
                 primdata.WQ_x[0] = Wx - Q[0];
 #endif
@@ -1796,7 +1917,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
 
               // prefactors for derivative ERI relations
-              if (deriv_order_ > 0) {
+              if (deriv_order_ + intrinsic_deriv_order() > 0) {
 #if LIBINT2_DEFINED(eri, alpha1_rho_over_zeta2)
                 primdata.alpha1_rho_over_zeta2[0] =
                     alpha0 * (oogammap * gammaq_o_gammapgammaq);
@@ -1879,7 +2000,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   }
 
   // compute directly (ss|ss)
-  const auto compute_directly = lmax == 0 && deriv_order_ == 0;
+  const auto compute_directly =
+      lmax == 0 && deriv_order_ == 0 && intrinsic_deriv_order() == 0;
 
   if (compute_directly) {
 #ifdef LIBINT2_ENGINE_TIMERS
@@ -1925,40 +2047,36 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
         break;
 
       case BraKet::xx_xs:
-        assert(false && "this braket is not supported");
-        abort();
-        break;
+        // xx_xs is always canonicalized to xs_xx by swap_braket=true in the
+        // shell-aliasing logic above; the swapped shells (bra1, ket1, ket2)
+        // are already in xs_xx layout by this point. Fall through to the
+        // xs_xx case to compute buildfnidx from those swapped shells.
+        [[fallthrough]];
       case BraKet::xs_xx: {
-        /// lmax might be center dependent
-        int ket_lmax = hard_lmax_;
-        switch (deriv_order_) {
-          // N.B. notice extra PP_CAT to avoid using
-          // LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri as a subtoken which gets
-          // expanded too early ... i.e. PP_CAT is "not associative"
-#define BOOST_PP_NBODYENGINE_MCR8(r, data, i, elem)                            \
-  case i:                                                                      \
-    BOOST_PP_IF(BOOST_PP_IS_1(BOOST_PP_CAT(                                    \
-                    LIBINT2_CENTER_DEPENDENT_MAX_AM_,                          \
-                    BOOST_PP_CAT(3eri, BOOST_PP_IIF(BOOST_PP_GREATER(i, 0), i, \
-                                                    BOOST_PP_EMPTY())))),      \
-                ket_lmax = hard_default_lmax_, BOOST_PP_EMPTY());              \
-    break;
-
-          BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR8, _,
-                                   BOOST_PP_NBODY_DERIV_ORDER_LIST)
-
-          default:
-            assert(false && "missing case in switch");
-            abort();
-        }
+        // The ket (paired/AO) centers may have a lower max AM than the bra
+        // (fitting) center for *center-dependent* 3-center tasks — e.g. 3eri,
+        // whose fitting center goes up to ERI3_MAX_AM while the paired centers
+        // only reach MAX_AM, giving a non-cubic build table. _initialize() sets
+        // hard_default_lmax_ to that paired max (+1) for center-dependent
+        // tasks, or to INT_MAX for tasks that are NOT center-dependent (e.g.
+        // the RKB 3-center 3coulomb_opop / 3coulomb_op, whose build table is
+        // the symmetric [hard_lmax_]^3). Taking the min picks the correct ket
+        // stride in both cases and matches the per-task build-table dimensions.
+        // (Previously this hard-coded LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri,
+        // which set ket_lmax = hard_default_lmax_ = INT_MAX for the non-center-
+        // dependent RKB operators, producing an out-of-bounds buildfnidx and a
+        // segfault on the first l(ket1) > 0 shell triplet.)
+        const int ket_lmax = std::min(hard_lmax_, hard_default_lmax_);
         assert(bra1.contr[0].l <= hard_lmax_ &&
                "the angular momentum limit is exceeded");
         assert(ket1.contr[0].l <= ket_lmax &&
                "the angular momentum limit is exceeded");
         assert(ket2.contr[0].l <= ket_lmax &&
                "the angular momentum limit is exceeded");
+
         buildfnidx = (bra1.contr[0].l * ket_lmax + ket1.contr[0].l) * ket_lmax +
                      ket2.contr[0].l;
+
 #ifdef LIBINT_ERI3_PURE_SH
         if (bra1.contr[0].l > 1)
           assert(bra1.contr[0].pure &&
@@ -2141,19 +2259,66 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                     tgt_ptr + tgt_col_idx, nr1_tgt, nr2_tgt,
                     Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
                         nr2_tgt * ncol_tgt, ncol_tgt));
+                // Coupled swap sign correction for multi-component operators.
+                // TODO: the per-component swap phase and the component remap
+                // below are hardcoded per operator (op_coulomb_op,
+                // opop_coulomb_opop, ...). These belong with the operator
+                // definition; expose them as traits (e.g. swap_phase(s),
+                // swap_remap(s)) so new multi-component operators need no new
+                // branch here.
+                Shell::real_t oper_cart_component_phase = 1.0;
+                if (swap_tket && oper_ == Operator::opop_coulomb_opop) {
+                  const bool bra_is_spin = (s / 4) > 0;
+                  const bool ket_is_spin = (s % 4) > 0;
+                  if (bra_is_spin != ket_is_spin)
+                    oper_cart_component_phase = -1.0;
+                }
+                if (swap_tket && oper_ == Operator::coulomb_opop && s > 0)
+                  oper_cart_component_phase = -1.0;
+                // For coulomb_opop in BraKet::xx_xs (the 3-center alias of
+                // xs_xx): after swap_braket the user's bra (AO pair) becomes
+                // the kernel's ket where σ·p attaches. If swap_tbra is also
+                // applied to canonicalize that AO pair, σ·p_a σ·p_b ↔
+                // σ·p_b σ·p_a — antisymmetric, so x,y,z components (s>0)
+                // pick up a -1 sign. (The scalar component s=0 is invariant.)
+                if (swap_tbra && oper_ == Operator::coulomb_opop && s > 0)
+                  oper_cart_component_phase = -1.0;
+                // op_coulomb_op irrep layout under bra↔ket swap: antisym
+                // components (s ∈ {1,2,3}) flip sign; scalar (0) and sym-TL
+                // (4..8) are invariant. swap_tket is always false for this
+                // operator; the sign correction applies on swap_braket alone.
+                if (oper_ == Operator::op_coulomb_op && s >= 1 && s <= 3)
+                  oper_cart_component_phase = -1.0;
                 if (swap_tbra)
-                  tgt_blk_mat = src_blk_mat.transpose();
+                  tgt_blk_mat =
+                      oper_cart_component_phase * src_blk_mat.transpose();
                 else
-                  tgt_blk_mat = src_blk_mat;
+                  tgt_blk_mat = oper_cart_component_phase * src_blk_mat;
               } else {
                 // source row {r1,r2} is mapped to target row {r1,r2} if
                 // !swap_tbra, else to {r2,r1}
                 const auto tgt_row_idx =
                     !swap_tbra ? r1 * nr2 + r2 : r2 * nr1 + r1;
                 Map tgt_blk_mat(tgt_ptr + tgt_row_idx * ncol, nc1_tgt, nc2_tgt);
-                if (swap_tket)
-                  tgt_blk_mat = src_blk_mat.transpose();
-                else
+                if (swap_tket) {
+                  Shell::real_t oper_cart_component_phase = 1.0;
+                  if (oper_ == Operator::opop_coulomb_opop) {
+                    // Option A ordering: index = 4*bra + ket
+                    // Coupled swap (a<->b AND c<->d) flips sign when exactly
+                    // one of bra/ket is a cross product (spin != S):
+                    //   bra_spin = s/4, ket_spin = s%4 (0=S, 1-3=X/Y/Z)
+                    const bool bra_is_spin = (s / 4) > 0;
+                    const bool ket_is_spin = (s % 4) > 0;
+                    if (bra_is_spin != ket_is_spin)
+                      oper_cart_component_phase = -1.0;
+                  }
+                  if (oper_ == Operator::coulomb_opop && s > 0)
+                    oper_cart_component_phase =
+                        -1.0;  // x,y,z quaternion components flip sign on
+                               // swapping ket for coulomb_opop
+                  tgt_blk_mat =
+                      oper_cart_component_phase * src_blk_mat.transpose();
+                } else
                   tgt_blk_mat = src_blk_mat;
               }
             }  // end of loop
@@ -2178,7 +2343,20 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                                                     // to primdata_[0].targets
           targets_[s_target] = source;
         }
-      }     // loop over shellsets
+      }  // loop over shellsets
+
+      // For opop_coulomb_opop with swap_braket: swapping particles remaps
+      // component (α,β) → (β,α). With Option A ordering (index=4*bra+ket),
+      // this is a matrix transpose: s_new = 4*(s%4) + (s/4).
+      if (permute && oper_ == Operator::opop_coulomb_opop && swap_braket) {
+        std::array<const value_type*, 16> temp;
+        for (auto s = 0; s != ntargets; ++s) temp[s] = targets_[s];
+        for (auto s = 0; s != ntargets; ++s)
+          targets_[4 * (s % 4) + (s / 4)] = temp[s];
+      }
+      // op_coulomb_op irrep layout: bra↔ket swap is handled in-place by
+      // oper_cart_component_phase above (sign flip on antisym components,
+      // identity on scalar / sym-TL); no pointer remap is needed.
     }       // if need_scratch => needed to transpose and/or tform
     else {  // did not use scratch? may still need to update targets_
       if (set_targets_) {

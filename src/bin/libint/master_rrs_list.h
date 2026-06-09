@@ -21,12 +21,18 @@
 #ifndef _libint2_src_bin_libint_masterrrslist_h_
 #define _libint2_src_bin_libint_masterrrslist_h_
 
+#include <comp_11_Coulombσp_11.h>
+#include <comp_11_Coulombσpσp_11.h>
 #include <comp_11_DivG12prime_xTx_11.h>
 #include <comp_11_g12tig12_11.h>
+#include <comp_11_σpCoulombσp_11.h>
 #include <comp_11_r12kr12lg12_11.h>
 #include <comp_11_tig12_11.h>
+#include <comp_11_σpσpCoulombσpσp_11.h>
+#include <comp_1_σpeμσp_1.h>
 #include <comp_1_σpVσp_1.h>
 #include <comp_deriv_gauss.h>
+#include <comp_deriv_gauss_v2.h>
 #include <comp_xyz.h>
 #include <generic_rr.h>
 #include <hrr.h>
@@ -178,6 +184,9 @@ typedef VRR_1_ElecPot_1<CGF, InKet> VRR_b_1_ElecPot_1_int;
 typedef CR_1_σpVσp_1<CGShell> CR_1_σpVσp_1_sh;
 typedef CR_1_σpVσp_1<CGF> CR_1_σpVσp_1_int;
 
+typedef CR_1_σpeμσp_1<CGShell> CR_1_σpeμσp_1_sh;
+typedef CR_1_σpeμσp_1<CGF> CR_1_σpeμσp_1_int;
+
 // TODO investigate whether need to stay away from HRR for now to be sure that
 // multipoles are computed as precisely as possible
 typedef HRR<SMultipole_1_1_sh, CGShell, 0, InBra, 0, InKet, 0>
@@ -266,6 +275,62 @@ typedef CR_DerivGauss<TwoPRep_11_11_int, 1, InKet, trinvskip2_part,
                       trinvskip2_where>
     Deriv_d_11_TwoPRep_11_int;
 
+// DerivGaussV2 for TwoPRep (shell sets)
+typedef DerivGaussV2<TwoPRep_11_11_sq, 0, InBra, trinvskip2_part,
+                     trinvskip2_where>
+    DerivV2_a_11_TwoPRep_11_sh;
+typedef DerivGaussV2<TwoPRep_11_11_sq, 0, InKet, trinvskip2_part,
+                     trinvskip2_where>
+    DerivV2_b_11_TwoPRep_11_sh;
+typedef DerivGaussV2<TwoPRep_11_11_sq, 1, InBra, trinvskip2_part,
+                     trinvskip2_where>
+    DerivV2_c_11_TwoPRep_11_sh;
+typedef DerivGaussV2<TwoPRep_11_11_sq, 1, InKet, trinvskip2_part,
+                     trinvskip2_where>
+    DerivV2_d_11_TwoPRep_11_sh;
+// DerivGaussV2 for TwoPRep (individual integrals)
+typedef DerivGaussV2<TwoPRep_11_11_int, 0, InBra, trinvskip2_part,
+                     trinvskip2_where>
+    DerivV2_a_11_TwoPRep_11_int;
+typedef DerivGaussV2<TwoPRep_11_11_int, 0, InKet, trinvskip2_part,
+                     trinvskip2_where>
+    DerivV2_b_11_TwoPRep_11_int;
+typedef DerivGaussV2<TwoPRep_11_11_int, 1, InBra, trinvskip2_part,
+                     trinvskip2_where>
+    DerivV2_c_11_TwoPRep_11_int;
+typedef DerivGaussV2<TwoPRep_11_11_int, 1, InKet, trinvskip2_part,
+                     trinvskip2_where>
+    DerivV2_d_11_TwoPRep_11_int;
+
+// DerivGaussV2 for DummySymmIntegral (used by register_with_rrstack)
+typedef DerivGaussV2<DummySymmIntegral_11_11_sq, 0, InBra>
+    DerivV2_a_11_Dummy_11_sh;
+typedef DerivGaussV2<DummySymmIntegral_11_11_sq, 0, InKet>
+    DerivV2_b_11_Dummy_11_sh;
+typedef DerivGaussV2<DummySymmIntegral_11_11_sq, 1, InBra>
+    DerivV2_c_11_Dummy_11_sh;
+typedef DerivGaussV2<DummySymmIntegral_11_11_sq, 1, InKet>
+    DerivV2_d_11_Dummy_11_sh;
+typedef DerivGaussV2<DummySymmIntegral_11_11_int, 0, InBra>
+    DerivV2_a_11_Dummy_11_int;
+typedef DerivGaussV2<DummySymmIntegral_11_11_int, 0, InKet>
+    DerivV2_b_11_Dummy_11_int;
+typedef DerivGaussV2<DummySymmIntegral_11_11_int, 1, InBra>
+    DerivV2_c_11_Dummy_11_int;
+typedef DerivGaussV2<DummySymmIntegral_11_11_int, 1, InKet>
+    DerivV2_d_11_Dummy_11_int;
+
+typedef CR_11_Coulombσpσp_11<CGShell> CR_11_Coulombσpσp_11_sh;
+typedef CR_11_Coulombσpσp_11<CGF> CR_11_Coulombσpσp_11_int;
+
+typedef CR_11_σpσpCoulombσpσp_11<CGShell> CR_11_σpσpCoulombσpσp_11_sh;
+typedef CR_11_σpσpCoulombσpσp_11<CGF> CR_11_σpσpCoulombσpσp_11_int;
+
+typedef CR_11_σpCoulombσp_11<CGShell> CR_11_σpCoulombσp_11_sh;
+typedef CR_11_σpCoulombσp_11<CGF> CR_11_σpCoulombσp_11_int;
+
+typedef CR_11_Coulombσp_11<CGShell> CR_11_Coulombσp_11_sh;
+typedef CR_11_Coulombσp_11<CGF> CR_11_Coulombσp_11_int;
 };  // namespace libint2
 
 #endif  // header guard
