@@ -2053,28 +2053,20 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
         // xs_xx case to compute buildfnidx from those swapped shells.
         [[fallthrough]];
       case BraKet::xs_xx: {
-        /// lmax might be center dependent
-        int ket_lmax = hard_lmax_;
-        switch (deriv_order_) {
-          // N.B. notice extra PP_CAT to avoid using
-          // LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri as a subtoken which gets
-          // expanded too early ... i.e. PP_CAT is "not associative"
-#define BOOST_PP_NBODYENGINE_MCR8(r, data, i, elem)                            \
-  case i:                                                                      \
-    BOOST_PP_IF(BOOST_PP_IS_1(BOOST_PP_CAT(                                    \
-                    LIBINT2_CENTER_DEPENDENT_MAX_AM_,                          \
-                    BOOST_PP_CAT(3eri, BOOST_PP_IIF(BOOST_PP_GREATER(i, 0), i, \
-                                                    BOOST_PP_EMPTY())))),      \
-                ket_lmax = hard_default_lmax_, BOOST_PP_EMPTY());              \
-    break;
-
-          BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR8, _,
-                                   BOOST_PP_NBODY_DERIV_ORDER_LIST)
-
-          default:
-            assert(false && "missing case in switch");
-            abort();
-        }
+        // The ket (paired/AO) centers may have a lower max AM than the bra
+        // (fitting) center for *center-dependent* 3-center tasks — e.g. 3eri,
+        // whose fitting center goes up to ERI3_MAX_AM while the paired centers
+        // only reach MAX_AM, giving a non-cubic build table. _initialize() sets
+        // hard_default_lmax_ to that paired max (+1) for center-dependent
+        // tasks, or to INT_MAX for tasks that are NOT center-dependent (e.g.
+        // the RKB 3-center 3coulomb_opop / 3coulomb_op, whose build table is
+        // the symmetric [hard_lmax_]^3). Taking the min picks the correct ket
+        // stride in both cases and matches the per-task build-table dimensions.
+        // (Previously this hard-coded LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri,
+        // which set ket_lmax = hard_default_lmax_ = INT_MAX for the non-center-
+        // dependent RKB operators, producing an out-of-bounds buildfnidx and a
+        // segfault on the first l(ket1) > 0 shell triplet.)
+        const int ket_lmax = std::min(hard_lmax_, hard_default_lmax_);
         assert(bra1.contr[0].l <= hard_lmax_ &&
                "the angular momentum limit is exceeded");
         assert(ket1.contr[0].l <= ket_lmax &&
