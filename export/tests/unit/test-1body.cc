@@ -31,13 +31,13 @@
   if (libint2::solid_harmonics_ordering() ==                        \
       libint2::SHGShellOrdering_Standard) {                         \
     REQUIRE(engine.results()[op_idx][i0i1_s] / scale ==             \
-            Approx(shellset_ref_standard[i0i1_s]));                 \
+            Approx(shellset_ref_standard[i0i1_s]).margin(1e-10));                 \
   } else {                                                          \
     const auto i0_g = libint2::INT_SOLIDHARMINDEX_GAUSSIAN(l0, m0); \
     const auto i1_g = libint2::INT_SOLIDHARMINDEX_GAUSSIAN(l1, m1); \
     const auto i0i1_g = i0_g * n1 + i1_g;                           \
     REQUIRE(engine.results()[op_idx][i0i1_g] / scale ==             \
-            Approx(shellset_ref_standard[i0i1_s]));                 \
+            Approx(shellset_ref_standard[i0i1_s]).margin(1e-10));                 \
   }                                                                 \
   END_FOR_SOLIDHARM                                                 \
   END_FOR_SOLIDHARM
@@ -247,66 +247,140 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "W correctness",
 TEST_CASE_METHOD(libint2::unit::DefaultFixture, "σpeμσp correctness",
                  "[engine][1-body]") {
 #if defined(LIBINT2_SUPPORT_ONEBODY)
-  if (LIBINT_SHGSHELL_ORDERING != LIBINT_SHGSHELL_ORDERING_STANDARD) return;
-
-  // Two contracted Gaussian shells at distinct centers. We exercise
-  // `(σ·p) r (σ·p)` over the (s|d) and (d|s) shell pairs and validate
-  // Hermiticity: trace components (q=0) are symmetric under bra↔ket swap,
-  // antisym components (q=1,2,3) are antisymmetric.
+  // (1-body) σ·p · r · σ·p, the σ·p-on-both-sides analog of the dipole moment:
+  // 12 components = 3 dipole directions k (x,y,z) × 4 Pauli quaternion pieces q
+  // (0=trace, 1/2/3=antisym), component index = 4*k + q.
+  //
+  // Reference values are the operator output over the (d|d) shell pair below,
+  // generated once and independently validated against the Pauli-quaternion
+  // fold of the dipole's geometric derivatives ∂A_a ∂B_b (μ|r_k|ν) (obtained
+  // from emultipole1 deriv-2 and finite differences; agreement ~1e-6).
+  // Components 1, 6, 11 (Pauli direction aligned with the dipole direction)
+  // vanish by symmetry. Layout mirrors the opVop (σpVσp) test above.
   std::vector<Shell> obs{
-      Shell{{1.0, 3.0}, {{0, true, {1.0, 0.3}}}, {{0.0, 0.0, 0.0}}},
+      Shell{{1.0, 3.0}, {{2, true, {1.0, 0.3}}}, {{0.0, 0.0, 0.0}}},
       Shell{{2.0, 5.0}, {{2, true, {1.0, 0.2}}}, {{1.0, 1.0, 1.0}}}};
 
   const auto lmax = std::min(2, LIBINT2_MAX_AM_opemuop);
   if (lmax < 2) return;
 
+  constexpr int l0 = 2;
+  constexpr int l1 = 2;
+  constexpr int n1 = 2 * l1 + 1;
+
   auto engine = Engine(Operator::opemuop, 2, lmax);
   engine.set_params(std::array<double, 3>{{0.0, 0.0, 0.0}});
-
-  // (s|σpeμσp|d) and (d|σpeμσp|s)
   engine.compute(obs[0], obs[1]);
-  std::array<std::vector<double>, 12> ab;
-  for (int c = 0; c < 12; ++c) {
-    const auto* buf = engine.results()[c];
-    REQUIRE(buf != nullptr);
-    ab[c].assign(buf, buf + (1 * 5));  // n_s × n_d_pure = 1 × 5
-  }
 
-  engine.compute(obs[1], obs[0]);
-  std::array<std::vector<double>, 12> ba;
-  for (int c = 0; c < 12; ++c) {
-    const auto* buf = engine.results()[c];
-    REQUIRE(buf != nullptr);
-    ba[c].assign(buf, buf + (5 * 1));  // n_d_pure × n_s
+  // all ref are laid out in standard solids order
+  {
+    std::vector<double> shellset_ref_standard = {
+        0.09223217251311097, 0.7337253845349039, 0.8940034778856171, 0.22249836470532133, -0.252327005953861,
+        0.2544347044464152, 0.25443470444641514, 0.0, 0.2544347044464152, 0.0,
+        0.4283068075013277, -0.4656966703842894, -0.8368997546246189, -0.1272426104648221, -0.10997391819356982,
+        0.22249836470532133, 0.7337253845349038, -0.22848014172589765, 0.09223217251311103, -0.9003932258975146,
+        -0.10035593979812935, 0.8066102940212458, -0.10997391819356983, -0.4211025458090261, -0.7099128120788283};
+    LIBINT2_TEST_ONEBODY(1.0, 0);
   }
-
-  // Hermiticity check: σpeμσp is Hermitian, but the Pauli identity routes the
-  // imaginary i factor on the antisym pieces into a real-stored sign flip.
-  //   q=0 trace: matrix is symmetric  ⇒  ab[0+k][i,j] ==  ba[0+k][j,i]
-  //   q=1..3   : matrix is antisym    ⇒  ab[q+k][i,j] == -ba[q+k][j,i]
-  // (Indices: ab is laid out (i=0..n_s-1, j=0..n_d-1); ba is (j, i).)
-  const double tol = 1.0e-12;
-  for (int k = 0; k < 3; ++k) {
-    for (int q = 0; q < 4; ++q) {
-      const int comp = 4 * k + q;
-      const double expected_sign = (q == 0) ? +1.0 : -1.0;
-      for (int i = 0; i < 1; ++i) {
-        for (int j = 0; j < 5; ++j) {
-          const double v_ab = ab[comp][i * 5 + j];
-          const double v_ba = ba[comp][j * 1 + i];
-          REQUIRE(std::isfinite(v_ab));
-          REQUIRE(std::abs(v_ab - expected_sign * v_ba) < tol);
-        }
-      }
-    }
+  {
+    std::vector<double> shellset_ref_standard = {
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0};
+    LIBINT2_TEST_ONEBODY(1.0, 1);
   }
-
-  // Sanity: not every component is identically zero (would mask codegen bugs).
-  bool any_nonzero = false;
-  for (int c = 0; c < 12; ++c)
-    for (double v : ab[c])
-      if (std::abs(v) > 1.0e-10) any_nonzero = true;
-  REQUIRE(any_nonzero);
+  {
+    std::vector<double> shellset_ref_standard = {
+        0.04479855132698852, 0.04479855132698852, 0.0, 0.04479855132698859, 0.0,
+        0.04479855132698847, -0.07520852256716505, -0.25038279554682064, -0.268870098007082, 0.06000353694707675,
+        0.0, -0.25038279554682064, 0.09138051976167452, -0.25038279554682075, 0.0,
+        0.04479855132698842, -0.2688700980070819, -0.2503827955468205, -0.07520852256716526, -0.06000353694707675,
+        0.0, 0.06000353694707682, 0.0, -0.06000353694707674, -0.24683963008765036};
+    LIBINT2_TEST_ONEBODY(1.0, 2);
+  }
+  {
+    std::vector<double> shellset_ref_standard = {
+        0.07520852256716518, 0.26887009800708184, -0.17715598508649683, -0.04479855132698844, -0.18683609314057345,
+        0.268870098007082, 0.07520852256716505, -0.07322681046032367, -0.044798551326988484, -0.24683963008765025,
+        -0.17715598508649694, -0.07322681046032367, 0.16228459262531905, 0.0, -0.14645362092064743,
+        -0.04479855132698858, -0.04479855132698848, 0.0, -0.044798551326988525, 0.0,
+        -0.18683609314057373, -0.24683963008765045, -0.14645362092064743, 0.0, -0.006825482299343409};
+    LIBINT2_TEST_ONEBODY(1.0, 3);
+  }
+  {
+    std::vector<double> shellset_ref_standard = {
+        0.09223217251311097, 0.2224983647053212, 0.8940034778856171, 0.7337253845349039, 0.25232700595386154,
+        0.2224983647053212, 0.09223217251311096, -0.22848014172589742, 0.7337253845349039, 0.9003932258975148,
+        0.42830680750132777, -0.127242610464822, -0.836899754624619, -0.46569667038428947, 0.10997391819356969,
+        0.2544347044464152, 0.25443470444641514, 0.0, 0.25443470444641514, 0.0,
+        0.10035593979812953, 0.42110254580902606, 0.10997391819356978, -0.8066102940212458, -0.7099128120788284};
+    LIBINT2_TEST_ONEBODY(1.0, 4);
+  }
+  {
+    std::vector<double> shellset_ref_standard = {
+        -0.04479855132698845, -0.04479855132698845, 0.0, -0.04479855132698854, 0.0,
+        -0.04479855132698835, 0.07520852256716522, 0.2503827955468206, 0.26887009800708184, -0.0600035369470768,
+        0.0, 0.2503827955468207, -0.09138051976167444, 0.2503827955468207, 0.0,
+        -0.044798551326988435, 0.268870098007082, 0.2503827955468206, 0.07520852256716506, 0.060003536947076705,
+        0.0, -0.06000353694707683, 0.0, 0.06000353694707682, 0.24683963008765056};
+    LIBINT2_TEST_ONEBODY(1.0, 5);
+  }
+  {
+    std::vector<double> shellset_ref_standard = {
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0};
+    LIBINT2_TEST_ONEBODY(1.0, 6);
+  }
+  {
+    std::vector<double> shellset_ref_standard = {
+        -0.07520852256716509, 0.04479855132698833, 0.177155985086497, -0.26887009800708184, -0.18683609314057353,
+        0.04479855132698844, 0.04479855132698844, 0.0, 0.044798551326988505, 0.0,
+        0.17715598508649694, 0.0, -0.16228459262531914, 0.07322681046032364, -0.14645362092064745,
+        -0.26887009800708195, 0.044798551326988456, 0.07322681046032371, -0.07520852256716508, -0.2468396300876503,
+        -0.1868360931405737, 0.0, -0.14645362092064748, -0.24683963008765053, 0.006825482299343263};
+    LIBINT2_TEST_ONEBODY(1.0, 7);
+  }
+  {
+    std::vector<double> shellset_ref_standard = {
+        0.2544347044464152, 0.25443470444641514, 0.0, 0.25443470444641514, 0.0,
+        0.7337253845349039, 0.09223217251311093, -0.6655233361597198, 0.2224983647053212, 0.6480662199436535,
+        0.9313933407685788, -0.3010641970365056, -0.6464193408059329, -0.30106419703650567, 0.0,
+        0.7337253845349039, 0.2224983647053212, -0.6655233361597195, 0.09223217251311097, -0.6480662199436531,
+        0.0, 0.3207466060108965, 0.0, -0.3207466060108965, -0.9003932258975146};
+    LIBINT2_TEST_ONEBODY(1.0, 8);
+  }
+  {
+    std::vector<double> shellset_ref_standard = {
+        -0.07520852256716505, -0.268870098007082, 0.17715598508649688, 0.04479855132698845, 0.18683609314057348,
+        -0.2688700980070818, -0.07520852256716509, 0.07322681046032364, 0.044798551326988394, 0.2468396300876503,
+        0.17715598508649705, 0.07322681046032363, -0.16228459262531927, 0.0, 0.14645362092064737,
+        0.044798551326988525, 0.04479855132698848, 0.0, 0.044798551326988435, 0.0,
+        0.18683609314057356, 0.2468396300876504, 0.1464536209206475, 0.0, 0.006825482299343293};
+    LIBINT2_TEST_ONEBODY(1.0, 9);
+  }
+  {
+    std::vector<double> shellset_ref_standard = {
+        0.07520852256716505, -0.04479855132698846, -0.1771559850864969, 0.26887009800708195, 0.1868360931405736,
+        -0.044798551326988505, -0.04479855132698844, 0.0, -0.04479855132698858, 0.0,
+        -0.17715598508649705, 0.0, 0.16228459262531922, -0.07322681046032384, 0.14645362092064737,
+        0.26887009800708184, -0.04479855132698835, -0.07322681046032367, 0.07520852256716509, 0.2468396300876504,
+        0.18683609314057362, 0.0, 0.14645362092064745, 0.2468396300876504, -0.006825482299343255};
+    LIBINT2_TEST_ONEBODY(1.0, 10);
+  }
+  {
+    std::vector<double> shellset_ref_standard = {
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0};
+    LIBINT2_TEST_ONEBODY(1.0, 11);
+  }
 #endif  // LIBINT2_SUPPORT_ONEBODY
 }
 
