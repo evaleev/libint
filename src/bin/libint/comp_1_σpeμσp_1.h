@@ -50,7 +50,8 @@ class CR_1_σpeμσp_1
       ParentType;
   friend class GenericRecurrenceRelation<ThisType, BasisFunctionType,
                                          TargetType>;
-  static const unsigned int max_nchildren = 100;
+  // trace component folds 3 derivative children; the antisym components fold 2
+  static const unsigned int max_nchildren = 3;
 
   using ParentType::Instance;
 
