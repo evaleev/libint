@@ -125,6 +125,10 @@ set(LIBINT2_INSTALL_DATADIR "${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}"
 set(LIBINT2_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/libint2"
         CACHE PATH "LIBINT2 CMAKE install directory")
 
+if(NOT CMAKE_INSTALL_Fortran_MODULES)
+    set(CMAKE_INSTALL_Fortran_MODULES "${LIBINT2_INSTALL_INCLUDEDIR}")
+endif()
+
 
 # ====  Dependencies  ===========================================================
 
@@ -668,21 +672,13 @@ if (LIBINT2_ENABLE_FORTRAN)
       )
 
     # build module
-    add_library(
-      libint_f
-      OBJECT
-        fortran/libint_f.F90
-      )
+    add_library(libint_f OBJECT fortran/libint_f.F90)
     set_source_files_properties(
       fortran/libint_f.F90
       PROPERTIES
         OBJECT_DEPENDS "${PROJECT_BINARY_DIR}/fortran/libint2_types_f.h;${PROJECT_BINARY_DIR}/fortran/fortran_incldefs.h"
       )
-    target_compile_definitions(
-      libint_f
-      PRIVATE
-        __COMPILING_LIBINT2
-      )
+    target_compile_definitions(libint_f PRIVATE __COMPILING_LIBINT2)
     set_target_properties(
       libint_f
       PROPERTIES
@@ -698,6 +694,21 @@ if (LIBINT2_ENABLE_FORTRAN)
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/fortran>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/${BUILDTREE_FMODDIR}/>
+      )
+
+    add_library(int_f STATIC $<TARGET_OBJECTS:libint_f>)
+    set_target_properties(int_f PROPERTIES OUTPUT_NAME "int2_f")
+    if (L2_BUILD_SHARED_LIBS)
+        target_link_libraries(int_f INTERFACE int-shared)
+    else()
+        target_link_libraries(int_f INTERFACE int-static)
+    endif()
+    target_include_directories(
+      int_f
+      INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/fortran>
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/${BUILDTREE_FMODDIR}>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_Fortran_MODULES}>
       )
 
     # Fortran tests merged into rest of tests
@@ -732,6 +743,9 @@ if (L2_BUILD_SHARED_LIBS)
 endif()
 if (L2_BUILD_STATIC_LIBS)
     list(APPEND _libint2_install_targets int-static)
+endif()
+if (LIBINT2_ENABLE_FORTRAN)
+    list(APPEND _libint2_install_targets int_f)
 endif()
 
 install(
@@ -839,7 +853,7 @@ endif()
 if (LIBINT2_ENABLE_FORTRAN)
     install(
       DIRECTORY ${PROJECT_BINARY_DIR}/${BUILDTREE_FMODDIR}/
-      DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}"
+      DESTINATION "${CMAKE_INSTALL_Fortran_MODULES}"
       )
 endif()
 

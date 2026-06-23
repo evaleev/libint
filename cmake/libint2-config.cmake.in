@@ -40,6 +40,7 @@
 #   oo - search for           + orca      = orca
 #   bs - search for  bagel    + standard  = bagel
 #   bo - search for           + orca
+#   Fortran - require the Fortran interface target
 
 @PACKAGE_INIT@
 
@@ -54,6 +55,8 @@ list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 
 # check library language component
 include(CMakeFindDependencyMacro)
+
+set(${L2}_Fortran_FOUND @LIBINT2_ENABLE_FORTRAN@)
 
     if(NOT TARGET Eigen3::Eigen)
       set(Eigen3_CONFIG @Eigen3_CONFIG@)
