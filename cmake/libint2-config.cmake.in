@@ -55,6 +55,8 @@ list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 # check library language component
 include(CMakeFindDependencyMacro)
 
+set(LIBINT2_REQUIRE_CXX_API @LIBINT2_REQUIRE_CXX_API@)
+if(LIBINT2_REQUIRE_CXX_API)
     if(NOT TARGET Eigen3::Eigen)
       set(Eigen3_CONFIG @Eigen3_CONFIG@)
       if (NOT Eigen3_CONFIG OR NOT EXISTS ${Eigen3_CONFIG})
@@ -65,7 +67,6 @@ include(CMakeFindDependencyMacro)
         find_dependency(Eigen3 REQUIRED HINTS "${Eigen3_DIR}")
       endif()
     endif()
-
     if (@LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@)  # LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS
         # Boost headers _not_ unpacked to within `include/libint2/`
         if (NOT TARGET Boost::headers)
@@ -83,6 +84,7 @@ include(CMakeFindDependencyMacro)
             message(STATUS "Boost detected. satisfied by headers bundled with ${L2} distribution")
         endif()
     endif()
+endif()
 
 # check orderings, AM, & derivatives components
 # * LIBINT2_SHGAUSS_ORDERING = @LIBINT2_SHGAUSS_ORDERING@
