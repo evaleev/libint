@@ -250,7 +250,7 @@ if (LIBINT2_ENABLE_FORTRAN)
     target_link_libraries(
       fortran_example-libint2
       PRIVATE
-        int_f
+        Libint2::fortran
       )
     add_test(  # Test #14
       NAME libint2/fortran_example/build
@@ -284,7 +284,7 @@ if (LIBINT2_ENABLE_FORTRAN)
           PRIVATE
             $<IF:$<TARGET_EXISTS:Libint2::int2-cxx>,Libint2::int2-cxx,Libint2::cxx>
             # N.B. cxx compiled library if LIBINT2_REQUIRE_CXX_API_COMPILED=ON else header-only library
-            int_f
+            Libint2::fortran
           )
         add_test(  # Test #16
           NAME libint2/fortran_test/build

@@ -171,6 +171,9 @@ else()
         # Note: not handling CMAKE_Fortran_COMPILER_ARG1
         list(APPEND library_CMAKE_ARGS "-DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}")
     endif()
+    if (LIBINT2_ENABLE_FORTRAN AND LIBINT2_INSTALL_FMODDIR)
+        list(APPEND library_CMAKE_ARGS "-DLIBINT2_INSTALL_FMODDIR=${LIBINT2_INSTALL_FMODDIR}")
+    endif()
 
     ExternalProject_Add(
       library
@@ -222,7 +225,15 @@ else()
     endif()
 
     # install library from ExternalProject staging area into CMAKE_INSTALL_PREFIX
-    foreach(_dir ${CMAKE_INSTALL_INCLUDEDIR} ${CMAKE_INSTALL_LIBDIR} ${CMAKE_INSTALL_DATADIR})
+    # N.B. LIBINT2_INSTALL_FMODDIR defaults to CMAKE_INSTALL_INCLUDEDIR but a packager
+    #   may point it outside the three dirs below (e.g. lib64/gfortran/modules while
+    #   CMAKE_INSTALL_LIBDIR=lib), in which case the staged modules need their own pass
+    set(_stage_dirs ${CMAKE_INSTALL_INCLUDEDIR} ${CMAKE_INSTALL_LIBDIR} ${CMAKE_INSTALL_DATADIR})
+    if (LIBINT2_ENABLE_FORTRAN AND LIBINT2_INSTALL_FMODDIR)
+        list(APPEND _stage_dirs ${LIBINT2_INSTALL_FMODDIR})
+    endif()
+    list(REMOVE_DUPLICATES _stage_dirs)
+    foreach(_dir ${_stage_dirs})
       install(
         DIRECTORY "${LIBRARY_INSTALL_STAGE_DIR}/${_dir}/"
         DESTINATION "${_dir}"
