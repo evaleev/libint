@@ -99,35 +99,11 @@ endforeach()
 # rather than from configure-time options
 
 # Import library targets
-if(NOT TARGET ${L2}::int-shared AND NOT TARGET ${L2}::int-static)
+if(NOT TARGET ${L2}::int2)
   include("${CMAKE_CURRENT_LIST_DIR}/${pnv}-targets.cmake")
 endif()
 
-# Create convenience aliases matching the build-tree names
-if (TARGET ${L2}::int-shared)
-    if (NOT TARGET ${L2}::int2)
-        add_library(${L2}::int2 ALIAS ${L2}::int-shared)
-    endif()
-elseif (TARGET ${L2}::int-static)
-    if (NOT TARGET ${L2}::int2)
-        add_library(${L2}::int2 ALIAS ${L2}::int-static)
-    endif()
-endif()
-
-if (TARGET ${L2}::int-cxx-headeronly-shared)
-    if (NOT TARGET ${L2}::cxx)
-        add_library(${L2}::cxx ALIAS ${L2}::int-cxx-headeronly-shared)
-    endif()
-elseif (TARGET ${L2}::int-cxx-headeronly-static)
-    if (NOT TARGET ${L2}::cxx)
-        add_library(${L2}::cxx ALIAS ${L2}::int-cxx-headeronly-static)
-    endif()
-endif()
-
-if (TARGET ${L2}::int_f)
-    if (NOT TARGET ${L2}::fortran)
-        add_library(${L2}::fortran ALIAS ${L2}::int_f)
-    endif()
+if (TARGET ${L2}::fortran)
     set(${L2}_fortran_FOUND 1)
 endif()
 

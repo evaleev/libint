@@ -585,39 +585,45 @@ endif (L2_BUILD_STATIC_LIBS)
 
 # ====  aliases  ================================================================
 
-# permanent aliases
-# * used for tests
-
+# Select one canonical implementation for the public CMake API. When both
+# shared and static libraries are built, keep the static variant as an
+# additional artifact rather than exposing linkage-specific imported targets.
 if (L2_BUILD_SHARED_LIBS)
-    add_library(${L2}::int2 ALIAS int-shared)
+    set(_int_target int-shared)
     if (LIBINT2_REQUIRE_CXX_API)
-        add_library(${L2}::cxx ALIAS int-cxx-headeronly-shared)
+        set(_cxx_target int-cxx-headeronly-shared)
         if (LIBINT2_REQUIRE_CXX_API_COMPILED)
-            add_library(${L2}::int2-cxx ALIAS int-cxx-shared)
+            set(_cxx_compiled_target int-cxx-shared)
         endif()
     endif()
 elseif (L2_BUILD_STATIC_LIBS)
-    add_library(${L2}::int2 ALIAS int-static)
+    set(_int_target int-static)
     if (LIBINT2_REQUIRE_CXX_API)
-        add_library(${L2}::cxx ALIAS int-cxx-headeronly-static)
+        set(_cxx_target int-cxx-headeronly-static)
         if (LIBINT2_REQUIRE_CXX_API_COMPILED)
-            add_library(${L2}::int2-cxx ALIAS int-cxx-static)
+            set(_cxx_compiled_target int-cxx-static)
         endif()
+    endif()
+else()
+    message(FATAL_ERROR "Neither shared nor static Libint library is enabled")
+endif()
+
+set_target_properties(${_int_target} PROPERTIES EXPORT_NAME int2)
+add_library(${L2}::int2 ALIAS ${_int_target})
+
+if (LIBINT2_REQUIRE_CXX_API)
+    set_target_properties(${_cxx_target} PROPERTIES EXPORT_NAME cxx)
+    add_library(${L2}::cxx ALIAS ${_cxx_target})
+    if (LIBINT2_REQUIRE_CXX_API_COMPILED)
+        set_target_properties(${_cxx_compiled_target} PROPERTIES EXPORT_NAME int2-cxx)
+        add_library(${L2}::int2-cxx ALIAS ${_cxx_compiled_target})
     endif()
 endif()
 
 # legacy (pre-2.9.0) aliases
-
-if (L2_BUILD_SHARED_LIBS)
-    add_library(libint2 ALIAS int-shared)
-    if (LIBINT2_REQUIRE_CXX_API)
-        add_library(libint2_cxx ALIAS int-cxx-headeronly-shared)
-    endif()
-elseif (L2_BUILD_STATIC_LIBS)
-    add_library(libint2 ALIAS int-static)
-    if (LIBINT2_REQUIRE_CXX_API)
-        add_library(libint2_cxx ALIAS int-cxx-headeronly-static)
-    endif()
+add_library(libint2 ALIAS ${_int_target})
+if (LIBINT2_REQUIRE_CXX_API)
+    add_library(libint2_cxx ALIAS ${_cxx_target})
 endif()
 
 
@@ -703,13 +709,14 @@ if (LIBINT2_ENABLE_FORTRAN)
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/${BUILDTREE_FMODDIR}/>
       )
 
-    add_library(int_f STATIC $<TARGET_OBJECTS:libint_f>)
-    set_target_properties(int_f PROPERTIES OUTPUT_NAME "int2_f")
-    if (L2_BUILD_SHARED_LIBS)
-        target_link_libraries(int_f INTERFACE int-shared)
-    else()
-        target_link_libraries(int_f INTERFACE int-static)
-    endif()
+    add_library(int_f $<TARGET_OBJECTS:libint_f>)
+    set_target_properties(
+      int_f
+      PROPERTIES
+        OUTPUT_NAME "int2_f"
+        EXPORT_NAME fortran
+      )
+    target_link_libraries(int_f INTERFACE ${_int_target})
     target_include_directories(
       int_f
       INTERFACE
@@ -723,8 +730,6 @@ if (LIBINT2_ENABLE_FORTRAN)
 
     # permanent alias, so that consuming code can use the same target name
     # whether libint2 is found or added as a subproject.
-    # N.B. the install-tree counterpart is created
-    # in cmake/libint2-config.cmake.in, same as for ${L2}::int2 and ${L2}::cxx
     add_library(${L2}::fortran ALIAS int_f)
 
     # Fortran tests merged into rest of tests
@@ -752,14 +757,8 @@ configure_package_config_file(
 
 #  <<<  Install  >>>
 
-# install library targets
-set(_libint2_install_targets)
-if (L2_BUILD_SHARED_LIBS)
-    list(APPEND _libint2_install_targets int-shared)
-endif()
-if (L2_BUILD_STATIC_LIBS)
-    list(APPEND _libint2_install_targets int-static)
-endif()
+# install public library targets
+set(_libint2_install_targets ${_int_target})
 if (LIBINT2_ENABLE_FORTRAN)
     list(APPEND _libint2_install_targets int_f)
 endif()
@@ -771,6 +770,22 @@ install(
   LIBRARY DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
   ARCHIVE DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
   )
+
+# If both linkage variants are requested, install the non-canonical library as
+# an additional artifact without adding a linkage-specific imported target.
+if (L2_BUILD_SHARED_LIBS AND L2_BUILD_STATIC_LIBS)
+    if (_int_target STREQUAL "int-shared")
+        set(_int_secondary_target int-static)
+    else()
+        set(_int_secondary_target int-shared)
+    endif()
+    install(
+      TARGETS ${_int_secondary_target}
+      RUNTIME DESTINATION "${LIBINT2_INSTALL_BINDIR}"
+      LIBRARY DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
+      ARCHIVE DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
+      )
+endif()
 
 # install public API headers from source tree
 # only install libint2.h, libint2.hpp at include/ root
@@ -841,23 +856,28 @@ install(
 
 # CXX API targets
 if (LIBINT2_REQUIRE_CXX_API)
-    set(_cxx_targets)
-    if (L2_BUILD_SHARED_LIBS)
-        list(APPEND _cxx_targets int-cxx-headeronly-shared)
-        if (LIBINT2_REQUIRE_CXX_API_COMPILED)
-            list(APPEND _cxx_targets int-cxx-shared)
-        endif()
+    set(_cxx_targets ${_cxx_target})
+    if (LIBINT2_REQUIRE_CXX_API_COMPILED)
+        list(APPEND _cxx_targets ${_cxx_compiled_target})
     endif()
-    if (L2_BUILD_STATIC_LIBS)
-        list(APPEND _cxx_targets int-cxx-headeronly-static)
-        if (LIBINT2_REQUIRE_CXX_API_COMPILED)
-            list(APPEND _cxx_targets int-cxx-static)
+    install(
+      TARGETS ${_cxx_targets}
+      EXPORT ${pnv}-targets
+      RUNTIME DESTINATION "${LIBINT2_INSTALL_BINDIR}"
+      LIBRARY DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
+      ARCHIVE DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
+      )
+
+    # Preserve the additional compiled artifact in dual-linkage builds without
+    # exposing another public CMake target.
+    if (LIBINT2_REQUIRE_CXX_API_COMPILED AND L2_BUILD_SHARED_LIBS AND L2_BUILD_STATIC_LIBS)
+        if (_cxx_compiled_target STREQUAL "int-cxx-shared")
+            set(_cxx_secondary_target int-cxx-static)
+        else()
+            set(_cxx_secondary_target int-cxx-shared)
         endif()
-    endif()
-    if (_cxx_targets)
         install(
-          TARGETS ${_cxx_targets}
-          EXPORT ${pnv}-targets
+          TARGETS ${_cxx_secondary_target}
           RUNTIME DESTINATION "${LIBINT2_INSTALL_BINDIR}"
           LIBRARY DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
           ARCHIVE DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
