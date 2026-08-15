@@ -97,8 +97,9 @@ jobs:
     - name: Install prerequisite MacOS packages
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'macos-15' }}
       run: |
-        brew install ninja gcc@11 gmp boost eigen@3 bison ccache automake python
-        echo "FC=/opt/homebrew/Cellar/gcc@11/11.5.0/bin/gfortran-11" >> $GITHUB_ENV
+        brew untap aws/tap || true
+        brew install ninja gcc gmp boost eigen@3 bison ccache automake python
+        echo "FC=$(brew --prefix gcc)/bin/gfortran" >> $GITHUB_ENV
         /opt/homebrew/bin/pip3 install --break-system-packages pytest numpy scipy scikit-image
         /opt/homebrew/bin/pip3 show pytest numpy scipy scikit-image
 
@@ -217,6 +218,7 @@ jobs:
             libargs: >
               -D BUILD_SHARED_LIBS=ON
               -D LIBINT2_ENABLE_FORTRAN=ON
+              -D CMAKE_EXE_LINKER_FLAGS="-Wl,-rpath-link,${CONDA_PREFIX}/lib"
             testargs: ""
 
           - runs-on: windows-latest
@@ -324,7 +326,6 @@ jobs:
           -B build \
           -G Ninja \
           -D CMAKE_INSTALL_PREFIX="${{github.workspace}}/installed" \
-          -D CMAKE_CXX_COMPILER=${CXX} \
           -D LIBINT2_REQUIRE_CXX_API_COMPILED=ON \
           -D LIBINT2_ENABLE_PYTHON=ON \
           -D CMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
