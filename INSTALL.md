@@ -51,7 +51,7 @@ The Libint build is structured into three parts:
     or dependency (FetchContent or ExternalProject)
   - (4) unpack the export tarball and build the library and install into \<build\>/library-install-stage/
   - duration depends on number of integrals requested; runs in parallel
-  - consumes language-interface and the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR paths options
+  - consumes language-interface, the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR paths options, and LIBINT2_INSTALL_FMODDIR
   - the default build target includes this final library build
   - (5) optionally testable
   - (6) install into CMAKE_INSTALL_PREFIX
@@ -329,6 +329,7 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 
 ### Install Paths (L) (TARBALL)
 
+* `LIBINT2_INSTALL_FMODDIR` - L - For `LIBINT2_ENABLE_FORTRAN=ON`, the directory below `CMAKE_INSTALL_PREFIX` into which `libint_f.mod` is installed and which the `Libint2::fortran` target adds to its interface. Distribution packages that keep Fortran modules in a compiler-specific location (e.g. `lib64/gfortran/modules`) can set it at configure time rather than relocating the module after install. [Default=`CMAKE_INSTALL_INCLUDEDIR`]
 * `LIBINT2_PREFIX_PYTHON_INSTALL` - L - For `LIBINT2_ENABLE_PYTHON=ON`, whether to install the Python module in the Linux manner to `CMAKE_INSTALL_PREFIX` or to not install it. Note: not a path; the installation sub-path below `CMAKE_INSTALL_PREFIX` is determined by querying `Python_EXECUTABLE`. For alternate installation in the Python manner to `Python_EXECUTABLE`'s site-packages, see target libint2-python-wheel. [Default=OFF]
 
 
@@ -383,13 +384,13 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 | `Libint2::int2`        | `C`                  | yes              | always                                | impossible                                                                                                             | `int-{static,shared}`                | `libint2`     |
 | `Libint2::cxx`         | `CXX_ho`             | yes              | `LIBINT2_REQUIRE_CXX_API=ON`          | `LIBINT2_REQUIRE_CXX_API=OFF` & withhold Eigen3 & `LIBINT2_REQUIRE_CXX_API_COMPILED=OFF` & `LIBINT2_ENABLE_PYTHON=OFF` | `int-cxx-headeronly-{static,shared}` | `libint2_cxx` |
 | `Libint2::int2-cxx`    | `CXX`                | yes              | `LIBINT2_REQUIRE_CXX_API_COMPILED=ON` | `LIBINT2_REQUIRE_CXX_API_COMPILED=OFF`                                                                                 | `int-cxx-{static,shared}`   |               |
-| Fortran local[^19]     | (NYI)                | no               | `LIBINT2_ENABLE_FORTRAN=ON`           | `LIBINT2_ENABLE_FORTRAN=OFF`                                                                                           | `libint_f`                           |               |
+| `Libint2::fortran`     | `fortran`            | no               | `LIBINT2_ENABLE_FORTRAN=ON`           | `LIBINT2_ENABLE_FORTRAN=OFF`                                                                                           | `int_f`, `libint_f`[^19]             |               |
 
 [^15]: Targets for library consumer use. These are available after `find_package(Libint2)` or `add_subdirectory()`.
 [^16]: Ensure target found in installation after `find_package(Libint2 COMPONENTS ...)`.
 [^17]: Targets in export/CMakeLists.txt.export . Names subject to change. Use namespaced target names in any consuming code.
 [^18]: Deprecated legacy aliases. Update any uses to namespaced target.
-[^19]: The `libint_f` internal target defines the Fortran interface to Libint2. One must also link to `Libint2::int2` or `Libint2::cxx`. At present, it is not exported, and a namespaced target is not defined.
+[^19]: `libint_f` compiles the Fortran module; `int_f` archives it and carries the usage requirements, so linking `Libint2::fortran` alone brings in the Fortran module directory, the generated Fortran headers, and the Libint2 C library. Set `LIBINT2_INSTALL_FMODDIR` to control where `libint_f.mod` is installed.
 
 
 -----------------------------------------------------------------------------

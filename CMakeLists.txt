@@ -82,7 +82,8 @@ set(pnv libint2) # projectnameversion
 #     build libint-library-export target before library build targets appear
 #   - (4) unpack the export tarball and build the library and install into \<build\>/library-install-stage/
 #   - duration depends on number of integrals requested; runs in parallel
-#   - consumes language-interface and the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR paths options
+#   - consumes language-interface, the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR paths
+#     options, and LIBINT2_INSTALL_FMODDIR
 #   - the default build target includes this final library build
 #   - (5) optionally testable
 #   - (6) install into CMAKE_INSTALL_PREFIX

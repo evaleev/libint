@@ -242,10 +242,6 @@ endif (LIBINT2_REQUIRE_CXX_API)
 
 if (LIBINT2_ENABLE_FORTRAN)
 
-    # Note: if forming compile line by hand rather than using targets, you'll
-    #   need to include the Fortran module file directory:
-    #   `target_include_directories(... PRIVATE $<TARGET_PROPERTY:libint_f,Fortran_MODULE_DIRECTORY>)`
-
     add_executable(
       fortran_example-libint2
       EXCLUDE_FROM_ALL
@@ -254,8 +250,7 @@ if (LIBINT2_ENABLE_FORTRAN)
     target_link_libraries(
       fortran_example-libint2
       PRIVATE
-        Libint2::int2
-        libint_f
+        Libint2::fortran
       )
     add_test(  # Test #14
       NAME libint2/fortran_example/build
@@ -283,14 +278,13 @@ if (LIBINT2_ENABLE_FORTRAN)
           EXCLUDE_FROM_ALL
           fortran/test.cc
           fortran/test-eri.cc
-          $<TARGET_OBJECTS:libint_f>
           )
         target_link_libraries(
           fortran_test-libint2
           PRIVATE
             $<IF:$<TARGET_EXISTS:Libint2::int2-cxx>,Libint2::int2-cxx,Libint2::cxx>
             # N.B. cxx compiled library if LIBINT2_REQUIRE_CXX_API_COMPILED=ON else header-only library
-            libint_f
+            Libint2::fortran
           )
         add_test(  # Test #16
           NAME libint2/fortran_test/build
