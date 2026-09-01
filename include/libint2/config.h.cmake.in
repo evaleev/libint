@@ -341,7 +341,7 @@
 #  endif
 #endif  /* __has_attribute */
 #endif  /* LIBINT_MAYBE_UNUSED */
-#ifndef LIBINT_MAYBE_UNUSED  /* fallback */
+#ifndef LIBINT_MAYBE_UNUSED
 #define LIBINT_MAYBE_UNUSED
 #endif
 
