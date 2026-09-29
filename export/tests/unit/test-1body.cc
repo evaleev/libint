@@ -695,6 +695,386 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture,
 #endif
 }
 
+// Geometric derivatives of nuclear-attraction-like integrals. The generated
+// code differentiates with respect to the Gaussian centers only; Engine
+// reconstructs the derivatives with respect to the positions of the charges
+// from translational invariance.
+// see https://github.com/evaleev/libint/issues/429
+#if defined(LIBINT2_SUPPORT_ONEBODY)
+namespace {
+
+typedef std::vector<std::pair<double, std::array<double, 3>>> charges_type;
+typedef std::vector<std::vector<double>> shellsets_type;
+
+// a nuclear-type operator and an order of its geometric derivatives supported
+// by the library
+struct NuclearDerivCase {
+  Operator oper;
+  const char* label;
+  size_t nopers;
+  int deriv_order;
+  int lmax;  // max angular momentum supported by the library
+};
+
+std::vector<NuclearDerivCase> nuclear_deriv_cases() {
+  std::vector<NuclearDerivCase> cases;
+#if LIBINT2_DERIV_ONEBODY_ORDER >= 1
+  // these use the same generated code
+  const std::vector<std::pair<Operator, const char*>> elecpot_opers{
+      {Operator::nuclear, "nuclear"},
+      {Operator::erf_nuclear, "erf_nuclear"},
+      {Operator::erfc_nuclear, "erfc_nuclear"},
+      {Operator::erfx_nuclear, "erfx_nuclear"},
+      {Operator::q_gau, "q_gau"}};
+  for (const auto& oper : elecpot_opers)
+    cases.push_back({oper.first, oper.second, 1, 1, LIBINT2_MAX_AM_elecpot1});
+#endif
+#if LIBINT2_DERIV_ONEBODY_ORDER >= 2
+  for (const auto& oper : elecpot_opers)
+    cases.push_back({oper.first, oper.second, 1, 2, LIBINT2_MAX_AM_elecpot2});
+#endif
+#if LIBINT2_DERIV_ONEBODY_PROPERTY_ORDER >= 1
+  cases.push_back({Operator::opVop, "opVop", 4, 1, LIBINT2_MAX_AM_opVop1});
+  cases.push_back(
+      {Operator::op_q_gau_op, "op_q_gau_op", 4, 1, LIBINT2_MAX_AM_opVop1});
+#endif
+#if LIBINT2_DERIV_ONEBODY_PROPERTY_ORDER >= 2
+  cases.push_back({Operator::opVop, "opVop", 4, 2, LIBINT2_MAX_AM_opVop2});
+  cases.push_back(
+      {Operator::op_q_gau_op, "op_q_gau_op", 4, 2, LIBINT2_MAX_AM_opVop2});
+#endif
+  return cases;
+}
+
+bool uses_gaussian_potential(Operator oper) {
+  return oper == Operator::q_gau || oper == Operator::op_q_gau_op;
+}
+
+// 2 shells and the charges; all centers are distinct and in general position.
+// There are 3 derivative coordinates per center, with centers ordered as
+// {a, b, charges}.
+struct NuclearDerivGeometry {
+  std::array<double, 3> A{{0.0, 0.0, 0.0}};
+  std::array<double, 3> B{{0.3, -0.4, 0.5}};
+  charges_type charges{{8.0, {{0.1, 0.2, -0.1}}}, {1.0, {{-0.3, 0.1, 0.4}}}};
+
+  Shell a(int l, bool pure) const {
+    return Shell{{0.8, 0.3}, {{l, pure, {1.0, 0.4}}}, A};
+  }
+  Shell b(int l, bool pure) const {
+    return Shell{{0.9, 0.35}, {{l, pure, {1.0, 0.6}}}, B};
+  }
+  size_t ncoords() const { return 3 * (2 + charges.size()); }
+
+  // displaces coordinate coord by delta
+  NuclearDerivGeometry displaced(size_t coord, double delta) const {
+    auto result = *this;
+    const auto center = coord / 3;
+    const auto xyz = coord % 3;
+    if (center == 0)
+      result.A[xyz] += delta;
+    else if (center == 1)
+      result.B[xyz] += delta;
+    else
+      result.charges[center - 2].second[xyz] += delta;
+    return result;
+  }
+};
+
+std::shared_ptr<const libint2::GaussianPotentialData> make_potential(
+    libint2::GaussianPotentialData primitives) {
+  return std::make_shared<const libint2::GaussianPotentialData>(
+      std::move(primitives));
+}
+
+// index of the second derivative with respect to coordinates i and j: second
+// derivatives are the upper triangle of the Hessian, in row-major order
+size_t hessian_index(size_t ncoords, size_t i, size_t j) {
+  const auto row = std::min(i, j);
+  const auto col = std::max(i, j);
+  return row * (2 * ncoords - row - 1) / 2 + col;
+}
+
+// computes all shell sets of derivatives of order deriv_order, these are
+// ordered as deriv_index * nopers + oper; potentials are only used by q_gau and
+// op_q_gau_op
+shellsets_type compute_nuclear_derivs(
+    Engine& engine, const NuclearDerivCase& c, int deriv_order, const Shell& a,
+    const Shell& b, const charges_type& charges,
+    const libint2::GaussianPotentialCentersData& potentials) {
+  switch (c.oper) {
+    case Operator::nuclear:
+    case Operator::opVop:
+      engine.set_params(charges);
+      break;
+    case Operator::erf_nuclear:
+    case Operator::erfc_nuclear:
+      // attenuation parameter + charges
+      engine.set_params(std::make_tuple(0.7, charges));
+      break;
+    case Operator::erfx_nuclear:
+      // {attenuation parameter, erf coefficient, erfc coefficient} + charges
+      engine.set_params(
+          std::make_tuple(std::array<double, 3>{{0.7, 0.3, 0.6}}, charges));
+      break;
+    case Operator::q_gau:
+    case Operator::op_q_gau_op:
+      engine.set_params(std::make_tuple(potentials, charges));
+      break;
+    default:
+      FAIL("not a nuclear-type operator");
+  }
+
+  // Engine must have room for the derivatives with respect to the positions
+  // of the charges; check before computing, else compute() overruns its
+  // buffers
+  const size_t nshellsets = c.nopers * libint2::num_geometrical_derivatives(
+                                           2 + charges.size(), deriv_order);
+  REQUIRE(engine.nshellsets() == nshellsets);
+
+  const auto& results = engine.compute(a, b);
+  REQUIRE(results.size() == nshellsets);
+  const auto n = a.size() * b.size();
+  shellsets_type shellsets;
+  for (auto s = 0ul; s != nshellsets; ++s)
+    shellsets.emplace_back(results[s], results[s] + n);
+  return shellsets;
+}
+
+double max_abs(const std::vector<double>& v) {
+  auto result = 0.0;
+  for (auto x : v) result = std::max(result, std::abs(x));
+  return result;
+}
+
+double max_abs_diff(const std::vector<double>& v1,
+                    const std::vector<double>& v2) {
+  REQUIRE(v1.size() == v2.size());
+  auto result = 0.0;
+  for (auto i = 0ul; i != v1.size(); ++i)
+    result = std::max(result, std::abs(v1[i] - v2[i]));
+  return result;
+}
+
+}  // namespace
+#endif  // LIBINT2_SUPPORT_ONEBODY
+
+// validates derivatives against finite differences of the derivatives of the
+// next lower order
+TEST_CASE("geometric derivatives of nuclear-type 1-body integrals",
+          "[engine][1-body][deriv]") {
+#if defined(LIBINT2_SUPPORT_ONEBODY)
+  const NuclearDerivGeometry geom{};
+  const auto ncoords = geom.ncoords();
+  // one potential per charge: point charge + Gaussian, and Gaussian
+  const libint2::GaussianPotentialCentersData potentials{
+      make_potential({{libint2::infinite_exponent, 1.0}, {0.7, -0.4}}),
+      make_potential({{1.3, 1.0}})};
+  const auto nprim_max =
+      std::max(static_cast<size_t>(2), max_nprim(potentials));
+
+  for (const auto& c : nuclear_deriv_cases()) {
+    DYNAMIC_SECTION(c.label << ", deriv_order=" << c.deriv_order) {
+      const auto lmax = std::min(2, c.lmax);
+      Engine engine(c.oper, nprim_max, lmax, c.deriv_order);
+      Engine engine_lower(c.oper, nprim_max, lmax, c.deriv_order - 1);
+
+      for (bool pure : {false, true}) {
+        for (int l1 = 0; l1 <= lmax; ++l1) {
+          for (int l2 = 0; l2 <= lmax; ++l2) {
+            const auto analytic = compute_nuclear_derivs(
+                engine, c, c.deriv_order, geom.a(l1, pure), geom.b(l2, pure),
+                geom.charges, potentials);
+
+            for (auto coord1 = 0ul; coord1 != ncoords; ++coord1) {
+              // derivatives of order deriv_order - 1 at a displaced geometry
+              auto lower = [&](double delta) {
+                const auto g = geom.displaced(coord1, delta);
+                return compute_nuclear_derivs(
+                    engine_lower, c, c.deriv_order - 1, g.a(l1, pure),
+                    g.b(l2, pure), g.charges, potentials);
+              };
+              const auto h = 1e-3;
+              const auto m2 = lower(-2 * h);
+              const auto m1 = lower(-h);
+              const auto p1 = lower(h);
+              const auto p2 = lower(2 * h);
+
+              for (auto s = 0ul; s != p1.size(); ++s) {
+                // 5-point central difference
+                auto numeric = p1[s];
+                for (auto i = 0ul; i != numeric.size(); ++i)
+                  numeric[i] =
+                      (m2[s][i] - 8 * m1[s][i] + 8 * p1[s][i] - p2[s][i]) /
+                      (12 * h);
+
+                const auto oper = s % c.nopers;
+                const auto coord0 = s / c.nopers;  // only if deriv_order == 2
+                const auto deriv_index =
+                    c.deriv_order == 1 ? coord1
+                                       : hessian_index(ncoords, coord0, coord1);
+                const auto max_error = max_abs_diff(
+                    analytic[deriv_index * c.nopers + oper], numeric);
+                INFO(c.label << " deriv_order=" << c.deriv_order << " l1=" << l1
+                             << " l2=" << l2 << " pure=" << pure
+                             << " deriv_index=" << deriv_index
+                             << " oper=" << oper << " coord=" << coord1
+                             << " max_error=" << max_error);
+                REQUIRE(max_error <= 1e-7 * std::max(1.0, max_abs(numeric)));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+#endif  // LIBINT2_SUPPORT_ONEBODY
+}
+
+// q_gau and op_q_gau_op with point-charge potentials are nuclear and opVop
+TEST_CASE("geometric derivatives of q_gau integrals for point charges",
+          "[engine][1-body][deriv]") {
+#if defined(LIBINT2_SUPPORT_ONEBODY)
+  const NuclearDerivGeometry geom{};
+  const auto point_charge = make_potential({{libint2::infinite_exponent, 1.0}});
+  const libint2::GaussianPotentialCentersData potentials(geom.charges.size(),
+                                                         point_charge);
+
+  for (const auto& c : nuclear_deriv_cases()) {
+    if (!uses_gaussian_potential(c.oper)) continue;
+    DYNAMIC_SECTION(c.label << ", deriv_order=" << c.deriv_order) {
+      auto c_ref = c;
+      c_ref.oper =
+          c.oper == Operator::q_gau ? Operator::nuclear : Operator::opVop;
+      const auto lmax = std::min(2, c.lmax);
+      Engine engine(c.oper, 2, lmax, c.deriv_order);
+      Engine engine_ref(c_ref.oper, 2, lmax, c.deriv_order);
+
+      for (bool pure : {false, true}) {
+        for (int l1 = 0; l1 <= lmax; ++l1) {
+          for (int l2 = 0; l2 <= lmax; ++l2) {
+            const auto a = geom.a(l1, pure);
+            const auto b = geom.b(l2, pure);
+            const auto value = compute_nuclear_derivs(
+                engine, c, c.deriv_order, a, b, geom.charges, potentials);
+            const auto ref =
+                compute_nuclear_derivs(engine_ref, c_ref, c.deriv_order, a, b,
+                                       geom.charges, potentials);
+
+            REQUIRE(value.size() == ref.size());
+            for (auto s = 0ul; s != ref.size(); ++s) {
+              const auto max_error = max_abs_diff(value[s], ref[s]);
+              INFO(c.label << " deriv_order=" << c.deriv_order << " l1=" << l1
+                           << " l2=" << l2 << " pure=" << pure
+                           << " shellset=" << s << " max_error=" << max_error);
+              REQUIRE(max_error <= 1e-12 * std::max(1.0, max_abs(ref[s])));
+            }
+          }
+        }
+      }
+    }
+  }
+#endif  // LIBINT2_SUPPORT_ONEBODY
+}
+
+// a center without a potential does not contribute to the integrals, hence
+// derivatives with respect to its position vanish
+TEST_CASE("geometric derivatives of q_gau integrals skip empty centers",
+          "[engine][1-body][deriv]") {
+#if defined(LIBINT2_SUPPORT_ONEBODY)
+  const NuclearDerivGeometry geom{};
+  const libint2::GaussianPotentialCentersData potentials{
+      make_potential({{libint2::infinite_exponent, 1.0}, {0.7, -0.4}}),
+      make_potential({{1.3, 1.0}})};
+  const auto nprim_max =
+      std::max(static_cast<size_t>(2), max_nprim(potentials));
+
+  // same as geom, with an empty center inserted between the 2 charges
+  const size_t empty_center = 2 + 1;
+  auto geom_w_empty = geom;
+  geom_w_empty.charges.insert(
+      geom_w_empty.charges.begin() + 1,
+      charges_type::value_type{3.0, {{0.2, -0.3, 0.2}}});
+  const libint2::GaussianPotentialCentersData potentials_w_empty{
+      potentials[0], nullptr, potentials[1]};
+  const auto ncoords = geom.ncoords();
+  const auto ncoords_w_empty = geom_w_empty.ncoords();
+  // maps coordinates of geom to coordinates of geom_w_empty
+  auto to_w_empty = [&](size_t coord) {
+    return coord < 3 * empty_center ? coord : coord + 3;
+  };
+  auto is_empty = [&](size_t coord_w_empty) {
+    return coord_w_empty / 3 == empty_center;
+  };
+
+  for (const auto& c : nuclear_deriv_cases()) {
+    if (!uses_gaussian_potential(c.oper)) continue;
+    DYNAMIC_SECTION(c.label << ", deriv_order=" << c.deriv_order) {
+      const auto lmax = std::min(2, c.lmax);
+      Engine engine(c.oper, nprim_max, lmax, c.deriv_order);
+
+      for (bool pure : {false, true}) {
+        for (int l1 = 0; l1 <= lmax; ++l1) {
+          for (int l2 = 0; l2 <= lmax; ++l2) {
+            const auto a = geom.a(l1, pure);
+            const auto b = geom.b(l2, pure);
+            const auto ref = compute_nuclear_derivs(
+                engine, c, c.deriv_order, a, b, geom.charges, potentials);
+            const auto value = compute_nuclear_derivs(
+                engine, c, c.deriv_order, a, b, geom_w_empty.charges,
+                potentials_w_empty);
+            auto scale = 1.0;
+            for (const auto& shellset : ref)
+              scale = std::max(scale, max_abs(shellset));
+
+            // derivatives that do not involve the empty center are unchanged
+            std::vector<bool> checked(value.size(), false);
+            for (auto s = 0ul; s != ref.size(); ++s) {
+              const auto oper = s % c.nopers;
+              const auto deriv_index = s / c.nopers;
+              auto deriv_index_w_empty = to_w_empty(deriv_index);
+              if (c.deriv_order == 2) {
+                // invert hessian_index
+                auto coord0 = 0ul;
+                auto coord1 = deriv_index;
+                while (coord1 >= ncoords - coord0) {
+                  coord1 -= ncoords - coord0;
+                  ++coord0;
+                }
+                coord1 += coord0;
+                REQUIRE(hessian_index(ncoords, coord0, coord1) == deriv_index);
+                deriv_index_w_empty = hessian_index(
+                    ncoords_w_empty, to_w_empty(coord0), to_w_empty(coord1));
+              }
+              const auto s_w_empty = deriv_index_w_empty * c.nopers + oper;
+              const auto max_error = max_abs_diff(value[s_w_empty], ref[s]);
+              INFO(c.label << " deriv_order=" << c.deriv_order << " l1=" << l1
+                           << " l2=" << l2 << " pure=" << pure
+                           << " deriv_index=" << deriv_index << " oper=" << oper
+                           << " max_error=" << max_error);
+              REQUIRE(max_error <= 1e-13 * scale);
+              checked[s_w_empty] = true;
+            }
+
+            // all others involve the empty center, hence vanish
+            for (auto s = 0ul; s != value.size(); ++s) {
+              if (checked[s]) continue;
+              const auto deriv_index = s / c.nopers;
+              if (c.deriv_order == 1) REQUIRE(is_empty(deriv_index));
+              INFO(c.label << " deriv_order=" << c.deriv_order << " l1=" << l1
+                           << " l2=" << l2 << " pure=" << pure
+                           << " deriv_index=" << deriv_index
+                           << " oper=" << s % c.nopers);
+              REQUIRE(max_abs(value[s]) <= 1e-13 * scale);
+            }
+          }
+        }
+      }
+    }
+  }
+#endif  // LIBINT2_SUPPORT_ONEBODY
+}
+
 TEST_CASE("infinite_exponent sentinel", "[engine][1-body][validation]") {
   REQUIRE(libint2::infinite_exponent ==
           std::numeric_limits<double>::infinity());
