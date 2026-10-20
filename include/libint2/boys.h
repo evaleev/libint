@@ -39,7 +39,7 @@
 #include <type_traits>
 #include <vector>
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
 #define posix_memalign(p, a, s) \
   (((*(p)) = _aligned_malloc((s), (a))), *(p) ? 0 : errno)
 #define posix_memfree(p) ((_aligned_free((p))))

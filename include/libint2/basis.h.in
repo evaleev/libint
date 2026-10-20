@@ -44,7 +44,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
 #include <io.h>
 #define S_ISDIR(m) (((m)&S_IFMT) == S_IFDIR)
 #define PATH_SEPARATOR "\\"
@@ -105,7 +105,7 @@ namespace libint2 {
 
   /// @return the default locale name for parsing basis set files
   inline const char* default_locale_name() {
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
     return "en-US";
 #else
     return "POSIX";
@@ -417,7 +417,7 @@ namespace libint2 {
             char cc = ::tolower(c);
             switch (cc) {
               case '/': cc = 'I'; break;
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
               case '*': cc = 's'; break;
 #endif
             }
