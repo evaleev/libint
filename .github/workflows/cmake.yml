@@ -321,9 +321,34 @@ jobs:
       with:
         arch: x64
 
+    - name: Write compiler environment fixup
+      shell: bash -l {0}
+      run: |
+        # conda-forge compiler activation (since ~Oct 2026 builds) may export CC/CXX/FC
+        # pointing to executables that do not exist; drop such values and prefer
+        # the conda env's compilers. Activation reruns in every login shell,
+        # so steps that invoke compilers must source this file.
+        cat > "${{github.workspace}}/compilers.sh" <<'EOF'
+        for _v in CC CXX FC; do
+          _val="${!_v}"
+          if [[ -n "${_val}" ]] && ! command -v "${_val%% *}" >/dev/null 2>&1; then
+            echo "::warning::${_v}=${_val} not found; unsetting it"
+            unset "${_v}"
+          fi
+        done
+        _pick() { local c; for c in "${@:2}"; do if [[ -x "${CONDA_PREFIX}/bin/${c}" ]]; then export "$1=${CONDA_PREFIX}/bin/${c}"; return; fi; done; }
+        [[ -n "${CC}" ]] || _pick CC gcc clang
+        [[ -n "${CXX}" ]] || _pick CXX g++ clang++
+        [[ -n "${FC}" ]] || _pick FC gfortran
+        echo "compilers: CC=${CC} CXX=${CXX} FC=${FC}"
+        EOF
+        source "${{github.workspace}}/compilers.sh"
+        ls "${CONDA_PREFIX}/bin" | grep -E 'c\+\+|g\+\+|clang|gcc|gfortran' || true
+
     - name: Extract, Build, Install Libint Library
       shell: bash -l {0}
       run: |
+        source "${{github.workspace}}/compilers.sh"
         tar -zxf libint*tgz
         mkdir libint && mv libint-2*/* libint/ && cd libint/
         cmake \
@@ -347,6 +372,7 @@ jobs:
       if: ${{ matrix.cfg.c_only }}
       shell: bash -l {0}
       run: |
+        source "${{github.workspace}}/compilers.sh"
         mkdir test_installed_c_library && cd test_installed_c_library
         cat > main.c <<EOF
         #include <libint2.h>
@@ -387,6 +413,7 @@ jobs:
       if: ${{ !matrix.cfg.c_only }}
       shell: bash -l {0}
       run: |
+        source "${{github.workspace}}/compilers.sh"
         mkdir test_installed_library && cd test_installed_library
         cat > CMakeLists.txt <<EOF
         cmake_minimum_required(VERSION 3.8)
@@ -412,6 +439,7 @@ jobs:
       shell: bash -l {0}
       working-directory: ${{github.workspace}}/libint/python
       run: |
+        source "${{github.workspace}}/compilers.sh"
         cmake . -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
         cmake --build . --target libint2-python
         cmake --build . --target libint2-python-test
