@@ -58,6 +58,7 @@
 #include <libint2/boys_fwd.h>
 #include <libint2/initialize.h>
 #include <libint2/numeric.h>
+#include <libint2/truncated_coulomb.h>
 
 #if HAVE_LAPACK  // use F77-type interface for now, switch to LAPACKE later
 extern "C" void dgesv_(const int* n, const int* nrhs, double* A, const int* lda,

@@ -85,6 +85,7 @@ if (LIBINT2_REQUIRE_CXX_API)
             unit/test-core.cc
             unit/test-core-ints.cc
             unit/test-molden.cc
+            unit/test-truncated-coulomb.cc
             unit/test-permute.cc
             unit/test-precision.cc
             unit/test-shell-order.cc

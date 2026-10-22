@@ -225,6 +225,8 @@ enum class Operator {
   stg_x_coulomb,
   /// alias for Operator::stg_x_coulomb
   yukawa = stg_x_coulomb,
+  /// Spherically truncated Coulomb, theta(Rc-r12)/r12; Rc has length units.
+  truncated_coulomb,
   // do not modify this
   invalid = -1,
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!keep this
@@ -232,7 +234,7 @@ enum class Operator {
   first_1body_oper = overlap,
   last_1body_oper = op_q_gau_op,
   first_2body_oper = delta,
-  last_2body_oper = stg_x_coulomb,
+  last_2body_oper = truncated_coulomb,
   first_oper = first_1body_oper,
   last_oper = last_2body_oper
 };
@@ -518,6 +520,18 @@ struct operator_traits<Operator::stg_x_coulomb>
   typedef scalar_type oper_params_type;
   static oper_params_type default_params() { return oper_params_type{0}; }
   typedef const libint2::TennoGmEval<scalar_type> core_eval_type;
+};
+
+template <>
+struct operator_traits<Operator::truncated_coulomb>
+    : public detail::default_operator_traits {
+  /// Cutoff in the same length units as Shell::O. Zero gives zero integrals;
+  /// positive infinity gives ordinary Coulomb integrals.
+  typedef scalar_type oper_params_type;
+  static oper_params_type default_params() { return oper_params_type{0}; }
+  typedef const libint2::GenericGmEval<
+      libint2::os_core_ints::truncated_coulomb_gm_eval<scalar_type>>
+      core_eval_type;
 };
 
 /// the runtime version of \c operator_traits<oper>::default_params()
@@ -807,6 +821,7 @@ class Engine {
     if (braket_ != new_braket) {
       braket_ = new_braket;
       initialize();
+      core_eval_pack_ = make_core_eval_pack(oper_);
     }
     return *this;
   }
@@ -852,6 +867,7 @@ class Engine {
     if (L >= static_cast<std::size_t>(lmax_)) {
       lmax_ = L;
       initialize();
+      core_eval_pack_ = make_core_eval_pack(oper_);
     }
     return *this;
   }

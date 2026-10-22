@@ -62,6 +62,8 @@ template <typename Real>
 struct erfx_coulomb_gm_eval;
 template <typename Real>
 struct q_gau_gm_eval;
+template <typename Real>
+struct truncated_coulomb_gm_eval;
 }  // namespace os_core_ints
 
 /*

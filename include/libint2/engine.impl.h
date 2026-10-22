@@ -95,7 +95,8 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
                        (eri,   /* erfx_coulomb */   \
                         (eri,  /* stg */            \
                          (eri, /* yukawa */         \
-                          BOOST_PP_NIL))))))))))))))))))))))))
+                          (eri, /* truncated_coulomb */ \
+                           BOOST_PP_NIL)))))))))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
@@ -907,7 +908,13 @@ __libint2_engine_inline any Engine::make_core_eval_pack(Operator oper) const {
 }
 
 __libint2_engine_inline void Engine::init_core_ints_params(const any& params) {
-  if (oper_ == Operator::delcgtg2) {
+  if (oper_ == Operator::truncated_coulomb) {
+    const auto cutoff = any_cast<
+        operator_traits<Operator::truncated_coulomb>::oper_params_type>(params);
+    if (!(cutoff >= 0))
+      throw std::invalid_argument("truncated Coulomb cutoff must be nonnegative");
+    core_ints_params_ = params;
+  } else if (oper_ == Operator::delcgtg2) {
     // [g12,[- \Del^2, g12] = 2 (\Del g12) \cdot (\Del g12)
     // (\Del exp(-a r_12^2) \cdot (\Del exp(-b r_12^2) = 4 a b (r_{12}^2 exp(-
     // (a+b) r_{12}^2) )
@@ -1524,6 +1531,16 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                           core_eval_pack_)
                           .first();
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax);
+                } break;
+                case Operator::truncated_coulomb: {
+                  const auto& core_eval_ptr =
+                      any_cast<const detail::core_eval_pack_type<
+                          Operator::truncated_coulomb>&>(core_eval_pack_)
+                          .first();
+                  const auto cutoff = any_cast<typename operator_traits<
+                      Operator::truncated_coulomb>::oper_params_type>(
+                      core_ints_params_);
+                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, cutoff);
                 } break;
                 case Operator::erf_coulomb: {
                   const auto& core_eval_ptr =

@@ -198,6 +198,14 @@ file(
 
 # ====  /src  ===================================================================
 
+# Independent truncated-Coulomb coefficient data, compiled once in the library.
+file(GLOB truncated_coulomb_sources
+    "${PROJECT_SOURCE_DIR}/src/lib/libint/truncated_coulomb_table*.cc")
+file(INSTALL ${truncated_coulomb_sources} DESTINATION "${EXPORT_STAGE_DIR}/src")
+file(INSTALL "${PROJECT_SOURCE_DIR}/tools/generate_truncated_coulomb_table.cc"
+             "${PROJECT_SOURCE_DIR}/tools/generate_truncated_coulomb_reference.py"
+     DESTINATION "${EXPORT_STAGE_DIR}/tools")
+
 file(
   INSTALL
     "${PROJECT_SOURCE_DIR}/export/engine.cpp"
