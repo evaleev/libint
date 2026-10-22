@@ -324,10 +324,11 @@ jobs:
     - name: Write compiler environment fixup
       shell: bash -l {0}
       run: |
-        # conda-forge compiler activation (since ~Oct 2026 builds) may export CC/CXX/FC
-        # pointing to executables that do not exist; drop such values and prefer
-        # the conda env's compilers. Activation reruns in every login shell,
-        # so steps that invoke compilers must source this file.
+        # conda-forge compiler packages (since ~Oct 2026 builds) no longer export
+        # CC/CXX/FC on activation, and CMake then fails to find a C++ compiler;
+        # point them at the conda env's compilers (and drop values that do not
+        # resolve). Activation reruns in every login shell, so steps that invoke
+        # compilers must source this file.
         cat > "${{github.workspace}}/compilers.sh" <<'EOF'
         for _v in CC CXX FC; do
           _val="${!_v}"
