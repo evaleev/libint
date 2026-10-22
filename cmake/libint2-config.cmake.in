@@ -26,6 +26,7 @@
 #   eri_HH_dD       - search for library including 2-body integrals with 2 centers
 #   eri_hh_dD       - ditto
 #   g12_hhhh_dD     - search for library including F12 integrals with Gaussian factors
+#   CXX             - search for library including the C++ API (Libint2::cxx target)
 #
 #                    cart       shell_set   used_by
 #                    --------   ---------   -------
@@ -55,8 +56,9 @@ list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 # check library language component
 include(CMakeFindDependencyMacro)
 
-set(LIBINT2_REQUIRE_CXX_API @LIBINT2_REQUIRE_CXX_API@)
-if(LIBINT2_REQUIRE_CXX_API)
+if (@LIBINT2_REQUIRE_CXX_API@)  # LIBINT2_REQUIRE_CXX_API
+    set(${L2}_CXX_FOUND 1)
+
     if(NOT TARGET Eigen3::Eigen)
       set(Eigen3_CONFIG @Eigen3_CONFIG@)
       if (NOT Eigen3_CONFIG OR NOT EXISTS ${Eigen3_CONFIG})
@@ -67,6 +69,7 @@ if(LIBINT2_REQUIRE_CXX_API)
         find_dependency(Eigen3 REQUIRED HINTS "${Eigen3_DIR}")
       endif()
     endif()
+
     if (@LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@)  # LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS
         # Boost headers _not_ unpacked to within `include/libint2/`
         if (NOT TARGET Boost::headers)
@@ -84,6 +87,12 @@ if(LIBINT2_REQUIRE_CXX_API)
             message(STATUS "Boost detected. satisfied by headers bundled with ${L2} distribution")
         endif()
     endif()
+else()
+    list(FIND ${L2}_FIND_COMPONENTS CXX _l2_cxx_idx)
+    if (NOT _l2_cxx_idx EQUAL -1)
+        set(${L2}_NOT_FOUND_MESSAGE "${L2} was built without the C++ API (LIBINT2_REQUIRE_CXX_API=OFF); ${L2}::cxx is not available")
+    endif()
+    unset(_l2_cxx_idx)
 endif()
 
 # check orderings, AM, & derivatives components

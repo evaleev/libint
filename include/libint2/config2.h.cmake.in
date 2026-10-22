@@ -35,6 +35,7 @@
 /* retired Jan 2023 #undef LIBINT_SHGSHELL_ORDERING */
 #undef LIBINT_HAS_EIGEN
 #undef LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS
+#undef LIBINT2_CXX_API_DISABLED
 
 /* if can be controlled with posix_memalign, alignment size */
 #define LIBINT2_ALIGN_SIZE @LIBINT2_ALIGN_SIZE@
@@ -50,6 +51,9 @@
 
 /* define if system-wide Boost.Preprocessor is available */
 #cmakedefine LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS @LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@
+
+/* define if the library was built without the C++ API (LIBINT2_REQUIRE_CXX_API=OFF) */
+#cmakedefine LIBINT2_CXX_API_DISABLED @LIBINT2_CXX_API_DISABLED@
 
 /* have MPFR library ? */
 #cmakedefine LIBINT_HAS_MPFR @LIBINT_HAS_MPFR@

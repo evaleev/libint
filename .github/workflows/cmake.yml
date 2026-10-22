@@ -250,6 +250,13 @@ jobs:
               -D CMAKE_CXX_COMPILER=icpx
               -D CMAKE_CXX_FLAGS="--gcc-toolchain=${CONDA_PREFIX} --sysroot=${CONDA_PREFIX}/${HOST}/sysroot -target ${HOST}"
 
+          - runs-on: ubuntu-latest
+            lane: ubuntu-c-only
+            c_only: true
+            libargs: >
+              -D BUILD_SHARED_LIBS=ON
+            testargs: ""
+
     name: "Export • ${{ matrix.cfg.lane }}"
     runs-on: ${{ matrix.cfg.runs-on }}
 
@@ -325,11 +332,10 @@ jobs:
           -G Ninja \
           -D CMAKE_INSTALL_PREFIX="${{github.workspace}}/installed" \
           -D CMAKE_CXX_COMPILER=${CXX} \
-          -D LIBINT2_REQUIRE_CXX_API_COMPILED=ON \
-          -D LIBINT2_ENABLE_PYTHON=ON \
+          ${{ matrix.cfg.c_only && '-D LIBINT2_REQUIRE_CXX_API=OFF' || '-D LIBINT2_REQUIRE_CXX_API_COMPILED=ON -D LIBINT2_ENABLE_PYTHON=ON' }} \
           -D CMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
           ${{ matrix.cfg.libargs }}
-        cmake --build build --target install libint2-python-test
+        cmake --build build --target install ${{ !matrix.cfg.c_only && 'libint2-python-test' || '' }}
 
     - name: Test Libint library - unit tests
       shell: bash -l {0}
@@ -337,7 +343,48 @@ jobs:
       run: |
         cmake --build . --target check
 
+    - name: Test Libint library - consume C-only installation [from build+install]
+      if: ${{ matrix.cfg.c_only }}
+      shell: bash -l {0}
+      run: |
+        mkdir test_installed_c_library && cd test_installed_c_library
+        cat > main.c <<EOF
+        #include <libint2.h>
+        int main(void) { LIBINT2_PREFIXED_NAME(libint2_static_init)(); LIBINT2_PREFIXED_NAME(libint2_static_cleanup)(); return 0; }
+        EOF
+        echo '#include <libint2.hpp>' > cxx.cc
+        cat > CMakeLists.txt <<EOF
+        cmake_minimum_required(VERSION 3.8)
+        project(c_consumer C CXX)
+        # C-only install must not require Eigen3 or Boost
+        set(CMAKE_DISABLE_FIND_PACKAGE_Eigen3 ON)
+        set(CMAKE_DISABLE_FIND_PACKAGE_Boost ON)
+        find_package(Libint2 REQUIRED)
+        if (TARGET Libint2::cxx)
+          message(FATAL_ERROR "Libint2::cxx must not exist in a C-only installation")
+        endif()
+        find_package(Libint2 QUIET COMPONENTS CXX)
+        if (Libint2_FOUND)
+          message(FATAL_ERROR "find_package(Libint2 COMPONENTS CXX) must fail for a C-only installation")
+        endif()
+        add_executable(c_consumer main.c)
+        target_link_libraries(c_consumer Libint2::int2)
+        # C++ API headers must fail loudly
+        try_compile(_l2_cxx_ok \${CMAKE_BINARY_DIR}/cxx_check \${CMAKE_SOURCE_DIR}/cxx.cc
+          LINK_LIBRARIES Libint2::int2 OUTPUT_VARIABLE _l2_cxx_out)
+        if (_l2_cxx_ok OR NOT _l2_cxx_out MATCHES "built without the C[+][+] API")
+          message(FATAL_ERROR "including libint2.hpp from a C-only installation must hit the #error guard:\n\${_l2_cxx_out}")
+        endif()
+        EOF
+        cmake -S . -B from_build_tree -DCMAKE_PREFIX_PATH="${{github.workspace}}/libint/build" ${{ matrix.cfg.testargs }}
+        cmake --build from_build_tree --target c_consumer
+        from_build_tree/c_consumer
+        cmake -S . -B from_install_tree -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
+        cmake --build from_install_tree --target c_consumer
+        from_install_tree/c_consumer
+
     - name: Test Libint library - consume installation for SCF [from build+install]
+      if: ${{ !matrix.cfg.c_only }}
       shell: bash -l {0}
       run: |
         mkdir test_installed_library && cd test_installed_library
@@ -361,6 +408,7 @@ jobs:
         from_install_tree/hf++ ../libint/tests/hartree-fock/h2o_rotated.xyz | python ../libint/tests/hartree-fock/hartree-fock++-validate.py ../libint/features
 
     - name: Build & Test Python bindings (again, independently)
+      if: ${{ !matrix.cfg.c_only }}
       shell: bash -l {0}
       working-directory: ${{github.workspace}}/libint/python
       run: |
