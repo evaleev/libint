@@ -25,6 +25,7 @@
 #include <libint2/basis.h>
 #include <libint2/cgshell_ordering.h>
 #include <libint2/chemistry/elements.h>
+#include <libint2/initialize.h>
 #include <libint2/shell.h>
 #include <libint2/shgshell_ordering.h>
 
@@ -56,7 +57,8 @@ class Export {
   /// @param coefficients the matrix of LCAO coefficients (columns are LCAOs,
   ///        rows are AOs; AOs are ordered according to the order of shells in
   ///        \c basis and by the ordering conventions of this Libint
-  ///        configuration)
+  ///        configuration; solid harmonics are ordered according to
+  ///        libint2::solid_harmonics_ordering() at the time of construction)
   /// @param occupancies the vector of occupancies (size = # LCAOs)
   /// @param energies the vector of energies (size = # of LCAOs); the default is
   ///        to assign zero to each LCAO
@@ -280,7 +282,7 @@ class Export {
   void initialize_bf_map() {
     atom2shell_ = BasisSet::atom2shell(atoms_, basis_);
 
-    const auto nao = BasisSet::nbf(basis_);
+    const auto nao = libint2::nbf(basis_);
     ao_map_.resize(nao);
     assert(nao == coefs_.rows());
     const auto shell2ao = BasisSet::compute_shell2bf(basis_);
@@ -295,26 +297,24 @@ class Export {
           const auto pure = shell.contr[c].pure;
           if (pure) {
             int m;
+            // N.B. the order of solid harmonics in coefs_ is set at runtime by
+            // libint2::solid_harmonics_ordering(), not by the build-time
+            // LIBINT_SHGSHELL_ORDERING
+            const auto sho = libint2::solid_harmonics_ordering();
             // Molden only handles Cartesian p shells, thus remap solid-harmonic
-            // p shells to Cartesians:
+            // p shells to Cartesians {x, y, z} = {m=+1, m=-1, m=0}:
             // - CCA: solid harmonics {y, z, x} -> Cartesian {x, y, z}
             // - Gaussian: solid harmonics {z, x, y} -> Cartesian {x, y, z}
             if (l == 1) {
-#if LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD
-              ao_map_[ao_molden] = ao + 2;
-              ao_map_[ao_molden + 1] = ao;
-              ao_map_[ao_molden + 2] = ao + 1;
-#elif LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_GAUSSIAN
-              ao_map_[ao_molden] = ao + 1;
-              ao_map_[ao_molden + 1] = ao + 2;
-              ao_map_[ao_molden + 2] = ao;
-#else
-#error "unknown value of LIBINT_SHGSHELL_ORDERING"
-#endif
+              ao_map_[ao_molden] = ao + libint2::INT_SOLIDHARMINDEX(sho, 1, 1);
+              ao_map_[ao_molden + 1] =
+                  ao + libint2::INT_SOLIDHARMINDEX(sho, 1, -1);
+              ao_map_[ao_molden + 2] =
+                  ao + libint2::INT_SOLIDHARMINDEX(sho, 1, 0);
               ao_molden += 3;
             } else {
               FOR_SOLIDHARM_MOLDEN(l, m)
-              const auto ao_in_shell = libint2::INT_SOLIDHARMINDEX(l, m);
+              const auto ao_in_shell = libint2::INT_SOLIDHARMINDEX(sho, l, m);
               ao_map_[ao_molden++] = ao + ao_in_shell;
               END_FOR_SOLIDHARM_MOLDEN
             }
@@ -348,7 +348,8 @@ class PBCExport : public Export {
   /// @param coefficients the matrix of LCAO coefficients (columns are LCAOs,
   ///        rows are AOs; AOs are ordered according to the order of shells in
   ///        \c basis and by the ordering conventions of this Libint
-  ///        configuration)
+  ///        configuration; solid harmonics are ordered according to
+  ///        libint2::solid_harmonics_ordering() at the time of construction)
   /// @param occupancies the vector of occupancies (size = # LCAOs)
   /// @param space_group (base-0) index of the space group in the International
   /// Tables of Crystallography (https://it.iucr.org/Ac/)

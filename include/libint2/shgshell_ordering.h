@@ -23,6 +23,7 @@
 
 #include <libint2/config.h>
 
+#include <cassert>
 #include <cmath>
 
 namespace libint2 {
@@ -105,6 +106,8 @@ inline int INT_SOLIDHARMINDEX(int l, int m) {
 }
 
 inline int INT_SOLIDHARMINDEX(int sho, int l, int m) {
+  assert(sho == LIBINT_SHGSHELL_ORDERING_STANDARD ||
+         sho == LIBINT_SHGSHELL_ORDERING_GAUSSIAN);
   if (sho == LIBINT_SHGSHELL_ORDERING_STANDARD)
     return libint2::INT_SOLIDHARMINDEX_STANDARD(l, m);
   else

@@ -3,6 +3,11 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- unreleased:
+  - PR #420: libint2::molden::Export orders solid harmonics according to the runtime
+             libint2::solid_harmonics_ordering() instead of the build-time default
+             (fixes Molden output when the two differ); silence compiler warnings
+
 - 2025-2-2: 2.13.1
   - PR #397: cmake boost check supports in-tree (non-IMPORTED) targets, including modularized Boost
   - PR #s 395, 398: support for Eigen 5.0.0 (HT @EricaCMitchell)
