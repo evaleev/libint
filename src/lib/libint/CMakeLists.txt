@@ -75,11 +75,14 @@ list(APPEND _populate_inputs
   "${PROJECT_BINARY_DIR}/cmake/modules/int_computed.cmake"
   )
 
-# N.B. populate.cmake leaves unchanged files untouched, so the tarball keys off a stamp
 set(POPULATE_STAMP "${CMAKE_CURRENT_BINARY_DIR}/libint-library-populate.stamp")
+# populate.cmake leaves up-to-date files untouched, so the staged files are byproducts
+#   rather than outputs: as outputs they would stay older than their inputs, and
+#   populate would rerun on every build
 add_custom_command(
   OUTPUT
     "${POPULATE_STAMP}"
+  BYPRODUCTS
     ${EXPORT_STAGE_DIR}/CMakeLists.txt
     ${EXPORT_STAGE_DIR}/include/libint2_params.h
     ${EXPORT_STAGE_DIR}/include/HRRPart0bra0ket0pp.h
@@ -137,6 +140,13 @@ else()
     message(FATAL_ERROR "No C language support; invoke CMake with -D CMAKE_C_COMPILER=/path/to/C/compiler to resolve")
 endif()
 
+# keep the archived timestamps when unpacking the tarball, so that unchanged
+#   sources are not recompiled after re-export
+set(_extract_timestamp_arg)
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
+    set(_extract_timestamp_arg DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+endif()
+
 if (LIBINT2_BUILD_LIBRARY_AS_SUBPROJECT)
     include(FetchContent)
 
@@ -148,6 +158,7 @@ if (LIBINT2_BUILD_LIBRARY_AS_SUBPROJECT)
           libint-library
           URL "${EXPORT_TARBALL}"
           URL_HASH SHA256=${_export_tarball_sha256}
+          ${_extract_timestamp_arg}
           )
         FetchContent_MakeAvailable(libint-library)
     else()
@@ -244,6 +255,7 @@ else()
       # * DOWNLOAD_DIR <SOURCE_DIR> is tidier but fails on Windows
       URL "${EXPORT_TARBALL}"
       LOG_DOWNLOAD 1
+      ${_extract_timestamp_arg}
       CMAKE_ARGS "${library_CMAKE_ARGS}"
       CMAKE_CACHE_ARGS
         -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS}
