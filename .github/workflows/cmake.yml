@@ -367,3 +367,70 @@ jobs:
         cmake . -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
         cmake --build . --target libint2-python
         cmake --build . --target libint2-python-test
+
+  build_export_mingw:
+    # MinGW lanes: libstdc++ (UCRT64) and libc++ (CLANG64) differ in which locale names they accept, so test both
+    needs: build_repo
+    if: always() && (needs.build_repo.outputs.should_skip != 'true')
+    strategy:
+      fail-fast: false
+      matrix:
+        msystem: [ UCRT64, CLANG64 ]
+
+    name: "Export • windows-mingw-${{ matrix.msystem }}"
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+    - uses: actions/download-artifact@v4.1.7
+      with:
+        name: Linux-g++
+
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{ matrix.msystem }}
+        update: true
+        install: tar
+        pacboy: >-
+          toolchain:p
+          cmake:p
+          ninja:p
+          boost:p
+          eigen3:p
+          python:p
+
+    - name: Extract, Build, Install Libint Library
+      run: |
+        tar -zxf libint*tgz
+        mkdir libint && mv libint-2*/* libint/ && cd libint/
+        cmake \
+          -S . \
+          -B build \
+          -G Ninja \
+          -D CMAKE_BUILD_TYPE=Release \
+          -D CMAKE_INSTALL_PREFIX="$(cygpath -m '${{github.workspace}}')/installed" \
+          -D BUILD_SHARED_LIBS=OFF \
+          -D LIBINT2_REQUIRE_CXX_API_COMPILED=ON \
+          -D LIBINT2_ENABLE_PYTHON=OFF
+        cmake --build build --target install
+
+    - name: Test Libint library - unit tests
+      working-directory: ${{github.workspace}}/libint/build
+      run: cmake --build . --target check
+
+    - name: Test Libint library - consume installation for SCF
+      run: |
+        mkdir test_installed_library && cd test_installed_library
+        cat > CMakeLists.txt <<EOF
+        cmake_minimum_required(VERSION 3.8)
+        project(hf++)
+        find_package(Libint2 REQUIRED)
+        find_package(Threads)
+        add_executable(hf++ EXCLUDE_FROM_ALL "../libint/tests/hartree-fock/hartree-fock++.cc")
+        target_link_libraries(hf++ Libint2::cxx Threads::Threads)
+        EOF
+        cmake -S . -B from_install_tree -G Ninja -D CMAKE_BUILD_TYPE=Release -D CMAKE_PREFIX_PATH="$(cygpath -m '${{github.workspace}}')/installed"
+        cmake --build from_install_tree --target hf++
+        from_install_tree/hf++ ../libint/tests/hartree-fock/h2o_rotated.xyz | python ../libint/tests/hartree-fock/hartree-fock++-validate.py ../libint/features
