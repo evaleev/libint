@@ -192,7 +192,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   assert((s1.ncontr() == 1 && s2.ncontr() == 1) &&
          "generally-contracted shells not yet supported");
 
-  const auto oper_is_nuclear = this->oper_is_nuclear();
+  const auto oper_is_nuclear = is_nuclear_type(oper_);
 
   const auto l1 = s1.contr[0].l;
   const auto l2 = s2.contr[0].l;
@@ -237,6 +237,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   const auto nderivcoord = 3 * nderivcenters_shset;
   const auto num_shellsets_computed =
       nopers() * num_geometrical_derivatives(nderivcenters_shset, deriv_order_);
+  // targets_ and scratch_ are sized by reset_scratch() for
+  // compute_nshellsets() shell sets, the two must agree
+  if (num_shellsets_computed > targets_.size())
+    throw std::logic_error(
+        "Engine::compute1: buffers are too small for the computed shell sets");
 
   // will use scratch_ if:
   // - Coulomb ints are computed 1 charge at a time, contributions are
@@ -499,31 +504,10 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
 
             } break;
 
-            default: {
-              assert(deriv_order_ <= 2 && "feature not implemented");
-
-              // 1. since # of derivatives changes, remap derivatives computed
-              //    by libint; targets_ will hold the "remapped" pointers to
-              //    the data
-              using ShellSetDerivIterator =
-                  libint2::FixedOrderedIntegerPartitionIterator<
-                      std::vector<unsigned int>>;
-              ShellSetDerivIterator shellset_gaussian_diter(deriv_order_, 2);
-              ShellSetDerivIterator shellset_full_diter(deriv_order_,
-                                                        nderivcenters_shset);
-              std::vector<unsigned int> full_deriv(3 * nderivcenters_shset, 0);
-              std::size_t s = 0;
-              while (shellset_gaussian_diter) {  // loop over derivs computed
-                                                 // by libint
-                const auto& s1s2_deriv = *shellset_gaussian_diter;
-                std::copy(std::begin(s1s2_deriv), std::end(s1s2_deriv),
-                          std::begin(full_deriv));
-                const auto full_rank = ShellSetDerivIterator::rank(full_deriv);
-                targets_[full_rank] = primdata_[0].targets[s];
-              }
-              // use translational invariance to build derivatives w.r.t.
-              // operator centers
-            }
+            default:
+              throw std::logic_error(
+                  "Engine::compute1: geometric derivatives of order > 2 of "
+                  "nuclear-type integrals are not implemented");
 
           }  // deriv_order_ switch
         }    // reconstruct derivatives
@@ -994,7 +978,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   assert(LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD &&
          "non-standard shell ordering");
 
-  const auto oper_is_nuclear = this->oper_is_nuclear();
+  const auto oper_is_nuclear = is_nuclear_type(oper_);
 
   // need to use HRR? see strategy.cc
   const auto l1 = s1.contr[0].l;

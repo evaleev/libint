@@ -35,6 +35,12 @@ jobs:
             build_shared_libs: ON
             os: ubuntu-24.04
             do_fortran: ON
+          # exercise derivatives of multi-component nuclear-type operators
+          # (opVop, op_q_gau_op) in one lane only, to save compile time
+          - build_type: Debug
+            os: ubuntu-24.04
+            subproject: OFF
+            disable_onebody_property_derivs: OFF
           - build_type: Release
             build_shared_libs: ON
             os: macos-15
@@ -64,7 +70,7 @@ jobs:
         -D LIBINT2_ENABLE_ERI=1
         -D LIBINT2_ENABLE_ERI3=1
         -D LIBINT2_ENABLE_ONEBODY=1
-        -D LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS=ON
+        -D LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS=${{ matrix.disable_onebody_property_derivs || 'ON' }}
         -D LIBINT2_MULTIPOLE_MAX_ORDER=2
         -D LIBINT2_REQUIRE_CXX_API_COMPILED=ON
         -D LIBINT2_ENABLE_FORTRAN=${{ matrix.do_fortran }}

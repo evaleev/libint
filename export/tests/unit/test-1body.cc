@@ -718,7 +718,6 @@ struct NuclearDerivCase {
 
 std::vector<NuclearDerivCase> nuclear_deriv_cases() {
   std::vector<NuclearDerivCase> cases;
-#if LIBINT2_DERIV_ONEBODY_ORDER >= 1
   // these use the same generated code
   const std::vector<std::pair<Operator, const char*>> elecpot_opers{
       {Operator::nuclear, "nuclear"},
@@ -726,6 +725,8 @@ std::vector<NuclearDerivCase> nuclear_deriv_cases() {
       {Operator::erfc_nuclear, "erfc_nuclear"},
       {Operator::erfx_nuclear, "erfx_nuclear"},
       {Operator::q_gau, "q_gau"}};
+  static_cast<void>(elecpot_opers);  // unused if no derivatives
+#if LIBINT2_DERIV_ONEBODY_ORDER >= 1
   for (const auto& oper : elecpot_opers)
     cases.push_back({oper.first, oper.second, 1, 1, LIBINT2_MAX_AM_elecpot1});
 #endif

@@ -865,9 +865,7 @@ std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
   // nuclear attraction ints engine needs to know where the charges sit ...
   // the nuclei are charges in this case; in QM/MM there will also be classical
   // charges
-  if (obtype == Operator::nuclear || obtype == Operator::erf_nuclear ||
-      obtype == Operator::erfc_nuclear || obtype == Operator::erfx_nuclear ||
-      obtype == Operator::q_gau || obtype == Operator::op_q_gau_op) {
+  if (libint2::is_nuclear_type(obtype)) {
     engines[0].set_params(params);
   }
   for (size_t i = 1; i != nthreads; ++i) {
