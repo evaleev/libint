@@ -346,6 +346,8 @@ jobs:
       uses: conda-incubator/setup-miniconda@v3
       with:
         miniforge-variant: Miniforge3
+        # Miniforge3 26.9.4-0: `conda init --all` fails on Windows ("needs sudo" for conda.exe)
+        miniforge-version: ${{ runner.os == 'Windows' && '26.7.2-1' || 'latest' }}
         use-mamba: true
         python-version: "3.9"
         activate-environment: test
