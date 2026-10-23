@@ -113,7 +113,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * `🔸` required or recommended, but there's a path forward without
 * `-` not involved
 
-[^1]: C++ compiler that supports C++11 standard. C++11 standard is the fourth most recent international standard for C++, hence most modern compilers support it fully. A common compiler flag is `-std=c++11`, which CMake will impose on the compilation.
+[^1]: C++ compiler that supports C++11 standard (the Libint compiler itself requires C++17). C++11 standard is the fourth most recent international standard for C++, hence most modern compilers support it fully. A common compiler flag is `-std=c++11`, which CMake will impose on the compilation.
 
 [^2]: Fortran 2003 compiler to enable Fortran bindings generation.
 

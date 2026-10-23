@@ -31,6 +31,7 @@
 #include <strategy.h>
 
 #include <chrono>
+#include <cstdio>
 #include <deque>
 #include <fstream>
 #include <iomanip>
@@ -38,45 +39,69 @@
 #include <iterator>
 #include <sstream>
 #include <string>
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 
-/// Progress tracker for code generation.
+/// Progress tracker for code generation. On a terminal shows a single
+/// updating line; otherwise (e.g. in CI logs) prints one line per kernel so
+/// that a failure can be attributed to the kernel being generated.
 struct CodeGenProgress {
   unsigned int done = 0;
   std::string current_task;
   std::chrono::steady_clock::time_point start_time;
   bool started = false;
+  bool interactive = false;
+  std::string last_printed_task;
 
   void start() {
     start_time = std::chrono::steady_clock::now();
     started = true;
+    interactive = libint2_stderr_is_a_terminal();
   }
 
-  void print() const {
+  std::string elapsed() const {
+    const auto secs = std::chrono::duration_cast<std::chrono::seconds>(
+                          std::chrono::steady_clock::now() - start_time)
+                          .count();
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(2) << secs / 60 << ":" << std::setw(2)
+        << secs % 60;
+    return oss.str();
+  }
+
+  void print() {
     if (!started) return;
-    static const char spinner[] = "|/-\\";
-    const auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
-                             std::chrono::steady_clock::now() - start_time)
-                             .count();
-    const auto mins = elapsed / 60;
-    const auto secs = elapsed % 60;
-    std::cerr << "\r  " << spinner[done % 4] << "  " << std::setfill('0')
-              << std::setw(2) << mins << ":" << std::setw(2) << secs
-              << std::setfill(' ') << "  [" << done << " functions generated]  "
-              << current_task << "                    " << std::flush;
+    if (interactive) {
+      static const char spinner[] = "|/-\\";
+      std::cerr << "\r  " << spinner[done % 4] << "  " << elapsed() << "  ["
+                << done << " functions generated]  " << current_task
+                << "                    " << std::flush;
+    } else if (current_task != last_printed_task) {
+      std::cerr << "  " << elapsed() << "  [" << done << "] " << current_task
+                << std::endl;
+      last_printed_task = current_task;
+    }
   }
 
   void finish() {
     if (!started) return;
-    const auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
-                             std::chrono::steady_clock::now() - start_time)
-                             .count();
-    const auto mins = elapsed / 60;
-    const auto secs = elapsed % 60;
-    std::cerr << "\r  done  " << std::setfill('0') << std::setw(2) << mins
-              << ":" << std::setw(2) << secs << std::setfill(' ') << "  ["
+    std::cerr << (interactive ? "\r" : "") << "  done  " << elapsed() << "  ["
               << done << " functions generated]"
-              << "                                        " << std::endl;
+              << (interactive ? "                                        " : "")
+              << std::endl;
     started = false;
+  }
+
+ private:
+  static bool libint2_stderr_is_a_terminal() {
+#ifdef _WIN32
+    return _isatty(_fileno(stderr)) != 0;
+#else
+    return isatty(fileno(stderr)) != 0;
+#endif
   }
 };
 extern CodeGenProgress g_progress;

@@ -10,7 +10,10 @@ Following is a brief summary of changes made in each release of Libint.
     and 1-body Operator::opemuop. N.B. Operator::opemuop is inserted after the other 1-body
     operators, hence the numeric values of all 2-body Operator enumerators increase by 1.
     Engine::compute() now throws Engine::missing_kernel if the library was not configured to
-    compute the requested operator/braket/derivative order (previously the result was undefined).
+    compute the requested operator/braket/derivative order (previously the result was undefined),
+    and std::invalid_argument if given a cartesian fitting shell with l > 1 when the library was
+    configured with LIBINT2_ERI3_PURE_SH (previously a Debug-only assert). The Libint compiler
+    now requires C++17; the generated library still requires C++11 only.
   - PR #440: incremental builds re-export the library when include/libint2, export/tests, etc. change,
              without recompiling unchanged library sources (#438)
   - PR #436: GenericGmEval no longer copies the core evaluator on every call; fixes poor thread

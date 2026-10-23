@@ -71,7 +71,7 @@
 #undef LIBINT_INCLUDE_ERI
 #endif
 
-/* Support ERI derivatives up to this order */
+/* Support 4-center RKB ERI derivatives up to this order */
 #define LIBINT_INCLUDE_RKB_ERI @LIBINT_INCLUDE_RKB_ERI@
 #if @LIBINT_INCLUDE_RKB_ERI@ == -1
 #undef LIBINT_INCLUDE_RKB_ERI
@@ -144,7 +144,7 @@
 /* Max optimized AM for RKB_ERI (same for all derivatives; if not defined see LIBINT_RKB_ERI_OPT_AM_LIST) */
 #cmakedefine LIBINT_RKB_ERI_OPT_AM @LIBINT_RKB_ERI_OPT_AM@
 
-/* Max optimized AM for ERI and its derivatives */
+/* Max optimized AM for RKB_ERI and its derivatives */
 #cmakedefine LIBINT_RKB_ERI_OPT_AM_LIST "@LIBINT_RKB_ERI_OPT_AM_LIST@"
 
 /* Max AM for the 3-center RKB ERI density fitting (auxiliary/DF) basis on the single fitting center

@@ -150,6 +150,8 @@ if (LIBINT2_REQUIRE_CXX_API)
         FIXTURES_REQUIRED LIBINT2_UNIT_TESTS_EXEC
       )
 
+    # the Hartree-Fock examples need 4-center Coulomb integrals
+    if (NOT "${Libint2_MAX_AM_ERI}" STREQUAL "")
     add_executable(
       hf-libint2
       EXCLUDE_FROM_ALL
@@ -240,6 +242,7 @@ if (LIBINT2_REQUIRE_CXX_API)
       PROPERTIES
         FIXTURES_REQUIRED LIBINT2_HFXXTEST_EXEC
       )
+    endif()  # 4-center ERI
 
 endif (LIBINT2_REQUIRE_CXX_API)
 
