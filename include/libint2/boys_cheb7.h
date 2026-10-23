@@ -18,6 +18,9 @@
  *
  */
 
+// N.B. not a standalone header: this is included inside the body of class
+// FmEval_Chebyshev7 (see boys.h) and, for non-constexpr statics, by
+// statics_definition.h
 #ifndef LIBINT2_CONSTEXPR_STATICS
 #define LIBINT2_CONSTEXPR_STATICS 1
 #endif

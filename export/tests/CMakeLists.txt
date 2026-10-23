@@ -114,11 +114,13 @@ if (LIBINT2_REQUIRE_CXX_API)
         # note there's two ways to use eri.h, depending on the test src. eritest-libint2 uses the other.
         $<$<TARGET_EXISTS:Multiprecision::mpfr>:LIBINT_HAS_MPFR=1>
       )
+    find_package(Threads)  # test-core-ints.cc uses std::thread
     target_link_libraries(
       unit_tests-libint2
       PRIVATE
         $<IF:$<TARGET_EXISTS:Libint2::int2-cxx>,Libint2::int2-cxx,Libint2::cxx>
         # N.B. cxx compiled library if LIBINT2_REQUIRE_CXX_API_COMPILED=ON else header-only library
+        Threads::Threads
         $<$<TARGET_EXISTS:Multiprecision::mpfr>:Multiprecision::mpfr>
         $<$<TARGET_EXISTS:Multiprecision::mpfr>:Multiprecision::gmpxx>
         $<$<TARGET_EXISTS:Multiprecision::mpfr>:Multiprecision::gmp>

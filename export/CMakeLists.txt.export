@@ -64,8 +64,8 @@ if (HAVE_POSIX_MEMALIGN)
     option_with_default(LIBINT2_ALIGN_SIZE
       "(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics." 0)
     mark_as_advanced(LIBINT2_ALIGN_SIZE)
-elseif (MSVC)
-    # works for Windows in memory.h
+elseif (WIN32)
+    # works for Windows (MSVC and MinGW) in memory.h
     set(LIBINT2_ALIGN_SIZE "0" CACHE STRING "")
 endif()
 
