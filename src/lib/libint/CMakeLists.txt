@@ -47,8 +47,39 @@ configure_file(
   "include/libint2/basis.h"
   @ONLY)
 
+# populate.cmake copies whole directory trees, so glob them for its dependencies;
+#   CONFIGURE_DEPENDS re-globs at build time so that added files are picked up too.
+#   Dotfiles (e.g. .DS_Store) are skipped to avoid spurious re-exports.
+file(GLOB_RECURSE _populate_inputs CONFIGURE_DEPENDS
+  "${PROJECT_SOURCE_DIR}/export/*"
+  "${PROJECT_SOURCE_DIR}/include/libint2/*"
+  "${PROJECT_SOURCE_DIR}/doc/progman/*"
+  "${PROJECT_SOURCE_DIR}/cmake/modules/*.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
+  )
+list(FILTER _populate_inputs EXCLUDE REGEX "/\\.[^/]*$")
+list(APPEND _populate_inputs
+  "${PROJECT_SOURCE_DIR}/include/libint2.h"
+  "${PROJECT_SOURCE_DIR}/include/libint2.hpp"
+  "${PROJECT_SOURCE_DIR}/src/bin/libint/util_types.h"
+  "${PROJECT_SOURCE_DIR}/src/bin/test_eri/eri.h"
+  "${PROJECT_SOURCE_DIR}/src/bin/test_eri/prep_libint2.h"
+  "${PROJECT_SOURCE_DIR}/external/boost.tar.gz"
+  "${PROJECT_SOURCE_DIR}/doc/Libint_Logo3_alt.pdf"
+  "${PROJECT_SOURCE_DIR}/doc/Libint_Logo3_alt.eps"
+  "${PROJECT_SOURCE_DIR}/INSTALL.md"
+  "${PROJECT_SOURCE_DIR}/COPYING"
+  "${PROJECT_SOURCE_DIR}/COPYING.LESSER"
+  "${PROJECT_SOURCE_DIR}/CITATION"
+  "${PROJECT_SOURCE_DIR}/README.md"
+  "${PROJECT_BINARY_DIR}/cmake/modules/int_computed.cmake"
+  )
+
+# N.B. populate.cmake leaves unchanged files untouched, so the tarball keys off a stamp
+set(POPULATE_STAMP "${CMAKE_CURRENT_BINARY_DIR}/libint-library-populate.stamp")
 add_custom_command(
   OUTPUT
+    "${POPULATE_STAMP}"
     ${EXPORT_STAGE_DIR}/CMakeLists.txt
     ${EXPORT_STAGE_DIR}/include/libint2_params.h
     ${EXPORT_STAGE_DIR}/include/HRRPart0bra0ket0pp.h
@@ -58,17 +89,18 @@ add_custom_command(
           "-DPROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}"
           "-DEXPORT_STAGE_DIR=${EXPORT_STAGE_DIR}"
           -P ${CMAKE_CURRENT_SOURCE_DIR}/populate.cmake
+  COMMAND ${CMAKE_COMMAND} -E touch "${POPULATE_STAMP}"
   DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/populate.cmake"
-    "${PROJECT_SOURCE_DIR}/export/CMakeLists.txt.export"
     "${PROJECT_SOURCE_DIR}/cmake/libint2-config.cmake.in"
+    ${_populate_inputs}
     "${PROJECT_BINARY_DIR}/generated/libint2_params.h"
     "${PROJECT_BINARY_DIR}/generated/HRRPart0bra0ket0pp.h"
     "${PROJECT_BINARY_DIR}/generated/HRRPart0bra0ket0pp.cc"
     libint-library-generate
   COMMENT "Populating Libint2 library"
   )
-add_custom_target(libint-library-populate DEPENDS ${EXPORT_STAGE_DIR}/CMakeLists.txt)
+add_custom_target(libint-library-populate DEPENDS "${POPULATE_STAMP}")
 
 
 # <<<  Export The Library Source  >>>
@@ -81,7 +113,7 @@ add_custom_command(
   DEPENDS
     libint-library-generate
     libint-library-populate
-    ${EXPORT_STAGE_DIR}/CMakeLists.txt
+    "${POPULATE_STAMP}"
   WORKING_DIRECTORY "${EXPORT_STAGE_DIR}/.."
   COMMENT "Exporting tarball of Libint2 library source: ${EXPORT_TARBALL}"
   )
@@ -110,9 +142,12 @@ if (LIBINT2_BUILD_LIBRARY_AS_SUBPROJECT)
 
     if (EXISTS "${EXPORT_TARBALL}")
         message("Unpacking ${EXPORT_TARBALL} and setting up as a subproject")
+        # the hash makes FetchContent re-unpack a re-exported tarball at the same URL
+        file(SHA256 "${EXPORT_TARBALL}" _export_tarball_sha256)
         FetchContent_Declare(
           libint-library
           URL "${EXPORT_TARBALL}"
+          URL_HASH SHA256=${_export_tarball_sha256}
           )
         FetchContent_MakeAvailable(libint-library)
     else()
@@ -216,6 +251,20 @@ else()
         install
       )
     ExternalProject_Get_property(library BINARY_DIR)
+    # the download (i.e. unpack) step otherwise only reruns if the URL changes,
+    #   so a re-exported tarball would not be picked up by an existing build tree
+    ExternalProject_Add_StepDependencies(library download "${EXPORT_TARBALL}")
+    # start each library install from an empty stage, so that the files left
+    #   behind by a differently-configured earlier build (e.g. shared libraries
+    #   after switching to BUILD_SHARED_LIBS=OFF) do not get installed
+    ExternalProject_Add_Step(
+      library clear-stage
+      COMMAND ${CMAKE_COMMAND} -E rm -rf "${LIBRARY_INSTALL_STAGE_DIR}"
+      COMMENT "Clearing Libint2 library install stage"
+      DEPENDEES build
+      DEPENDERS install
+      ALWAYS TRUE
+      )
 
     # instead of running tests by default, replicate check-libint2 target here
     #   and use it to invoke library's check-libint2 target
