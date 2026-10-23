@@ -657,6 +657,7 @@ __libint2_engine_inline void Engine::_initialize() {
                                    BOOST_PP_NBODYENGINE_MCR3_task(product))),  \
         std::max(hard_lmax_, hard_default_lmax_), hard_lmax_);                 \
     if (lmax_ >= lmax) {                                                       \
+      buildfnptrs_ = nullptr; /* leave no table for kernels we cannot use */   \
       throw Engine::lmax_exceeded(BOOST_PP_STRINGIZE(BOOST_PP_NBODYENGINE_MCR3_TASK(product)), lmax, lmax_);              \
     }                                                                          \
     if (stack_size_ > 0)                                                       \
@@ -691,6 +692,12 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
     throw std::invalid_argument(
         "Engine::initialize -- geometric derivatives of RKB integrals are not "
         "yet supported");
+  // energies canonicalize xx_xs to xs_xx, but DerivMapGenerator has no
+  // derivative index map for xx_xs; fail here rather than inside compute2
+  if (braket_ == BraKet::xx_xs && deriv_order_ > 0)
+    throw std::invalid_argument(
+        "Engine::initialize -- geometric derivatives are not supported for "
+        "BraKet::xx_xs, use BraKet::xs_xx");
   assert(deriv_order_ <= LIBINT2_MAX_DERIV_ORDER &&
          "exceeded the max derivative order of the library");
 
@@ -2033,10 +2040,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
         // the kernels may have been generated assuming that the fitting
         // (bra) shell will be transformed to solid harmonics
         // (LIBINT2_ERI3_PURE_SH); this never applies to the RKB 3-center
-        // kernels. Such kernels produce garbage for a cartesian shell, hence
-        // check in all builds
-        if (detail::eri3_pure_sh && !detail::is_rkb_2body(oper_) &&
-            bra1.contr[0].l > 1 && !bra1.contr[0].pure)
+        // kernels, nor to derivative kernels (the generator marks the fitting
+        // shell pure only for derivative order 0, see build_libint.cc). Such
+        // kernels produce garbage for a cartesian shell, hence check in all
+        // builds
+        if (detail::eri3_pure_sh && deriv_order_ == 0 &&
+            !detail::is_rkb_2body(oper_) && bra1.contr[0].l > 1 &&
+            !bra1.contr[0].pure)
           throw std::invalid_argument(
               "Engine::compute2 -- this library assumes that the fitting "
               "(bra) shell of 3-center 2-body integrals is a solid harmonics "
@@ -2050,14 +2060,16 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                "the angular momentum limit is exceeded");
         buildfnidx = bra1.contr[0].l * hard_lmax_ + ket1.contr[0].l;
 #ifdef LIBINT_ERI2_PURE_SH
-        if (bra1.contr[0].l > 1)
+        // as for 3-center: derivative kernels are generated for cartesian
+        // shells, only the energy kernels assume solid harmonics
+        if (deriv_order_ == 0 && bra1.contr[0].l > 1)
           assert(bra1.contr[0].pure &&
                  "library assumes solid harmonics shells in a 2-center "
                  "2-body int, but a cartesian shell given in bra");
-        if (ket1.contr[0].l > 1)
+        if (deriv_order_ == 0 && ket1.contr[0].l > 1)
           assert(ket1.contr[0].pure &&
                  "library assumes solid harmonics shells in a 2-center "
-                 "2-body int, but a cartesian shell given in bra");
+                 "2-body int, but a cartesian shell given in ket");
 #endif
         break;
 

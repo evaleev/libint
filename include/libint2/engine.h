@@ -1276,13 +1276,14 @@ class Engine {
   size_t stack_size_;  // amount allocated by libint2_init_xxx in
                        // primdata_[0].stack
   int lmax_;
-  int hard_lmax_;  // max L supported by library for this operator type (i.e.
-                   // LIBINT2_MAX_AM_<task><deriv_order>) + 1
-  int hard_default_lmax_;  // max L supported by library for default operator
-                           // type (i.e. LIBINT2_MAX_AM_default<deriv_order>) +
-                           // 1 this is only set and used if
-                           // LIBINT2_CENTER_DEPENDENT_MAX_AM_<task><deriv_order>
-                           // == 1
+  // max L supported by library for this operator type (i.e.
+  // LIBINT2_MAX_AM_<task><deriv_order>) + 1; 0 until _initialize() finds
+  // the kernels
+  int hard_lmax_ = 0;
+  // max L supported by library for default operator type (i.e.
+  // LIBINT2_MAX_AM_default<deriv_order>) + 1; this is only set and used if
+  // LIBINT2_CENTER_DEPENDENT_MAX_AM_<task><deriv_order> == 1
+  int hard_default_lmax_ = 0;
   int deriv_order_;
   scalar_type precision_;
   scalar_type ln_precision_;
