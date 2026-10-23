@@ -636,6 +636,9 @@ __libint2_engine_inline void Engine::_initialize() {
         LIBINT2_PREFIXED_NAME(libint2_cleanup_default)(&primdata_[0]);         \
       stack_size_ = 0;                                                         \
       buildfnptrs_ = nullptr;                                                  \
+      targets_.clear();                                                        \
+      scratch_.clear();                                                        \
+      scratch2_ = nullptr;                                                     \
       return;                                                                  \
     }                                                                          \
     hard_lmax_ = BOOST_PP_CAT(LIBINT2_MAX_AM_,                                 \
@@ -836,6 +839,33 @@ __libint2_engine_inline unsigned int Engine::intrinsic_deriv_order() const {
   assert(false && "missing case in switch");  // unreachable
   abort();
 }
+
+// clang-format off
+// accessors to the permutational-symmetry traits of oper_ (see
+// operator_traits<Operator>): RET NAME ARGS const { return
+// operator_traits<oper_>::TRAIT_EXPR; }
+#define BOOST_PP_NBODYENGINE_MCR10(r, trait_expr, i, elem) \
+  case i:                                                  \
+    return operator_traits<static_cast<Operator>(i)>::trait_expr;
+#define LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(RET, NAME, ARGS, TRAIT_EXPR) \
+  __libint2_engine_inline RET Engine::NAME ARGS const {                     \
+    switch (static_cast<int>(oper_)) {                                      \
+      BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR10, TRAIT_EXPR,      \
+                               BOOST_PP_NBODY_OPERATOR_LIST)                \
+      default:                                                              \
+        break;                                                              \
+    }                                                                       \
+    assert(false && "missing case in switch"); /* unreachable */            \
+    abort();                                                                \
+  }
+LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(PairSwap, pair_swap, (), pair_swap)
+LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(bool, braket_swap, (), braket_swap)
+LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(int, pair_swap_phase, (unsigned int c), pair_swap_phase(c))
+LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(int, braket_swap_phase, (unsigned int c), braket_swap_phase(c))
+LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(unsigned int, braket_swap_remap, (unsigned int c), braket_swap_remap(c))
+#undef LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR
+#undef BOOST_PP_NBODYENGINE_MCR10
+// clang-format on
 
 template <>
 __libint2_engine_inline any Engine::enforce_params_type<any>(
@@ -1269,67 +1299,43 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
 #if LIBINT2_SHELLQUARTET_SET == \
     LIBINT2_SHELLQUARTET_SET_STANDARD  // standard angular momentum ordering
+  // canonicalize the shell set according to the permutational symmetry of
+  // the operator (see operator_traits: pair_swap, braket_swap); the kernels
+  // are generated for the canonical shell sets only
   bool swap_braket;
   bool swap_tbra, swap_tket;
-  if (oper_ == Operator::opop_coulomb_opop) {
-    // For σpσpCoulombσpσp: (ab|cd) = (cd|ab) = (ba|dc)* = (dc|ba)*
-    // Canonical form: lc >= ld (or la >= lb when lc == ld),
-    // la+lb <= lc+ld (or max(la,lb) <= lc when sums equal)
+  {
+    const auto pair_swap = this->pair_swap();
     const auto bra_total = tbra1.contr[0].l + tbra2.contr[0].l;
     const auto ket_total = tket1.contr[0].l + tket2.contr[0].l;
     const auto bra_max = std::max(tbra1.contr[0].l, tbra2.contr[0].l);
     const auto ket_max = std::max(tket1.contr[0].l, tket2.contr[0].l);
-    swap_braket = ((braket_ == BraKet::xx_xx) &&
+    // xx_xs is the alias of xs_xx, hence always swapped; else swap if the bra
+    // is "heavier" than the ket; with coupled pair swaps the kernels are
+    // generated for max(la,lb) <= lc when the totals tie
+    swap_braket = braket_ == BraKet::xx_xs ||
+                  (braket_ == BraKet::xx_xx && this->braket_swap() &&
                    (bra_total > ket_total ||
-                    (bra_total == ket_total && bra_max > ket_max))) ||
-                  braket_ == BraKet::xx_xs;
-    // Coupled swap: after braket swap, sort the pair that ends up in ket
-    // position to ensure lc >= ld; when lc == ld, also sort bra (la >= lb)
-    if (swap_braket) {
-      // After braket swap: new ket = original bra, new bra = original ket.
-      // Coupled swap sorts new ket (ensure lc >= ld).
-      const bool swap_p1p2 = (tbra1.contr[0].l < tbra2.contr[0].l);
-      swap_tbra = swap_tket = swap_p1p2;
-    } else {
-      // No braket swap: ket stays as original ket.
-      // Coupled swap sorts ket (ensure lc >= ld).
-      const bool swap_p1p2 = (tket1.contr[0].l < tket2.contr[0].l);
-      swap_tbra = swap_tket = swap_p1p2;
+                    (pair_swap == PairSwap::coupled && bra_total == ket_total &&
+                     bra_max > ket_max)));
+    switch (pair_swap) {
+      case PairSwap::independent:
+        swap_tbra = (tbra1.contr[0].l < tbra2.contr[0].l);
+        swap_tket = (tket1.contr[0].l < tket2.contr[0].l);
+        break;
+      case PairSwap::coupled: {
+        // sort the pair that ends up in the ket of the kernel, and swap the
+        // other pair along with it
+        const bool swap_pairs = swap_braket
+                                    ? (tbra1.contr[0].l < tbra2.contr[0].l)
+                                    : (tket1.contr[0].l < tket2.contr[0].l);
+        swap_tbra = swap_tket = swap_pairs;
+      } break;
+      case PairSwap::none:
+        swap_tbra = swap_tket = false;
+        break;
     }
-  } else if (oper_ == Operator::op_coulomb_op) {
-    // σpCoulombσp: only bra↔ket (particle 1↔2) swap is a symmetry (with
-    // (a,b)↔(b,a) component remap). Within-side swap is NOT a symmetry
-    // because σ·p attaches to one specific function per side; moving it to
-    // the other function changes the integral in a way IBP cannot recover
-    // across electrons. Canonical form: la+lb <= lc+ld only.
-    const auto bra_total = tbra1.contr[0].l + tbra2.contr[0].l;
-    const auto ket_total = tket1.contr[0].l + tket2.contr[0].l;
-    swap_braket = ((braket_ == BraKet::xx_xx) && (bra_total > ket_total)) ||
-                  braket_ == BraKet::xx_xs;
-    swap_tbra = false;
-    swap_tket = false;
-  } else if (oper_ == Operator::coulomb_op) {
-    // Coulombσp (3-center single-σ·p): σ·p attaches to the 2nd ket function ν,
-    // so within-ket swap is NOT a symmetry (it would move σ·p onto μ). The
-    // kernel is generated for every (lc,ld), so no canonicalizing swap is
-    // needed. bra↔ket swap IS a symmetry of 1/r12 and leaves the 3 Cartesian
-    // components unchanged (the vector index is the ket-side σ·p direction
-    // only — no transpose, no sign flip). Only xx_xs needs a braket swap.
-    swap_braket = (braket_ == BraKet::xx_xs);
-    swap_tbra = false;
-    swap_tket = false;
-  } else {
-    swap_braket = ((braket_ == BraKet::xx_xx) &&
-                   (tbra1.contr[0].l + tbra2.contr[0].l >
-                    tket1.contr[0].l + tket2.contr[0].l) &&
-                   (oper_ != Operator::coulomb_opop)) ||
-                  braket_ == BraKet::xx_xs;
-    swap_tbra = (tbra1.contr[0].l < tbra2.contr[0].l);
-    swap_tket = (tket1.contr[0].l < tket2.contr[0].l);
   }
-
-  // N.B. cannot swap bra and ket for coulomb_opop since the ket is mutated by
-  // this operator
 #else  // orca angular momentum ordering
   const auto swap_tbra = (tbra1.contr[0].l > tbra2.contr[0].l);
   const auto swap_tket = (tket1.contr[0].l > tket2.contr[0].l);
@@ -2155,6 +2161,14 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           const auto* src_row_ptr = source;
           auto tgt_ptr = target;
 
+          // the phase of this component due to the swaps (see
+          // operator_traits); N.B. shell sets are ordered as
+          // deriv index * nopers + component
+          const auto component = s % this->nopers();
+          const value_type component_phase =
+              (swap_ket ? this->pair_swap_phase(component) : 1) *
+              (swap_braket ? this->braket_swap_phase(component) : 1);
+
           // if permuting derivatives ints must update their derivative index
           // Additional BraKet types would require adding support to
           // DerivMapGenerator::generate_deriv_index_map
@@ -2211,70 +2225,20 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                     tgt_ptr + tgt_col_idx, nr1_tgt, nr2_tgt,
                     Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
                         nr2_tgt * ncol_tgt, ncol_tgt));
-                // Coupled swap sign correction for multi-component operators.
-                // N.B. s indexes operator components only because RKB
-                // integrals have no geometric derivatives (see initialize()).
-                // TODO: the per-component swap phase and the component remap
-                // below are hardcoded per operator (op_coulomb_op,
-                // opop_coulomb_opop, ...). These belong with the operator
-                // definition; expose them as traits (e.g. swap_phase(s),
-                // swap_remap(s)) so new multi-component operators need no new
-                // branch here.
-                Shell::real_t oper_cart_component_phase = 1.0;
-                if (swap_tket && oper_ == Operator::opop_coulomb_opop) {
-                  const bool bra_is_spin = (s / 4) > 0;
-                  const bool ket_is_spin = (s % 4) > 0;
-                  if (bra_is_spin != ket_is_spin)
-                    oper_cart_component_phase = -1.0;
-                }
-                // coulomb_opop is bra<->ket swapped only in BraKet::xx_xs
-                // (the 3-center alias of xs_xx), where tket2 is the unit shell,
-                // hence swap_tket is false. After swap_braket the user's bra
-                // (AO pair) becomes the kernel's ket where σ·p attaches. If
-                // swap_tbra is also applied to canonicalize that AO pair,
-                // σ·p_a σ·p_b ↔ σ·p_b σ·p_a — antisymmetric, so x,y,z
-                // components (s>0) pick up a -1 sign. (The scalar component
-                // s=0 is invariant.)
-                assert(!(swap_tket && oper_ == Operator::coulomb_opop));
-                if (swap_tbra && oper_ == Operator::coulomb_opop && s > 0)
-                  oper_cart_component_phase = -1.0;
-                // op_coulomb_op irrep layout under bra↔ket swap: antisym
-                // components (s ∈ {1,2,3}) flip sign; scalar (0) and sym-TL
-                // (4..8) are invariant. swap_tket is always false for this
-                // operator; the sign correction applies on swap_braket alone.
-                if (oper_ == Operator::op_coulomb_op && s >= 1 && s <= 3)
-                  oper_cart_component_phase = -1.0;
                 if (swap_tbra)
-                  tgt_blk_mat =
-                      oper_cart_component_phase * src_blk_mat.transpose();
+                  tgt_blk_mat = component_phase * src_blk_mat.transpose();
                 else
-                  tgt_blk_mat = oper_cart_component_phase * src_blk_mat;
+                  tgt_blk_mat = component_phase * src_blk_mat;
               } else {
                 // source row {r1,r2} is mapped to target row {r1,r2} if
                 // !swap_tbra, else to {r2,r1}
                 const auto tgt_row_idx =
                     !swap_tbra ? r1 * nr2 + r2 : r2 * nr1 + r1;
                 Map tgt_blk_mat(tgt_ptr + tgt_row_idx * ncol, nc1_tgt, nc2_tgt);
-                if (swap_tket) {
-                  Shell::real_t oper_cart_component_phase = 1.0;
-                  if (oper_ == Operator::opop_coulomb_opop) {
-                    // Option A ordering: index = 4*bra + ket
-                    // Coupled swap (a<->b AND c<->d) flips sign when exactly
-                    // one of bra/ket is a cross product (spin != S):
-                    //   bra_spin = s/4, ket_spin = s%4 (0=S, 1-3=X/Y/Z)
-                    const bool bra_is_spin = (s / 4) > 0;
-                    const bool ket_is_spin = (s % 4) > 0;
-                    if (bra_is_spin != ket_is_spin)
-                      oper_cart_component_phase = -1.0;
-                  }
-                  if (oper_ == Operator::coulomb_opop && s > 0)
-                    oper_cart_component_phase =
-                        -1.0;  // x,y,z quaternion components flip sign on
-                               // swapping ket for coulomb_opop
-                  tgt_blk_mat =
-                      oper_cart_component_phase * src_blk_mat.transpose();
-                } else
-                  tgt_blk_mat = src_blk_mat;
+                if (swap_tket)
+                  tgt_blk_mat = component_phase * src_blk_mat.transpose();
+                else
+                  tgt_blk_mat = component_phase * src_blk_mat;
               }
             }  // end of loop
           }    // over rows of source
@@ -2300,20 +2264,22 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
         }
       }  // loop over shellsets
 
-      // For opop_coulomb_opop with swap_braket: swapping particles remaps
-      // component (α,β) → (β,α). With Option A ordering (index=4*bra+ket),
-      // this is a matrix transpose: s_new = 4*(s%4) + (s/4).
-      if (permute && oper_ == Operator::opop_coulomb_opop && swap_braket) {
-        // N.B. assumes no geometric derivatives (see initialize())
-        assert(ntargets == 16);
-        std::array<const value_type*, 16> temp;
-        for (auto s = 0; s != ntargets; ++s) temp[s] = targets_[s];
-        for (auto s = 0; s != ntargets; ++s)
-          targets_[4 * (s % 4) + (s / 4)] = temp[s];
+      // swapping bra and ket may permute the components (see
+      // operator_traits::braket_swap_remap)
+      if (permute && swap_braket) {
+        const auto nopers = this->nopers();
+        bool trivial = true;
+        for (auto c = 0u; c != nopers && trivial; ++c)
+          trivial = (this->braket_swap_remap(c) == c);
+        if (!trivial) {
+          const auto tmp = targets_;
+          for (auto s = 0; s != ntargets; ++s) {
+            const auto d = s / nopers;
+            const auto c = s % nopers;
+            targets_[d * nopers + this->braket_swap_remap(c)] = tmp[s];
+          }
+        }
       }
-      // op_coulomb_op irrep layout: bra↔ket swap is handled in-place by
-      // oper_cart_component_phase above (sign flip on antisym components,
-      // identity on scalar / sym-TL); no pointer remap is needed.
     }       // if need_scratch => needed to transpose and/or tform
     else {  // did not use scratch? may still need to update targets_
       if (set_targets_) {

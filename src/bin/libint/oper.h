@@ -238,6 +238,19 @@ typedef OperatorProperties<2, false, PermutationalSymmetry::symm>
 typedef OperatorProperties<2, false, PermutationalSymmetry::nonsymm>
     NonmultiplicativeNonsymm2Body_Props;
 
+/// which swaps of the two functions within the bra and within the ket of a
+/// 2-body integral the engine may perform to canonicalize a shell set; the
+/// generated kernels cover exactly the shell sets that are canonical with
+/// respect to these swaps. Must match PairSwap in the engine (engine.h).
+enum class PairSwap {
+  /// bra and ket are sorted independently of each other
+  independent,
+  /// bra and ket are swapped together, or not at all (the ket is sorted)
+  coupled,
+  /// neither bra nor ket may be swapped
+  none
+};
+
 /** GenMultSymmOper is a generic multiplicative symmetric N-body operator
  */
 template <unsigned int N>
@@ -430,6 +443,11 @@ using SphericalMultipoleOper = GenOper<SphericalMultipole_Descr>;
 struct TwoPRep_Descr : public Contractable<TwoPRep_Descr> {
   typedef MultiplicativeSymm2Body_Props Properties;
   static const unsigned int max_key = 1;
+  /// whether the engine may swap particles 1 and 2 (bra and ket in chemists'
+  /// notation) to canonicalize a shell set
+  static constexpr bool p1p2_swappable = true;
+  /// which swaps within bra and within ket the engine may perform
+  static constexpr PairSwap pair_swap = PairSwap::independent;
   unsigned int key() const { return 0; }
   std::string description() const { return "1/r_{12}"; }
   std::string label() const { return "TwoPRep"; }
@@ -438,11 +456,18 @@ struct TwoPRep_Descr : public Contractable<TwoPRep_Descr> {
 };
 typedef GenOper<TwoPRep_Descr> TwoPRep;
 
-/** Coulombσpσp is the two-body repulsion operator.
+/** Coulombσpσp: (a b | 1/r_{12} | σ·p c σ·p d), the Coulomb operator with
+ *  σ·p acting on both functions of particle 2. The Dirac identity
+ *  σ_i σ_j = δ_ij + i ε_ijk σ_k folds the Pauli matrices into 4 quaternion
+ *  components: 0: ∇_c·∇_d, 1-3: (∇_c × ∇_d)_{x,y,z}.
  */
 struct Coulombσpσp_Descr : public Contractable<Coulombσpσp_Descr> {
   // σ·p acts on particle 2 only, hence no particle 1<->2 symmetry
   typedef MultiplicativeNonsymm2Body_Props Properties;
+  static constexpr bool p1p2_swappable = false;
+  /// swapping c and d changes the sign of components 1-3 (handled by the
+  /// engine)
+  static constexpr PairSwap pair_swap = PairSwap::independent;
 
   Coulombσpσp_Descr() : quaternion_index_(0) {}
   Coulombσpσp_Descr(int quaternion_index)
@@ -489,6 +514,10 @@ typedef GenOper<Coulombσpσp_Descr> CoulombσpσpOper;
 struct Coulombσp_Descr : public Contractable<Coulombσp_Descr> {
   // σ·p acts on particle 2 only, hence no particle 1<->2 symmetry
   typedef MultiplicativeNonsymm2Body_Props Properties;
+  static constexpr bool p1p2_swappable = false;
+  /// σ·p acts on d only, hence c and d cannot be swapped: kernels are
+  /// generated for every ordering of the paired centers
+  static constexpr PairSwap pair_swap = PairSwap::none;
 
   Coulombσp_Descr() : cartesian_index_(0) {}
   Coulombσp_Descr(int cartesian_index) : cartesian_index_(cartesian_index) {
@@ -523,6 +552,10 @@ typedef GenOper<Coulombσp_Descr> CoulombσpOper;
 struct σpσpCoulombσpσp_Descr : public Contractable<σpσpCoulombσpσp_Descr> {
   // particle 1<->2 symmetric up to a remap of the components
   typedef MultiplicativeSymm2Body_Props Properties;
+  static constexpr bool p1p2_swappable = true;
+  /// (ab|cd) = (ba|dc) up to the sign of some components, but
+  /// (ab|cd) != (ba|cd): the pairs can only be swapped together
+  static constexpr PairSwap pair_swap = PairSwap::coupled;
 
   σpσpCoulombσpσp_Descr() : quaternion_index_(0) {}
   σpσpCoulombσpσp_Descr(int quaternion_index)
@@ -572,6 +605,10 @@ typedef GenOper<σpσpCoulombσpσp_Descr> σpσpCoulombσpσpOper;
 struct σpCoulombσp_Descr : public Contractable<σpCoulombσp_Descr> {
   // particle 1<->2 symmetric up to the sign of the antisymmetric components
   typedef MultiplicativeSymm2Body_Props Properties;
+  static constexpr bool p1p2_swappable = true;
+  /// σ·p acts on one specific function of each pair, hence no swaps within
+  /// bra or ket
+  static constexpr PairSwap pair_swap = PairSwap::none;
 
   /// SO(3) irreducible components of the rank-2 Cartesian tensor T_{ab}.
   enum Component : int {

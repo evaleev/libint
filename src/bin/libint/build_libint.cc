@@ -76,40 +76,52 @@ enum ShellSetType {
 };
 template <ShellSetType ShSet>
 struct ShellQuartetSetPredicate {
-  // return true if this set of angular momenta is included
-  static bool value(int la, int lb, int lc, int ld, bool p1p2_swappable = true);
+  /// @return true if code is to be generated for this set of angular momenta,
+  /// i.e. if it is canonical with respect to the permutations the engine
+  /// performs for this operator (see the descriptor traits p1p2_swappable and
+  /// pair_swap, and operator_traits in the engine)
+  /// @param p1p2_swappable whether the operator allows swapping particles 1
+  /// and 2 (bra and ket in chemists' notation)
+  /// @param pair_swap which swaps of the two functions within bra and within
+  /// ket the operator allows
+  static bool value(int la, int lb, int lc, int ld, bool p1p2_swappable = true,
+                    PairSwap pair_swap = PairSwap::independent);
 };
-
-/**
- * standard ordering for angular momenta la, lb, lc, ld
- * @param p1p2_swappable whether operator allows swaps of particle 1 and 2
- * functions (e.g., not allowed for Coulombσpσp but allowed
- * for Coulomb (TwoPRep)).
- * @param bra_ket_coswappable whether need to swap within both bra and ket.
- * Not individually swapping of either ket of bra allowed
- * ( e.g., for σpσpCoulombσpσp)
- */
 template <>
 struct ShellQuartetSetPredicate<ShellSetType_Standard> {
   static bool value(int la, int lb, int lc, int ld, bool p1p2_swappable = true,
-                    bool bra_ket_coswappable = false) {
-    if (bra_ket_coswappable)
-      return lc >= ld && (la + lb < lc + ld ||
-                          (la + lb == lc + ld && std::max(la, lb) <= lc));
-    else
-      return la >= lb && lc >= ld && (!p1p2_swappable || la + lb <= lc + ld);
+                    PairSwap pair_swap = PairSwap::independent) {
+    switch (pair_swap) {
+      case PairSwap::independent:
+        return la >= lb && lc >= ld && (!p1p2_swappable || la + lb <= lc + ld);
+      case PairSwap::coupled:
+        // the ket is sorted and the bra follows; when the totals tie the
+        // engine swaps bra and ket such that max(la,lb) <= lc
+        assert(p1p2_swappable);
+        return lc >= ld && (la + lb < lc + ld ||
+                            (la + lb == lc + ld && std::max(la, lb) <= lc));
+      case PairSwap::none:
+        return !p1p2_swappable || la + lb <= lc + ld;
+    }
+    abort();
   }
 };
 template <>
 struct ShellQuartetSetPredicate<ShellSetType_ORCA> {
   static bool value(int la, int lb, int lc, int ld, bool p1p2_swappable = true,
-                    bool bra_ket_coswappable = false) {
-    if (bra_ket_coswappable)
-      return lc <= ld && (la + lb > lc + ld ||
-                          (la + lb == lc + ld && std::min(la, lb) >= lc));
-    else
-      return la <= lb && lc <= ld &&
-             (!p1p2_swappable || (la < lc || (la == lc && lb <= ld)));
+                    PairSwap pair_swap = PairSwap::independent) {
+    switch (pair_swap) {
+      case PairSwap::independent:
+        return la <= lb && lc <= ld &&
+               (!p1p2_swappable || (la < lc || (la == lc && lb <= ld)));
+      case PairSwap::coupled:
+        assert(p1p2_swappable);
+        return lc <= ld && (la + lb > lc + ld ||
+                            (la + lb == lc + ld && std::min(la, lb) >= lc));
+      case PairSwap::none:
+        return !p1p2_swappable || la + lb >= lc + ld;
+    }
+    abort();
   }
 };
 template <ShellSetType ShSet>
@@ -326,6 +338,16 @@ Coulombσpσp_Descr make_descr<Coulombσpσp_Descr>(int p, int, int) {
 template <>
 σpσpCoulombσpσp_Descr make_descr<σpσpCoulombσpσp_Descr>(int p, int, int) {
   return σpσpCoulombσpσp_Descr(p);
+}
+
+template <>
+σpCoulombσp_Descr make_descr<σpCoulombσp_Descr>(int p, int, int) {
+  return σpCoulombσp_Descr(p);
+}
+
+template <>
+Coulombσp_Descr make_descr<Coulombσp_Descr>(int p, int, int) {
+  return Coulombσp_Descr(p);
 }
 
 template <typename _OperType>
@@ -1237,10 +1259,15 @@ void print_config(std::ostream& os) {
   os << "Will support G12DKH" << endl;
 #endif
 #ifdef LIBINT_INCLUDE_RKB_ERI
-  os << "Will support restricted kinetically balance (RKB) 4-center ERIs "
-     << std::endl;
+  os << "Will support restricted kinetic balance (RKB) 4-center ERIs";
   if (LIBINT_INCLUDE_RKB_ERI > 0)
-    os << "(deriv order = " << LIBINT_INCLUDE_RKB_ERI << ")";
+    os << " (deriv order = " << LIBINT_INCLUDE_RKB_ERI << ")";
+  os << endl;
+#endif
+#ifdef LIBINT_INCLUDE_RKB_ERI3
+  os << "Will support restricted kinetic balance (RKB) 3-center ERIs";
+  if (LIBINT_INCLUDE_RKB_ERI3 > 0)
+    os << " (deriv order = " << LIBINT_INCLUDE_RKB_ERI3 << ")";
   os << endl;
 #endif
 }
@@ -1282,21 +1309,11 @@ static void build_TwoPRep_2b_2k(
   std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
   std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
 
-  // σpCoulombσp has a 2-fold bra↔ket-swap symmetry, with per-component sign
-  // flips under the swap (Antisym* flip sign; Scalar/SymTL* invariant) — this
-  // is captured by p1_p2_swappable=true plus a dedicated predicate that
-  // canonicalizes only la+lb<=lc+ld and emits code for *all* within-side
-  // orderings (within-side swap is NOT a symmetry — σ·p attaches to one
-  // specific function per side, and IBP cannot recover the sign across the
-  // 1/r12 coupling).
-  // TODO: the per-operator swappability/component-count rules are spread across
-  // many std::is_same<OperType, ...> branches here (and the descriptor loops
-  // and strategy specializations). These are properties of the operator
-  // descriptor; expose them as descriptor traits (e.g. ncomponents(),
-  // p1p2_swappable(), bra_ket_coswappable()) and query generically so a new
-  // operator needs no edit here.
-  bool p1_p2_swappable = !std::is_same<OperType, CoulombσpσpOper>::value;
-  bool bra_ket_coswappable = std::is_same<OperType, σpσpCoulombσpσpOper>::value;
+  // the shell sets to generate code for are those that are canonical with
+  // respect to the permutations the engine performs for this operator
+  // (see the descriptor's p1p2_swappable and pair_swap)
+  constexpr bool p1p2_swappable = OperDescrType::p1p2_swappable;
+  constexpr PairSwap pair_swap = OperDescrType::pair_swap;
 
   // Note: la, lb, lc, ld generate code for chemist notation (ab|O|cd), where O
   // is a two-body operator.
@@ -1304,23 +1321,10 @@ static void build_TwoPRep_2b_2k(
     for (unsigned int lb = 0; lb <= lmax; lb++) {
       for (unsigned int lc = 0; lc <= lmax; lc++) {
         for (unsigned int ld = 0; ld <= lmax; ld++) {
-          // σpCoulombσp: only bra↔ket (particle 1↔2) swap is a symmetry.
-          // Within-side swap is NOT (σ·p would move to a different physical
-          // center; IBP cannot repair the sign across 1/r12). Dedicated
-          // predicate canonicalizes la+lb<=lc+ld only (ORCA: >=) and accepts
-          // all within-side orderings.
-          if constexpr (std::is_same<OperType, σpCoulombσpOper>::value) {
-#if LIBINT_SHELL_SET == LIBINT_SHELL_SET_STANDARD
-            if (!(la + lb <= lc + ld)) continue;
-#else
-            if (!(la + lb >= lc + ld)) continue;
-#endif
-          } else {
-            if (!ShellQuartetSetPredicate<static_cast<ShellSetType>(
-                    LIBINT_SHELL_SET)>::value(la, lb, lc, ld, p1_p2_swappable,
-                                              bra_ket_coswappable))
-              continue;
-          }
+          if (!ShellQuartetSetPredicate<static_cast<ShellSetType>(
+                  LIBINT_SHELL_SET)>::value(la, lb, lc, ld, p1p2_swappable,
+                                            pair_swap))
+            continue;
 
           // std::shared_ptr<Tactic> tactic(new ParticleDirectionTactic(la+lb >
           // lc+ld ? false : true));
@@ -1337,32 +1341,10 @@ static void build_TwoPRep_2b_2k(
           /////////////////////////////////
           // loop over operator components
           /////////////////////////////////
-          std::vector<OperDescrType> descrs(1);
-          if constexpr (std::is_same<OperType, CoulombσpσpOper>::value) {
-            // reset descriptors array
-            descrs.resize(0);
-            // iterate over 4 quaternion components (single spin space)
-            for (int p = 0; p != 4; ++p) {
-              descrs.emplace_back(OperDescrType(p));
-            }
-          }
-          if constexpr (std::is_same<OperType, σpσpCoulombσpσpOper>::value) {
-            // reset descriptors array
-            descrs.resize(0);
-            // iterate over 16 components (tensor product of two spin spaces)
-            for (int p = 0; p != 16; ++p) {
-              descrs.emplace_back(OperDescrType(p));
-            }
-          }
-          if constexpr (std::is_same<OperType, σpCoulombσpOper>::value) {
-            // reset descriptors array
-            descrs.resize(0);
-            // iterate over 9 SO(3) irrep components: 1 scalar trace + 3
-            // antisym (curl-curl) + 5 sym-traceless
-            for (int p = 0; p != 9; ++p) {
-              descrs.emplace_back(OperDescrType(p));
-            }
-          }
+          // one target per operator component
+          std::vector<OperDescrType> descrs;
+          for (unsigned int p = 0; p != OperDescrType::max_key; ++p)
+            descrs.emplace_back(make_descr<OperDescrType>(p));
 
           // unroll only if max_am <= cparams->max_am_opt(task)
           using std::max;
@@ -1512,9 +1494,6 @@ static void build_TwoPRep_2b_2k(
           dg_xxxx->reset();
           memman->reset();
 
-          ++g_progress.done;
-          g_progress.print();
-
         }  // end of d loop
       }    // end of c loop
     }      // end of b loop
@@ -1575,16 +1554,11 @@ static void build_TwoPRep_1b_2k(
   for (unsigned int lbra = 0; lbra <= lmax; lbra++) {
     for (unsigned int lc = 0; lc <= lmax_default; lc++) {
       for (unsigned int ld = 0; ld <= lmax_default; ld++) {
-        // eliminate some cases depending on the desired convention.
-        // The Standard/ORCA triangle (lc>=ld / lc<=ld) is valid only when the
-        // ket pair (μ,ν) is permutationally symmetric, so the engine can
-        // canonicalize by swapping μ↔ν. CoulombσpOper has a single σ·p on ν
-        // only, so that swap is NOT a symmetry — the engine never swaps and
-        // indexes the build table by the exact (l(μ),l(ν)); we must therefore
-        // emit the FULL (lc,ld) square. (Plain ERI3 and CoulombσpσpOper keep
-        // the triangle: ERI3's ket pair is symmetric, and Coulombσpσp carries
-        // σ·p on both ket functions so μ↔ν stays a symmetry.)
-        if constexpr (!std::is_same<OperType, CoulombσpOper>::value) {
+        // eliminate some cases depending on the desired convention: the
+        // Standard/ORCA triangle (lc>=ld / lc<=ld) applies only if the engine
+        // may swap the two functions of the paired (AO) centers (see the
+        // descriptor's pair_swap)
+        if (OperDescrType::pair_swap != PairSwap::none) {
           if (!ShellTripletSetPredicate<static_cast<ShellSetType>(
                   LIBINT_SHELL_SET)>::value(lbra, lc, ld))
             continue;
@@ -1607,17 +1581,10 @@ static void build_TwoPRep_1b_2k(
         if (!(lbra == lim && lc == lim && ld == lim)) continue;
 #endif
 
-        // operator components: 1 for plain TwoPRep, 4 for RKB CoulombσpσpOper
-        // (σ·p on both AO ket fns), 3 for RKB CoulombσpOper (single σ·p →
-        // x,y,z)
-        std::vector<OperDescrType> descrs(1);
-        if constexpr (std::is_same<OperType, CoulombσpσpOper>::value) {
-          descrs.resize(0);
-          for (int p = 0; p != 4; ++p) descrs.emplace_back(OperDescrType(p));
-        } else if constexpr (std::is_same<OperType, CoulombσpOper>::value) {
-          descrs.resize(0);
-          for (int p = 0; p != 3; ++p) descrs.emplace_back(OperDescrType(p));
-        }
+        // one target per operator component
+        std::vector<OperDescrType> descrs;
+        for (unsigned int p = 0; p != OperDescrType::max_key; ++p)
+          descrs.emplace_back(make_descr<OperDescrType>(p));
         const auto nopers = descrs.size();
 
         // unroll only if max_am <= cparams->max_am_opt(task)
@@ -1789,8 +1756,6 @@ static void build_TwoPRep_1b_2k(
 #endif
         dg_xxx->reset();
         memman->reset();
-        ++g_progress.done;
-        g_progress.print();
       }  // end of d loop
     }    // end of c loop
   }      // end of bra loop
@@ -1989,8 +1954,6 @@ void build_TwoPRep_1b_1k(std::ostream& os,
 #endif
       dg_xxx->reset();
       memman->reset();
-      ++g_progress.done;
-      g_progress.print();
     }  // end of ket loop
   }    // end of bra loop
 }

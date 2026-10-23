@@ -272,6 +272,43 @@ enum class Operator {
 /// @param[in] oper an Operator object
 /// @return the particle rank of \c oper
 /// @throw std::logic_error if an invalid @c oper given
+/**
+ \page rkb_operators Conventions for the relativistic (RKB) 2-body operators
+
+ The four operators built from σ·p and 1/r₁₂ expose their components in
+ different ways; this table is the single reference for their layouts.
+ "Folded" means that the Pauli matrices were contracted using
+ σ_a σ_b = δ_ab + i ε_abc σ_c, so the user must not apply them again;
+ "not folded" means the result is the spatial tensor and the user contracts it
+ with the Pauli matrices. In chemists' notation (ab|cd) the operator acts on
+ the second function of a pair, i.e. on b and/or d.
+
+ | Engine (C++ API)     | Compiler           | task label     | #comp |
+ component index                                      | spin   |
+ |----------------------|--------------------|----------------|-------|------------------------------------------------------|--------|
+ | `coulomb_opop`       | `Coulombσpσp`      | `coulomb_opop` |   4   | 0:
+ ∇_c·∇_d, 1-3: (∇_c×∇_d)_{x,y,z}                   | folded | | `coulomb_op` |
+ `Coulombσp`        | `coulomb_op`   |   3   | ∂_{d,x}, ∂_{d,y}, ∂_{d,z}
+ (3-center only)             | n/a    | | `opop_coulomb_opop`  |
+ `σpσpCoulombσpσp`  | `opop_coulomb_opop` | 16 | 4·bra + ket, with bra, ket ∈
+ {0: ∇·∇, 1-3: (∇×∇)_{x,y,z}} of (a,b) and (c,d); the sign of i² is folded into
+ the 1-3 ⊗ 1-3 block | folded | | `op_coulomb_op`      | `σpCoulombσp`      |
+ `op_coulomb_op` |   9  | SO(3) irreps of T_ab = ∂_{b,a} ∂_{d,b}: 0: trace, 1-3:
+ T_yz−T_zy, T_zx−T_xz, T_xy−T_yx, 4: T_xx−T_yy, 5: 2T_zz−T_xx−T_yy, 6-8:
+ T_xy+T_yx, T_xz+T_zx, T_yz+T_zy | not folded |
+
+ The 1-body analog of `opVop` with the dipole operator in the middle is
+ `opemuop` (compiler: `σpeμσp`), with 12 = 3 (dipole direction, slow) × 4
+ (folded Pauli component, fast) components.
+
+ The behavior of the components under the permutations Engine uses to
+ canonicalize shell sets is encoded in operator_traits<Operator>:
+ pair_swap, braket_swap, pair_swap_phase(), braket_swap_phase() and
+ braket_swap_remap(). The generated library covers exactly the shell sets that
+ are canonical under these permutations (see the matching descriptor traits
+ in the compiler).
+ */
+
 inline constexpr int rank(Operator oper) {
   return (oper >= Operator::first_1body_oper &&
           oper <= Operator::last_1body_oper)
@@ -294,6 +331,19 @@ inline constexpr bool is_nuclear_type(Operator oper) {
          oper == Operator::op_q_gau_op;
 }
 
+/// which swaps of the two functions within the bra and within the ket of a
+/// 2-body integral Engine may perform to canonicalize a shell set; the
+/// generated kernels cover exactly the shell sets that are canonical with
+/// respect to these swaps
+enum class PairSwap {
+  /// bra and ket are sorted independently of each other
+  independent,
+  /// bra and ket are swapped together, or not at all (the ket is sorted)
+  coupled,
+  /// neither bra nor ket may be swapped
+  none
+};
+
 namespace detail {
 struct default_operator_traits {
   typedef struct {
@@ -303,6 +353,21 @@ struct default_operator_traits {
   // N.B.: Below field means we *should* template specialize operator_traits for
   // Operator::kinetic, but L2 doesn't use that anywhere.
   static constexpr auto intrinsic_deriv_order = 0u;
+  /// which swaps within bra and within ket of a 2-body integral the engine
+  /// may perform to canonicalize a shell set
+  static constexpr auto pair_swap = PairSwap::independent;
+  /// whether the engine may swap bra and ket (particles 1 and 2) of a 2-body
+  /// integral to canonicalize a shell set
+  static constexpr bool braket_swap = true;
+  /// @return the phase acquired by component @p c when the two functions of
+  /// the ket (and, if pair_swap is PairSwap::coupled, of the bra) are swapped
+  static constexpr int pair_swap_phase(unsigned int /* c */) { return 1; }
+  /// @return the phase acquired by component @p c when bra and ket are
+  /// swapped
+  static constexpr int braket_swap_phase(unsigned int /* c */) { return 1; }
+  /// @return the index of the component that component @p c becomes when bra
+  /// and ket are swapped
+  static constexpr unsigned int braket_swap_remap(unsigned int c) { return c; }
   struct _core_eval_type {
     template <typename... params>
     static std::shared_ptr<const _core_eval_type> instance(params...) {
@@ -481,6 +546,13 @@ struct operator_traits<Operator::coulomb_opop>
     : public operator_traits<Operator::coulomb> {
   static constexpr auto nopers = 4;
   static constexpr auto intrinsic_deriv_order = 2;
+  /// σ·p acts on the ket only, hence bra and ket cannot be swapped
+  static constexpr bool braket_swap = false;
+  /// swapping the ket functions swaps the two ∇ in ∇_c × ∇_d: the vector
+  /// components (1-3) change sign, the scalar (0) does not
+  static constexpr int pair_swap_phase(unsigned int c) {
+    return c > 0 ? -1 : 1;
+  }
 };
 template <>
 struct operator_traits<Operator::coulomb_op>
@@ -489,6 +561,10 @@ struct operator_traits<Operator::coulomb_op>
   /// index = a, a ∈ {x=0, y=1, z=2}. One intrinsic derivative (σ·p = one ∇).
   static constexpr auto nopers = 3;
   static constexpr auto intrinsic_deriv_order = 1;
+  /// σ·p acts on one specific function, hence no swaps (the kernels are
+  /// generated for every ordering of the paired centers)
+  static constexpr auto pair_swap = PairSwap::none;
+  static constexpr bool braket_swap = false;
 };
 template <>
 struct operator_traits<Operator::opop_coulomb_opop>
@@ -497,6 +573,18 @@ struct operator_traits<Operator::opop_coulomb_opop>
   /// index = 4 * bra_spin + ket_spin, where spin in {S=0, X=1, Y=2, Z=3}
   static constexpr auto nopers = 16;
   static constexpr auto intrinsic_deriv_order = 4;
+  /// (ab|cd) = (cd|ab) = (ba|dc): the functions of bra and ket can only be
+  /// swapped together
+  static constexpr auto pair_swap = PairSwap::coupled;
+  /// swapping both pairs changes the sign of a component with exactly one
+  /// vector (spin ≠ S) factor
+  static constexpr int pair_swap_phase(unsigned int c) {
+    return ((c / 4 > 0) != (c % 4 > 0)) ? -1 : 1;
+  }
+  /// swapping bra and ket transposes the (bra_spin, ket_spin) index
+  static constexpr unsigned int braket_swap_remap(unsigned int c) {
+    return 4 * (c % 4) + c / 4;
+  }
 };
 template <>
 struct operator_traits<Operator::op_coulomb_op>
@@ -508,6 +596,14 @@ struct operator_traits<Operator::op_coulomb_op>
   /// SymTLOffXY,SymTLOffXZ,SymTLOffYZ (6-8).
   static constexpr auto nopers = 9;
   static constexpr auto intrinsic_deriv_order = 2;
+  /// σ·p acts on one specific function of each pair, hence no swaps within
+  /// bra or ket
+  static constexpr auto pair_swap = PairSwap::none;
+  /// swapping bra and ket transposes T_ab: the antisymmetric components (1-3)
+  /// change sign, the scalar (0) and symmetric-traceless (4-8) do not
+  static constexpr int braket_swap_phase(unsigned int c) {
+    return (c >= 1 && c <= 3) ? -1 : 1;
+  }
 };
 
 namespace detail {
@@ -1288,6 +1384,12 @@ class Engine {
   unsigned int nparams() const;
   unsigned int nopers() const;
   unsigned int intrinsic_deriv_order() const;
+  /// operator_traits<oper_>::pair_swap etc. (see \ref rkb_operators)
+  PairSwap pair_swap() const;
+  bool braket_swap() const;
+  int pair_swap_phase(unsigned int c) const;
+  int braket_swap_phase(unsigned int c) const;
+  unsigned int braket_swap_remap(unsigned int c) const;
   /// if Params == operator_traits<oper>::oper_params_type, will return
   /// \c any(params)
   /// else will set return \c any initialized with default value for
