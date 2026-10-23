@@ -21,7 +21,9 @@
 #include <libint2/boys.h>
 #include <libint2/config.h>
 
+#include <thread>
 #include <type_traits>
+#include <vector>
 
 #include "catch.hpp"
 
@@ -539,5 +541,69 @@ TEST_CASE("Slater/Yukawa core integral values", "[core-ints]") {
       REQUIRE(std::abs(yukawa[m] - cgtg_x_coulomb[m]) <= 5e-4);
       REQUIRE(std::abs(stg[m] - cgtg[m]) <= 2e-4);
     }
+  }
+}
+
+// core evaluators wrapped by GenericGmEval are shared by all threads (see
+// #431), so evaluating them concurrently must reproduce serial results exactly
+TEST_CASE("GenericGmEval shared across threads", "[core-ints][threads]") {
+  using scalar_type = libint2::scalar_type;
+  using namespace libint2::os_core_ints;
+  struct prim_t {
+    scalar_type exponent, coefficient;
+  };
+
+  const int mmax = 20;
+  const auto erf_eval =
+      libint2::GenericGmEval<erf_coulomb_gm_eval<scalar_type>>::instance(mmax);
+  const auto erfx_eval =
+      libint2::GenericGmEval<erfx_coulomb_gm_eval<scalar_type>>::instance(mmax);
+  const auto q_gau_eval =
+      libint2::GenericGmEval<q_gau_gm_eval<scalar_type>>::instance(mmax);
+  const auto r12_eval =
+      libint2::GenericGmEval<r12_xx_K_gm_eval<scalar_type, 1>>::instance(mmax);
+  const std::vector<prim_t> prims = {
+      {std::numeric_limits<scalar_type>::infinity(), -6.0},
+      {0.7, 1.3},
+      {12.0, -0.4}};
+
+  // evaluates all Gm on a grid of (rho, T) values with every evaluator
+  auto compute = [&]() {
+    std::vector<scalar_type> result;
+    std::vector<scalar_type> Gm(mmax + 1);
+    auto append = [&]() { result.insert(result.end(), Gm.begin(), Gm.end()); };
+    for (scalar_type rho : {1e-3, 0.5, 10.0, 2e4}) {
+      for (scalar_type T = 0; T < 60; T += 0.73) {
+        erf_eval->eval(Gm.data(), rho, T, mmax, 0.5);
+        append();
+        erfx_eval->eval(Gm.data(), rho, T, mmax, 0.5, 0.3, 0.8);
+        append();
+        q_gau_eval->eval(Gm.data(), rho, T, mmax, prims);
+        append();
+        r12_eval->eval(Gm.data(), rho, T, mmax);
+        append();
+      }
+    }
+    return result;
+  };
+
+  const auto reference = compute();
+  const int nthreads = 4;
+  std::vector<std::vector<scalar_type>> results(nthreads);
+  std::vector<std::thread> threads;
+  for (int t = 0; t != nthreads; ++t)
+    threads.emplace_back([&, t]() {
+      for (int rep = 0; rep != 10; ++rep) results[t] = compute();
+    });
+  for (auto& thread : threads) thread.join();
+  for (int t = 0; t != nthreads; ++t) REQUIRE(results[t] == reference);
+}
+
+TEST_CASE("FmStackScratch", "[core-ints]") {
+  using scalar_type = libint2::scalar_type;
+  for (int size : {1, 4, 5, 100}) {
+    libint2::detail::FmStackScratch<scalar_type, 4> scratch(size);
+    for (int i = 0; i != size; ++i) scratch[i] = i;
+    for (int i = 0; i != size; ++i) REQUIRE(scratch.data()[i] == i);
   }
 }

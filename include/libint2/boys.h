@@ -1722,7 +1722,9 @@ struct GaussianGmEval;
 
 namespace detail {
 
-/// some evaluators need thread-local scratch, but most don't
+/// Engine-owned scratch for core evaluators; only GaussianGmEval<Real,-1>
+/// needs any. Evaluators wrapped by GenericGmEval must not use this, see
+/// GenericGmEval for why.
 template <typename CoreEval>
 struct CoreEvalScratch {
   CoreEvalScratch(const CoreEvalScratch&) = default;
@@ -1948,6 +1950,13 @@ struct GaussianGmEval
   ExpensiveNumbers<Real> numbers_;
 };
 
+/// Wraps a core evaluator (e.g. os_core_ints::erfx_coulomb_gm_eval)
+///
+/// @tparam GmEvalFunction the core evaluator; its call operator must be
+/// `const` and must not modify any state (no `mutable` members), and its
+/// Boys function engine must be safe to call concurrently. A single instance
+/// is shared by all copies of an Engine and hence by all threads that use
+/// them; keep per-call scratch on the stack (see detail::FmStackScratch).
 template <typename GmEvalFunction>
 struct GenericGmEval : private GmEvalFunction {
   typedef typename GmEvalFunction::value_type Real;
@@ -1963,7 +1972,11 @@ struct GenericGmEval : private GmEvalFunction {
   template <typename Real, typename... ExtraArgs>
   void eval(Real* Gm, Real rho, Real T, int mmax, ExtraArgs... args) const {
     assert(mmax <= mmax_);
-    (GmEvalFunction(*this))(Gm, rho, T, mmax, std::forward<ExtraArgs>(args)...);
+    // call through a const reference: copying the evaluator here costs an
+    // atomic refcount update on the shared Boys engine (and, for evaluators
+    // with a scratch vector, a heap allocation) per call
+    static_cast<const GmEvalFunction&>(*this)(Gm, rho, T, mmax,
+                                              std::forward<ExtraArgs>(args)...);
   }
 
   /// @return the maximum value of m for which the \f$ G_m(\rho, T) \f$ can be
@@ -1978,42 +1991,31 @@ struct GenericGmEval : private GmEvalFunction {
   Real precision_;
 };
 
-// these Gm engines need extra scratch data
-namespace os_core_ints {
-template <typename Real, int K>
-struct r12_xx_K_gm_eval;
-template <typename Real>
-struct erfx_coulomb_gm_eval;
-template <typename Real>
-struct q_gau_gm_eval;
-}  // namespace os_core_ints
-
 namespace detail {
-/// r12_xx_K_gm_eval<1> needs extra scratch data
-template <typename Real>
-struct CoreEvalScratch<os_core_ints::r12_xx_K_gm_eval<Real, 1>> {
-  std::vector<Real> Fm_;
-  CoreEvalScratch(const CoreEvalScratch&) = default;
-  CoreEvalScratch(CoreEvalScratch&&) = default;
-  // need to store Fm(T) for m = 0 .. mmax+1
-  explicit CoreEvalScratch(int mmax) { Fm_.resize(mmax + 2); }
-};
-/// erfx_coulomb_gm_eval needs extra scratch data
-template <typename Real>
-struct CoreEvalScratch<os_core_ints::erfx_coulomb_gm_eval<Real>> {
-  std::vector<Real> Fm_;
-  CoreEvalScratch(const CoreEvalScratch&) = default;
-  CoreEvalScratch(CoreEvalScratch&&) = default;
-  // need to store Fm(T) for m = 0 .. mmax
-  explicit CoreEvalScratch(int mmax) { Fm_.resize(mmax + 1); }
-};
-/// q_gau_gm_eval needs extra scratch data
-template <typename Real>
-struct CoreEvalScratch<os_core_ints::q_gau_gm_eval<Real>> {
-  std::vector<Real> Fm_;
-  CoreEvalScratch(const CoreEvalScratch&) = default;
-  CoreEvalScratch(CoreEvalScratch&&) = default;
-  explicit CoreEvalScratch(int mmax) { Fm_.resize(mmax + 1); }
+/// Boys function scratch for core evaluators that need Boys function values
+/// in a separate buffer; lives on the caller's stack, so that evaluators
+/// can be invoked through a const reference from any number of threads
+/// @tparam StackSize number of values stored inline; Engine needs at most
+///         4*lmax + deriv_order + 2 values, so 64 covers any practical
+///         build, larger sizes fall back to the heap
+template <typename Real, int StackSize = 64>
+class FmStackScratch {
+ public:
+  explicit FmStackScratch(int size) : data_(stack_) {
+    if (size > StackSize) {
+      heap_.resize(size);
+      data_ = heap_.data();
+    }
+  }
+  FmStackScratch(const FmStackScratch&) = delete;
+  FmStackScratch& operator=(const FmStackScratch&) = delete;
+  Real* data() { return data_; }
+  Real& operator[](int i) { return data_[i]; }
+
+ private:
+  Real stack_[StackSize];
+  std::vector<Real> heap_;  // used only if size > StackSize
+  Real* data_;
 };
 }  // namespace detail
 
@@ -2043,9 +2045,7 @@ template <typename Real, int K>
 struct r12_xx_K_gm_eval;
 
 template <typename Real>
-struct r12_xx_K_gm_eval<Real, 1>
-    : private detail::CoreEvalScratch<r12_xx_K_gm_eval<Real, 1>> {
-  typedef detail::CoreEvalScratch<r12_xx_K_gm_eval<Real, 1>> base_type;
+struct r12_xx_K_gm_eval<Real, 1> {
   typedef Real value_type;
 
 #ifndef LIBINT_USER_DEFINED_REAL
@@ -2054,18 +2054,19 @@ struct r12_xx_K_gm_eval<Real, 1>
   using FmEvalType = libint2::FmEval_Reference<scalar_type>;
 #endif
 
-  r12_xx_K_gm_eval(unsigned int mmax, Real precision) : base_type(mmax) {
+  r12_xx_K_gm_eval(unsigned int mmax, Real precision) {
     fm_eval_ = FmEvalType::instance(mmax + 1, precision);
   }
-  void operator()(Real* Gm, Real rho, Real T, int mmax) {
-    fm_eval_->eval(&base_type::Fm_[0], T, mmax + 1);
+  void operator()(Real* Gm, Real rho, Real T, int mmax) const {
+    // need Fm(T) for m = 0 .. mmax+1
+    detail::FmStackScratch<Real> Fm(mmax + 2);
+    fm_eval_->eval(Fm.data(), T, mmax + 1);
     auto T_plus_m_plus_one = T + 1.0;
-    Gm[0] = T_plus_m_plus_one * base_type::Fm_[0] - T * base_type::Fm_[1];
+    Gm[0] = T_plus_m_plus_one * Fm[0] - T * Fm[1];
     auto minus_m = -1.0;
     T_plus_m_plus_one += 1.0;
     for (auto m = 1; m <= mmax; ++m, minus_m -= 1.0, T_plus_m_plus_one += 1.0) {
-      Gm[m] = minus_m * base_type::Fm_[m - 1] +
-              T_plus_m_plus_one * base_type::Fm_[m] - T * base_type::Fm_[m + 1];
+      Gm[m] = minus_m * Fm[m - 1] + T_plus_m_plus_one * Fm[m] - T * Fm[m + 1];
     }
   }
 
@@ -2113,9 +2114,7 @@ struct erf_coulomb_gm_eval {
 /// @note need extra scratch for Boys function values,
 ///       since need to call Boys engine twice
 template <typename Real>
-struct erfx_coulomb_gm_eval
-    : private detail::CoreEvalScratch<erfx_coulomb_gm_eval<Real>> {
-  typedef detail::CoreEvalScratch<erfx_coulomb_gm_eval<Real>> base_type;
+struct erfx_coulomb_gm_eval {
   typedef Real value_type;
 
 #ifndef LIBINT_USER_DEFINED_REAL
@@ -2124,16 +2123,17 @@ struct erfx_coulomb_gm_eval
   using FmEvalType = libint2::FmEval_Reference<scalar_type>;
 #endif
 
-  erfx_coulomb_gm_eval(unsigned int mmax, Real precision) : base_type(mmax) {
+  erfx_coulomb_gm_eval(unsigned int mmax, Real precision) {
     fm_eval_ = FmEvalType::instance(mmax, precision);
   }
   void operator()(Real* Gm, Real rho, Real T, int mmax, Real omega, Real lambda,
-                  Real sigma) {
+                  Real sigma) const {
+    detail::FmStackScratch<Real> Fm(mmax + 1);
     // \lambda \mathrm{erf}(\omega r) + \sigma \mathrm{erfc}(\omega r) = \sigma
     // - (\sigma - \lambda) \mathrm{erf}(\omega r)
     if (sigma != 0) {
-      fm_eval_->eval(&base_type::Fm_[0], T, mmax);
-      for (auto m = 0; m <= mmax; ++m) Gm[m] = sigma * base_type::Fm_[m];
+      fm_eval_->eval(Fm.data(), T, mmax);
+      for (auto m = 0; m <= mmax; ++m) Gm[m] = sigma * Fm[m];
     } else {
       std::fill(Gm, Gm + mmax + 1, Real{0});
     }
@@ -2141,14 +2141,14 @@ struct erfx_coulomb_gm_eval
     if (omega > 0 && sigma_minus_lambda != 0) {
       auto omega2 = omega * omega;
       auto omega2_over_omega2_plus_rho = omega2 / (omega2 + rho);
-      fm_eval_->eval(&base_type::Fm_[0], T * omega2_over_omega2_plus_rho, mmax);
+      fm_eval_->eval(Fm.data(), T * omega2_over_omega2_plus_rho, mmax);
 
       using std::sqrt;
       auto ooversqrto2prho_exp_2mplus1 =
           sqrt(omega2_over_omega2_plus_rho) * sigma_minus_lambda;
       for (auto m = 0; m <= mmax;
            ++m, ooversqrto2prho_exp_2mplus1 *= omega2_over_omega2_plus_rho) {
-        Gm[m] -= ooversqrto2prho_exp_2mplus1 * base_type::Fm_[m];
+        Gm[m] -= ooversqrto2prho_exp_2mplus1 * Fm[m];
       }
     }
   }
@@ -2166,8 +2166,7 @@ struct erfx_coulomb_gm_eval
 /// potential expansion (point nuclear, finite nuclear, SAP, erf, etc.).
 /// @note needs extra scratch for Boys function values
 template <typename Real>
-struct q_gau_gm_eval : private detail::CoreEvalScratch<q_gau_gm_eval<Real>> {
-  typedef detail::CoreEvalScratch<q_gau_gm_eval<Real>> base_type;
+struct q_gau_gm_eval {
   typedef Real value_type;
 
 #ifndef LIBINT_USER_DEFINED_REAL
@@ -2176,7 +2175,7 @@ struct q_gau_gm_eval : private detail::CoreEvalScratch<q_gau_gm_eval<Real>> {
   using FmEvalType = libint2::FmEval_Reference<scalar_type>;
 #endif
 
-  q_gau_gm_eval(unsigned int mmax, Real precision) : base_type(mmax) {
+  q_gau_gm_eval(unsigned int mmax, Real precision) {
     fm_eval_ = FmEvalType::instance(mmax, precision);
   }
 
@@ -2185,7 +2184,7 @@ struct q_gau_gm_eval : private detail::CoreEvalScratch<q_gau_gm_eval<Real>> {
   ///         .coefficient members
   template <typename PrimitivesContainer>
   void operator()(Real* Gm, Real rho, Real T, int mmax,
-                  const PrimitivesContainer& primitives) {
+                  const PrimitivesContainer& primitives) const {
     using std::isfinite;
     using std::isinf;
     using std::isnan;
@@ -2198,6 +2197,7 @@ struct q_gau_gm_eval : private detail::CoreEvalScratch<q_gau_gm_eval<Real>> {
 
     std::fill(Gm, Gm + mmax + 1, Real{0});
 
+    detail::FmStackScratch<Real> Fm(mmax + 1);
     for (const auto& prim : primitives) {
       assert(!isnan(prim.exponent) &&
              "q_gau_gm_eval: primitive exponent is NaN");
@@ -2211,15 +2211,13 @@ struct q_gau_gm_eval : private detail::CoreEvalScratch<q_gau_gm_eval<Real>> {
       // produces NaN from -inf/(-inf+rho) — visibly wrong rather than silently.
       if (isinf(prim.exponent) && prim.exponent > 0.0) {
         // α = ∞ => (∞/(∞+ρ)) = 1, contributes c_i * F_m(T)
-        fm_eval_->eval(&base_type::Fm_[0], T, mmax);
-        for (auto m = 0; m <= mmax; ++m)
-          Gm[m] += prim.coefficient * base_type::Fm_[m];
+        fm_eval_->eval(Fm.data(), T, mmax);
+        for (auto m = 0; m <= mmax; ++m) Gm[m] += prim.coefficient * Fm[m];
       } else {
         const auto r = prim.exponent / (prim.exponent + rho);
-        fm_eval_->eval(&base_type::Fm_[0], T * r, mmax);
+        fm_eval_->eval(Fm.data(), T * r, mmax);
         auto factor = prim.coefficient * sqrt(r);
-        for (auto m = 0; m <= mmax; ++m, factor *= r)
-          Gm[m] += factor * base_type::Fm_[m];
+        for (auto m = 0; m <= mmax; ++m, factor *= r) Gm[m] += factor * Fm[m];
       }
     }
   }
