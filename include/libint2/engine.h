@@ -226,7 +226,9 @@ enum class Operator {
   /// alias for Operator::stg_x_coulomb
   yukawa = stg_x_coulomb,
   /// Spherically truncated Coulomb, theta(Rc-r12)/r12; Rc has length units.
-  truncated_coulomb,
+  truncated_coulomb_v1,
+  /// Interpolation-free truncated Coulomb with binary64 order recurrences.
+  truncated_coulomb_v2,
   // do not modify this
   invalid = -1,
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!keep this
@@ -234,7 +236,7 @@ enum class Operator {
   first_1body_oper = overlap,
   last_1body_oper = op_q_gau_op,
   first_2body_oper = delta,
-  last_2body_oper = truncated_coulomb,
+  last_2body_oper = truncated_coulomb_v2,
   first_oper = first_1body_oper,
   last_oper = last_2body_oper
 };
@@ -523,14 +525,22 @@ struct operator_traits<Operator::stg_x_coulomb>
 };
 
 template <>
-struct operator_traits<Operator::truncated_coulomb>
+struct operator_traits<Operator::truncated_coulomb_v1>
     : public detail::default_operator_traits {
   /// Cutoff in the same length units as Shell::O. Zero gives zero integrals;
   /// positive infinity gives ordinary Coulomb integrals.
   typedef scalar_type oper_params_type;
   static oper_params_type default_params() { return oper_params_type{0}; }
   typedef const libint2::GenericGmEval<
-      libint2::os_core_ints::truncated_coulomb_gm_eval<scalar_type>>
+      libint2::os_core_ints::truncated_coulomb_v1_gm_eval<scalar_type>>
+      core_eval_type;
+};
+
+template <>
+struct operator_traits<Operator::truncated_coulomb_v2>
+    : public operator_traits<Operator::truncated_coulomb_v1> {
+  typedef const libint2::GenericGmEval<
+      libint2::os_core_ints::truncated_coulomb_v2_gm_eval<scalar_type>>
       core_eval_type;
 };
 
@@ -810,6 +820,7 @@ class Engine {
       core_eval_pack_ = make_core_eval_pack(oper_);  // must follow initialize()
                                                      // to ensure default
                                                      // braket_ has been set
+      init_core_ints_params(params_);
     }
     return *this;
   }

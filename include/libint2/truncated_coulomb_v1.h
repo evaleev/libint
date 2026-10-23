@@ -1,6 +1,6 @@
 /* Independent truncated-Coulomb evaluator. LGPL-3.0-or-later. */
-#ifndef LIBINT2_TRUNCATED_COULOMB_H
-#define LIBINT2_TRUNCATED_COULOMB_H
+#ifndef LIBINT2_TRUNCATED_COULOMB_V1_H
+#define LIBINT2_TRUNCATED_COULOMB_V1_H
 #include <libint2/truncated_coulomb_table.h>
 
 #include <algorithm>
@@ -12,9 +12,9 @@ namespace os_core_ints {
 /// Radial G_m for theta(Rc-r)/r. Immutable, independently generated
 /// Chebyshev patches cover the transition; the exterior uses limiting values.
 template <typename Real>
-struct truncated_coulomb_gm_eval {
+struct truncated_coulomb_v1_gm_eval {
   typedef Real value_type;
-  truncated_coulomb_gm_eval(unsigned, Real precision) {
+  truncated_coulomb_v1_gm_eval(unsigned, Real precision) {
     if (!(precision >= std::numeric_limits<double>::epsilon()))
       throw std::invalid_argument(
           "truncated Coulomb precision below double epsilon");
