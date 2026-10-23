@@ -231,21 +231,27 @@ else()
     endforeach()
 
     # generate basis.h at install time so LIBINT_DATADIR_ABSOLUTE reflects any --prefix override.
-    # configure_file into the build tree, then file(COPY) into the install tree with explicit
-    # FILE_PERMISSIONS: this avoids the installed header inheriting basis.h.in's mode (e.g. 0600,
-    # which varies by build env) without relying on NO_SOURCE_PERMISSIONS, and prepends
-    # $ENV{DESTDIR} manually -- install(CODE) runs custom code and does not get the automatic
-    # DESTDIR handling that install(FILES) etc. have.
+    # Same approach as in export/CMakeLists.txt.export (see the comment there): configure_file into
+    # the build tree, then file(INSTALL) with explicit FILE_PERMISSIONS, so that the installed
+    # header does not inherit basis.h.in's mode, $ENV{DESTDIR} is honored, and basis.h is recorded
+    # in install_manifest.txt.
     install(CODE "
       set(LIBINT_VERSION \"${LIBINT_VERSION}\")
-      set(LIBINT_DATADIR_ABSOLUTE \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}\")
+      set(LIBINT_DATADIR_ABSOLUTE \"${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}\")
+      if (NOT IS_ABSOLUTE \"\${LIBINT_DATADIR_ABSOLUTE}\")
+        set(LIBINT_DATADIR_ABSOLUTE \"\${CMAKE_INSTALL_PREFIX}/\${LIBINT_DATADIR_ABSOLUTE}\")
+      endif()
+      set(_libint2_includedir \"${CMAKE_INSTALL_INCLUDEDIR}\")
+      if (NOT IS_ABSOLUTE \"\${_libint2_includedir}\")
+        set(_libint2_includedir \"\${CMAKE_INSTALL_PREFIX}/\${_libint2_includedir}\")
+      endif()
       configure_file(
         \"${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in\"
         \"${CMAKE_CURRENT_BINARY_DIR}/basis.h.install/basis.h\"
         @ONLY)
-      file(COPY
+      file(INSTALL
         \"${CMAKE_CURRENT_BINARY_DIR}/basis.h.install/basis.h\"
-        DESTINATION \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/libint2\"
+        DESTINATION \"\${_libint2_includedir}/libint2\"
         FILE_PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
     ")
 endif()

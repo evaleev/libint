@@ -212,7 +212,11 @@ configure_file(
   src/configuration.cc
   @ONLY)
 
-set(LIBINT_DATADIR_ABSOLUTE ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION})
+if (IS_ABSOLUTE "${LIBINT2_INSTALL_DATADIR}")
+    set(LIBINT_DATADIR_ABSOLUTE "${LIBINT2_INSTALL_DATADIR}")
+else()
+    set(LIBINT_DATADIR_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_DATADIR}")
+endif()
 configure_file(
   include/libint2/basis.h.in  # temp until libtool dropped and moved to basis.h.cmake.in
   include/libint2/basis.h
@@ -408,10 +412,16 @@ if (L2_BUILD_SHARED_LIBS)
             # * below works fine in tests
             # * but fails in Psi4 compile
             # * prefix replacement in conda used instead on Windows
+            # an absolute LIBINT2_INSTALL_DATADIR is used as is, not relative to the install prefix
+            if (IS_ABSOLUTE "${LIBINT2_INSTALL_DATADIR}")
+                set(_libint2_installed_datadir "${LIBINT2_INSTALL_DATADIR}")
+            else()
+                set(_libint2_installed_datadir "\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_DATADIR}")
+            endif()
             target_compile_definitions(
               int-cxx-headeronly-shared
               INTERFACE
-                $<INSTALL_INTERFACE:LIBINT_DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_DATADIR}">
+                $<INSTALL_INTERFACE:LIBINT_DATADIR="${_libint2_installed_datadir}">
               )
         endif()
         target_link_libraries(
@@ -786,24 +796,31 @@ install(
   )
 
 # install basis.h at install time so LIBINT_DATADIR_ABSOLUTE reflects
-# any --prefix override. $ENV{DESTDIR} must be prepended manually
-# here: install(CODE) runs custom code and does not get the automatic
-# DESTDIR handling that install(FILES) etc. have. configure_file into the
-# build tree, then file(COPY) into the install tree with explicit
-# FILE_PERMISSIONS so the installed header does not inherit basis.h.in's
-# mode (e.g. 0600, which varies by build env); this also works with the
-# 3.16 minimum required here, unlike configure_file's NO_SOURCE_PERMISSIONS
-# (CMake 3.19+).
+# any --prefix override. configure_file into the build tree, then
+# file(INSTALL) with explicit FILE_PERMISSIONS: configure_file copies the
+# mode of basis.h.in, which is 0600 if the sources were unpacked under a
+# restrictive umask (git itself only records 0644). file(INSTALL) is what
+# install(FILES) uses under the hood, so it also prepends $ENV{DESTDIR},
+# records basis.h in install_manifest.txt, and prints the usual
+# "-- Installing:" line. (configure_file's NO_SOURCE_PERMISSIONS would also
+# work but needs CMake 3.19, newer than the 3.16 minimum required here.)
 install(CODE "
   set(LIBINT_VERSION \"${LIBINT_VERSION}\")
-  set(LIBINT_DATADIR_ABSOLUTE \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}\")
+  set(LIBINT_DATADIR_ABSOLUTE \"${LIBINT2_INSTALL_DATADIR}\")
+  if (NOT IS_ABSOLUTE \"\${LIBINT_DATADIR_ABSOLUTE}\")
+    set(LIBINT_DATADIR_ABSOLUTE \"\${CMAKE_INSTALL_PREFIX}/\${LIBINT_DATADIR_ABSOLUTE}\")
+  endif()
+  set(_libint2_includedir \"${LIBINT2_INSTALL_INCLUDEDIR}\")
+  if (NOT IS_ABSOLUTE \"\${_libint2_includedir}\")
+    set(_libint2_includedir \"\${CMAKE_INSTALL_PREFIX}/\${_libint2_includedir}\")
+  endif()
   configure_file(
     \"${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in\"
     \"${PROJECT_BINARY_DIR}/basis.h.install/basis.h\"
     @ONLY)
-  file(COPY
+  file(INSTALL
     \"${PROJECT_BINARY_DIR}/basis.h.install/basis.h\"
-    DESTINATION \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_INCLUDEDIR}/libint2\"
+    DESTINATION \"\${_libint2_includedir}/libint2\"
     FILE_PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
 ")
 
