@@ -329,7 +329,7 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 
 ### Install Paths (L) (TARBALL)
 
-* `LIBINT2_INSTALL_FMODDIR` - L - For `LIBINT2_ENABLE_FORTRAN=ON`, the directory below `CMAKE_INSTALL_PREFIX` into which `libint_f.mod` is installed and which the `Libint2::fortran` target adds to its interface. Distribution packages that keep Fortran modules in a compiler-specific location (e.g. `lib64/gfortran/modules`) can set it at configure time rather than relocating the module after install. [Default=`CMAKE_INSTALL_INCLUDEDIR`]
+* `LIBINT2_INSTALL_FMODDIR` - L - For `LIBINT2_ENABLE_FORTRAN=ON`, the directory below `CMAKE_INSTALL_PREFIX` into which `libint_f.mod` is installed and which the `Libint2::fortran` target adds to its interface. Distribution packages that keep Fortran modules in a compiler-specific location (e.g. `lib64/gfortran/modules`) can set it at configure time rather than relocating the module after install. An absolute path (e.g. Fedora's `%{_fmoddir}`) is accepted; when the library is built by the generator build (rather than from the export tarball) it must lie below `CMAKE_INSTALL_PREFIX`. [Default=`CMAKE_INSTALL_INCLUDEDIR`]
 * `LIBINT2_PREFIX_PYTHON_INSTALL` - L - For `LIBINT2_ENABLE_PYTHON=ON`, whether to install the Python module in the Linux manner to `CMAKE_INSTALL_PREFIX` or to not install it. Note: not a path; the installation sub-path below `CMAKE_INSTALL_PREFIX` is determined by querying `Python_EXECUTABLE`. For alternate installation in the Python manner to `Python_EXECUTABLE`'s site-packages, see target libint2-python-wheel. [Default=OFF]
 
 
@@ -390,7 +390,7 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 [^16]: Ensure target found in installation after `find_package(Libint2 COMPONENTS ...)`.
 [^17]: Targets in export/CMakeLists.txt.export . Names subject to change. Use namespaced target names in any consuming code.
 [^18]: Deprecated legacy aliases. Update any uses to namespaced target.
-[^19]: `libint_f` compiles the Fortran module; `int_f` archives it and carries the usage requirements, so linking `Libint2::fortran` alone brings in the Fortran module directory, the generated Fortran headers, and the Libint2 C library. Set `LIBINT2_INSTALL_FMODDIR` to control where `libint_f.mod` is installed.
+[^19]: `libint_f` compiles the Fortran module; `int_f` packages its objects into the installed `libint2_f` library (shared or static, per `BUILD_SHARED_LIBS`) and carries the usage requirements, so linking `Libint2::fortran` alone brings in the Fortran module directory, the generated Fortran headers, and the Libint2 C library. Set `LIBINT2_INSTALL_FMODDIR` to control where `libint_f.mod` is installed. Since Libint2 is implemented in C++, a consuming project must enable the `CXX` language when linking a static Libint2, so that CMake adds the C++ runtime to the link. On macOS with a shared Libint2, `Libint2::fortran` adds the `-Wl,-commons,use_dylibs` linker flag where needed, so that the Fortran module's `BIND(C)` variables resolve to those in `libint2.dylib`; pass this flag yourself if linking the Fortran interface without CMake.
 
 
 -----------------------------------------------------------------------------

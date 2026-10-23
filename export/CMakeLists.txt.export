@@ -699,7 +699,7 @@ if (LIBINT2_ENABLE_FORTRAN)
       )
     # N.B. use L2_BUILD_SHARED_LIBS (set above from LIBINT2_BUILD_SHARED_AND_STATIC_LIBS
     #   or BUILD_SHARED_LIBS), same as int-obj, since these objects end up in the
-    #   installed int_f archive that may be linked against the shared libint2
+    #   installed int_f library that may be shared or linked against the shared libint2
     if (L2_BUILD_SHARED_LIBS)
         set_target_properties(libint_f PROPERTIES POSITION_INDEPENDENT_CODE 1)
     endif()
@@ -712,13 +712,37 @@ if (LIBINT2_ENABLE_FORTRAN)
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/${BUILDTREE_FMODDIR}/>
       )
 
-    add_library(int_f STATIC $<TARGET_OBJECTS:libint_f>)
+    # libint_f (OBJECT) compiles the module, int_f packages its objects into the
+    #   installable libint2_f library (exported as int_f, aliased as ${L2}::fortran)
+    #   that carries the usage requirements. int_f is shared or static per
+    #   BUILD_SHARED_LIBS; it links PUBLIC to libint2 since libint_f.F90 references
+    #   libint2 symbols, so a shared libint2_f must record that dependency itself.
+    add_library(int_f $<TARGET_OBJECTS:libint_f>)
     set_target_properties(int_f PROPERTIES OUTPUT_NAME "int2_f")
-    if (L2_BUILD_SHARED_LIBS)
-        target_link_libraries(int_f INTERFACE int-shared)
-    else()
-        target_link_libraries(int_f INTERFACE int-static)
+    get_target_property(_int_f_type int_f TYPE)
+    if (_int_f_type STREQUAL "SHARED_LIBRARY")
+        set_target_properties(int_f PROPERTIES SOVERSION "${LIBINT_MAJOR_SO_VERSION}")
     endif()
+    if (L2_BUILD_SHARED_LIBS)
+        target_link_libraries(int_f PUBLIC int-shared)
+    else()
+        target_link_libraries(int_f PUBLIC int-static)
+    endif()
+    # The BIND(C) module variables in libint_f.F90 (e.g. libint2_build_eri) are emitted
+    #   by the Fortran compiler as common (tentative) definitions, not references.
+    #   ELF interposition merges them with libint2's definitions, but on macOS
+    #   (two-level namespace) the image that contains the libint_f objects keeps its own,
+    #   never initialized, copy and calls through null pointers. -commons use_dylibs
+    #   makes ld64 bind such symbols to libint2.dylib; it is needed by the shared
+    #   libint2_f itself or, if int_f is static, by whatever links it.
+    if (APPLE AND L2_BUILD_SHARED_LIBS)
+        if (_int_f_type STREQUAL "SHARED_LIBRARY")
+            target_link_options(int_f PRIVATE "LINKER:-commons,use_dylibs")
+        else()
+            target_link_options(int_f INTERFACE "LINKER:-commons,use_dylibs")
+        endif()
+    endif()
+    unset(_int_f_type)
     target_include_directories(
       int_f
       INTERFACE

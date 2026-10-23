@@ -171,8 +171,24 @@ else()
         # Note: not handling CMAKE_Fortran_COMPILER_ARG1
         list(APPEND library_CMAKE_ARGS "-DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}")
     endif()
+    # N.B. the library is installed into LIBRARY_INSTALL_STAGE_DIR and then copied
+    #   from there, so the module dir must be passed relative to the prefix: an
+    #   absolute one (e.g. Fedora's %{_fmoddir}) would be installed into directly
+    #   at build time, bypassing the stage. Accept absolute paths below
+    #   CMAKE_INSTALL_PREFIX by making them relative, reject any others.
     if (LIBINT2_ENABLE_FORTRAN AND LIBINT2_INSTALL_FMODDIR)
-        list(APPEND library_CMAKE_ARGS "-DLIBINT2_INSTALL_FMODDIR=${LIBINT2_INSTALL_FMODDIR}")
+        file(TO_CMAKE_PATH "${LIBINT2_INSTALL_FMODDIR}" _l2_fmoddir)
+        if (IS_ABSOLUTE "${_l2_fmoddir}")
+            file(TO_CMAKE_PATH "${CMAKE_INSTALL_PREFIX}" _l2_prefix)
+            file(RELATIVE_PATH _l2_fmoddir_rel "${_l2_prefix}" "${_l2_fmoddir}")
+            if (_l2_fmoddir_rel MATCHES "^\\.\\.(/|$)" OR IS_ABSOLUTE "${_l2_fmoddir_rel}")
+                message(FATAL_ERROR "LIBINT2_INSTALL_FMODDIR=${LIBINT2_INSTALL_FMODDIR} is not below CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}; use a path relative to, or below, CMAKE_INSTALL_PREFIX")
+            endif()
+            set(_l2_fmoddir "${_l2_fmoddir_rel}")
+            unset(_l2_fmoddir_rel)
+            unset(_l2_prefix)
+        endif()
+        list(APPEND library_CMAKE_ARGS "-DLIBINT2_INSTALL_FMODDIR=${_l2_fmoddir}")
     endif()
 
     ExternalProject_Add(
@@ -229,8 +245,8 @@ else()
     #   may point it outside the three dirs below (e.g. lib64/gfortran/modules while
     #   CMAKE_INSTALL_LIBDIR=lib), in which case the staged modules need their own pass
     set(_stage_dirs ${CMAKE_INSTALL_INCLUDEDIR} ${CMAKE_INSTALL_LIBDIR} ${CMAKE_INSTALL_DATADIR})
-    if (LIBINT2_ENABLE_FORTRAN AND LIBINT2_INSTALL_FMODDIR)
-        list(APPEND _stage_dirs ${LIBINT2_INSTALL_FMODDIR})
+    if (DEFINED _l2_fmoddir)
+        list(APPEND _stage_dirs ${_l2_fmoddir})
     endif()
     list(REMOVE_DUPLICATES _stage_dirs)
     foreach(_dir ${_stage_dirs})
