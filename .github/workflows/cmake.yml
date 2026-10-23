@@ -235,11 +235,14 @@ jobs:
 
           - runs-on: macos-15
             lane: macos-clang
+            # C++23 + libc++ prunes transitive std includes, catching missing #includes
             libargs: >
               -D BUILD_SHARED_LIBS=OFF
               -D LIBINT2_ENABLE_FORTRAN=ON
+              -D CMAKE_CXX_STANDARD=23
               # return to shared when mac+fortran+shared is fixed
-            testargs: ""
+            testargs: >
+              -D CMAKE_CXX_STANDARD=23
 
           - runs-on: ubuntu-latest
             lane: ubuntu-intel
