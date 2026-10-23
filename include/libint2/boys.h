@@ -1722,7 +1722,9 @@ struct GaussianGmEval;
 
 namespace detail {
 
-/// some evaluators need thread-local scratch, but most don't
+/// Engine-owned scratch for core evaluators; only GaussianGmEval<Real,-1>
+/// needs any. Evaluators wrapped by GenericGmEval must not use this, see
+/// GenericGmEval for why.
 template <typename CoreEval>
 struct CoreEvalScratch {
   CoreEvalScratch(const CoreEvalScratch&) = default;
@@ -1948,6 +1950,13 @@ struct GaussianGmEval
   ExpensiveNumbers<Real> numbers_;
 };
 
+/// Wraps a core evaluator (e.g. os_core_ints::erfx_coulomb_gm_eval)
+///
+/// @tparam GmEvalFunction the core evaluator; its call operator must be
+/// `const` and must not modify any state (no `mutable` members), and its
+/// Boys function engine must be safe to call concurrently. A single instance
+/// is shared by all copies of an Engine and hence by all threads that use
+/// them; keep per-call scratch on the stack (see detail::FmStackScratch).
 template <typename GmEvalFunction>
 struct GenericGmEval : private GmEvalFunction {
   typedef typename GmEvalFunction::value_type Real;
@@ -1986,6 +1995,9 @@ namespace detail {
 /// Boys function scratch for core evaluators that need Boys function values
 /// in a separate buffer; lives on the caller's stack, so that evaluators
 /// can be invoked through a const reference from any number of threads
+/// @tparam StackSize number of values stored inline; Engine needs at most
+///         4*lmax + deriv_order + 2 values, so 64 covers any practical
+///         build, larger sizes fall back to the heap
 template <typename Real, int StackSize = 64>
 class FmStackScratch {
  public:
