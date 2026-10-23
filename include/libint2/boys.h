@@ -28,6 +28,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cerrno>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
@@ -39,7 +40,8 @@
 #include <type_traits>
 #include <vector>
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
+#ifdef _WIN32
+#include <malloc.h>
 #define posix_memalign(p, a, s) \
   (((*(p)) = _aligned_malloc((s), (a))), *(p) ? 0 : errno)
 #define posix_memfree(p) ((_aligned_free((p))))
