@@ -2523,6 +2523,12 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
       iface->macro_define("DERIV_RKB_ERI_ORDER", LIBINT_INCLUDE_RKB_ERI));
   max_deriv_order = std::max(max_deriv_order, LIBINT_INCLUDE_RKB_ERI);
 #endif
+#ifdef LIBINT_INCLUDE_RKB_ERI3
+  iface->to_params(iface->macro_define("SUPPORT_RKB_ERI3", 1));
+  iface->to_params(
+      iface->macro_define("DERIV_RKB_ERI3_ORDER", LIBINT_INCLUDE_RKB_ERI3));
+  max_deriv_order = std::max(max_deriv_order, LIBINT_INCLUDE_RKB_ERI3);
+#endif
 #ifdef LIBINT_INCLUDE_ERI3
   iface->to_params(iface->macro_define("SUPPORT_ERI3", 1));
   iface->to_params(
