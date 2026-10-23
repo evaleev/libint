@@ -22,43 +22,6 @@
 /// (4, 3, and 2-center varieties) and (optionally) their derivatives using
 /// Libint and a dumb but fool-proof reference method
 
-#include <cmath>
-#include <iostream>
-#ifdef _MSC_VER
-// thanks, https://stackoverflow.com/a/26085827
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <stdint.h>  // portable: uint64_t   MSVC: __int64
-
-// MSVC defines this in winsock2.h!?
-typedef struct timeval {
-  long tv_sec;
-  long tv_usec;
-} timeval;
-
-int gettimeofday(struct timeval* tp, struct timezone* tzp) {
-  // Note: some broken versions only have 8 trailing zero's, the correct epoch
-  // has 9 trailing zero's This magic number is the number of 100 nanosecond
-  // intervals since January 1, 1601 (UTC) until 00:00:00 January 1, 1970
-  static const uint64_t EPOCH = ((uint64_t)116444736000000000ULL);
-
-  SYSTEMTIME system_time;
-  FILETIME file_time;
-  uint64_t time;
-
-  GetSystemTime(&system_time);
-  SystemTimeToFileTime(&system_time, &file_time);
-  time = ((uint64_t)file_time.dwLowDateTime);
-  time += ((uint64_t)file_time.dwHighDateTime) << 32;
-
-  tp->tv_sec = (long)((time - EPOCH) / 10000000L);
-  tp->tv_usec = (long)(system_time.wMilliseconds * 1000);
-  return 0;
-}
-#else  // _MSC_VER
-#include <sys/time.h>
-#endif  // _MSC_VER
 #include <eri.h>
 #include <libint2.h>
 #include <libint2/cgshell_ordering.h>
@@ -67,12 +30,22 @@ int gettimeofday(struct timeval* tp, struct timezone* tzp) {
 #include <prep_libint2.h>
 
 #include <cassert>
+#include <chrono>
+#include <cmath>
+#include <iostream>
 #if !LIBINT2_CONSTEXPR_STATICS
 #include <libint2/statics_definition.h>
 #endif
 
 using namespace std;
 using namespace libint2;
+
+/// @return wall time in seconds
+static double wall_time() {
+  return std::chrono::duration<double>(
+             std::chrono::steady_clock::now().time_since_epoch())
+      .count();
+}
 
 const double ABSOLUTE_DEVIATION_THRESHOLD =
     5.0E-14;  // indicate failure if any integral differs in absolute sense by
@@ -161,9 +134,7 @@ bool test_4eri(unsigned int deriv_order, unsigned int lmax_max) {
   bool test_success = true;
 
   // record start wall time
-  struct timeval tod;
-  gettimeofday(&tod, 0);
-  const double start_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
+  const double start_wall_time = wall_time();
 
   typedef unsigned int uint;
 
@@ -216,9 +187,7 @@ bool test_4eri(unsigned int deriv_order, unsigned int lmax_max) {
       for (unsigned int l2 = 0; l2 <= lmax; ++l2) {
         for (unsigned int l3 = 0; l3 <= lmax; ++l3) {
           // record start wall time
-          struct timeval tod;
-          gettimeofday(&tod, 0);
-          const double start_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
+          const double start_wall_time = wall_time();
 
 #if LIBINT_CONTRACTED_INTS
           const uint contrdepth =
@@ -460,8 +429,7 @@ bool test_4eri(unsigned int deriv_order, unsigned int lmax_max) {
 
           if (do_timing_only) {
             // record end wall time, compute total wall time spent here
-            gettimeofday(&tod, 0);
-            const double end_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
+            const double end_wall_time = wall_time();
             std::cout << "wall time = " << (end_wall_time - start_wall_time)
                       << " seconds" << std::endl;
           }
@@ -490,8 +458,7 @@ bool test_4eri(unsigned int deriv_order, unsigned int lmax_max) {
   free(inteval);
 
   // record end wall time, compute total wall time spent here
-  gettimeofday(&tod, 0);
-  const double end_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
+  const double end_wall_time = wall_time();
   std::cout << "wall time = " << (end_wall_time - start_wall_time) << " seconds"
             << std::endl;
 
@@ -506,9 +473,7 @@ bool test_3eri(unsigned int deriv_order, unsigned int lmax_max) {
   bool test_success = true;
 
   // record start wall time
-  struct timeval tod;
-  gettimeofday(&tod, 0);
-  const double start_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
+  const double start_wall_time = wall_time();
 
   typedef unsigned int uint;
 
@@ -583,9 +548,7 @@ bool test_3eri(unsigned int deriv_order, unsigned int lmax_max) {
     for (unsigned int l1 = 0; l1 <= lmax1; ++l1) {
       for (unsigned int l2 = 0; l2 <= lmax2; ++l2) {
         // record start wall time
-        struct timeval tod;
-        gettimeofday(&tod, 0);
-        const double start_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
+        const double start_wall_time = wall_time();
 
         // can compute this? skip, if not
         if (deriv_order == 0 &&
@@ -798,8 +761,7 @@ bool test_3eri(unsigned int deriv_order, unsigned int lmax_max) {
 
         if (do_timing_only) {
           // record end wall time, compute total wall time spent here
-          gettimeofday(&tod, 0);
-          const double end_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
+          const double end_wall_time = wall_time();
           std::cout << "wall time = " << (end_wall_time - start_wall_time)
                     << " seconds" << std::endl;
         }
@@ -828,8 +790,7 @@ bool test_3eri(unsigned int deriv_order, unsigned int lmax_max) {
   free(inteval);
 
   // record end wall time, compute total wall time spent here
-  gettimeofday(&tod, 0);
-  const double end_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
+  const double end_wall_time = wall_time();
   std::cout << "wall time = " << (end_wall_time - start_wall_time) << " seconds"
             << std::endl;
 
