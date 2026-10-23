@@ -23,9 +23,11 @@
 
 #include <libint2/util/generated/libint2_params.h>
 
+#include <cerrno>
 #include <cstdlib>
 
-#ifdef _MSC_VER
+#ifdef _WIN32
+#include <malloc.h>
 #define posix_memalign(p, a, s) \
   (((*(p)) = _aligned_malloc((s), (a))), *(p) ? 0 : errno)
 #endif

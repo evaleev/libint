@@ -44,9 +44,11 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include <io.h>
+#ifndef S_ISDIR  // MinGW's <sys/stat.h> provides it, MSVC's does not
 #define S_ISDIR(m) (((m)&S_IFMT) == S_IFDIR)
+#endif
 #define PATH_SEPARATOR "\\"
 #else
 #include <unistd.h>
@@ -104,12 +106,11 @@ namespace libint2 {
   }
 
   /// @return the default locale name for parsing basis set files
+  /// @note "C" is the only locale name guaranteed to be accepted by every
+  ///       standard library (e.g., libstdc++ on MinGW rejects all others,
+  ///       libc++/MSVC STL on Windows reject "POSIX")
   inline const char* default_locale_name() {
-#ifdef _MSC_VER
-    return "en-US";
-#else
-    return "POSIX";
-#endif
+    return "C";
   }
 
   /// determines the path to the basis data directory
@@ -417,7 +418,7 @@ namespace libint2 {
             char cc = ::tolower(c);
             switch (cc) {
               case '/': cc = 'I'; break;
-#ifdef _MSC_VER
+#ifdef _WIN32  // '*' is not allowed in Windows filenames
               case '*': cc = 's'; break;
 #endif
             }
@@ -486,7 +487,7 @@ namespace libint2 {
        *  @throw std::ios_base::failure if the path is not valid, or cannot be determined
        *  @throw std::logic_error if the contents of the file cannot be interpreted
        *  @return vector of basis sets for each element
-       *  @warning the included library basis sets should be parsed using POSIX locale
+       *  @warning the included library basis sets should be parsed using the C (aka POSIX) locale
        */
       static std::vector<std::vector<libint2::Shell>> read_g94_basis_library(std::string file_dot_g94,
                                                                              bool force_cartesian_d = false,

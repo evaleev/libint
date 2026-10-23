@@ -21,6 +21,7 @@
 #ifndef _libint2_include_libint2_util_intpartiter_h_
 #define _libint2_include_libint2_util_intpartiter_h_
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstdint>

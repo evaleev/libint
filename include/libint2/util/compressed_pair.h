@@ -21,6 +21,9 @@
 #ifndef _libint2_src_lib_libint_util_compressedpair_h_
 #define _libint2_src_lib_libint_util_compressedpair_h_
 
+#include <type_traits>
+#include <utility>
+
 namespace libint2 {
 namespace detail {
 

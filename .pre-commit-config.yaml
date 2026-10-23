@@ -1,5 +1,7 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
+# vendored third-party files are kept verbatim (modulo local patches)
+exclude: ^export/tests/unit/catch\.hpp$
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.4.0

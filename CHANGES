@@ -6,6 +6,10 @@ Following is a brief summary of changes made in each release of Libint.
 - unreleased:
   - PR #440: incremental builds re-export the library when include/libint2, export/tests, etc. change,
              without recompiling unchanged library sources (#438)
+  - PR #436: GenericGmEval no longer copies the core evaluator on every call; fixes poor thread
+             scaling of erf/erfc/erfx, q_gau and r12 integrals (#431, HT @mgoldey);
+             N.B. removed detail::CoreEvalScratch specializations for r12_xx_K_gm_eval<Real,1>,
+             erfx_coulomb_gm_eval and q_gau_gm_eval, and their base_type typedefs
   - PR #420: libint2::molden::Export orders solid harmonics according to the runtime
              libint2::solid_harmonics_ordering() instead of the build-time default
              (fixes Molden output when the two differ); silence compiler warnings
