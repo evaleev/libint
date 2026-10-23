@@ -651,6 +651,15 @@ inline constexpr bool is_rkb_2body(Operator oper) {
   return oper == Operator::coulomb_opop || oper == Operator::coulomb_op ||
          oper == Operator::opop_coulomb_opop || oper == Operator::op_coulomb_op;
 }
+
+/// whether the library was generated assuming that the fitting (unpaired)
+/// center of plain 3-center ERIs will be transformed to solid harmonics
+/// (LIBINT2_ERI3_PURE_SH)
+#ifdef LIBINT_ERI3_PURE_SH
+constexpr bool eri3_pure_sh = true;
+#else
+constexpr bool eri3_pure_sh = false;
+#endif
 }  // namespace detail
 
 constexpr size_t nopers_2body = static_cast<int>(Operator::last_2body_oper) -

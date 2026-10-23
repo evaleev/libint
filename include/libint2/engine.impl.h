@@ -2024,12 +2024,17 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
         buildfnidx = (bra1.contr[0].l * ket_lmax + ket1.contr[0].l) * ket_lmax +
                      ket2.contr[0].l;
 
-#ifdef LIBINT_ERI3_PURE_SH
-        if (bra1.contr[0].l > 1)
-          assert(bra1.contr[0].pure &&
-                 "library assumes a solid harmonics shell in bra of a 3-center "
-                 "2-body int, but a cartesian shell given");
-#endif
+        // the kernels may have been generated assuming that the fitting
+        // (bra) shell will be transformed to solid harmonics
+        // (LIBINT2_ERI3_PURE_SH); this never applies to the RKB 3-center
+        // kernels. Such kernels produce garbage for a cartesian shell, hence
+        // check in all builds
+        if (detail::eri3_pure_sh && !detail::is_rkb_2body(oper_) &&
+            bra1.contr[0].l > 1 && !bra1.contr[0].pure)
+          throw std::invalid_argument(
+              "Engine::compute2 -- this library assumes that the fitting "
+              "(bra) shell of 3-center 2-body integrals is a solid harmonics "
+              "shell, but a cartesian shell was given");
       } break;
 
       case BraKet::xs_xs:

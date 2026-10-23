@@ -478,7 +478,7 @@ foreach(_cls ONEBODY;ERI;RKB_ERI;RKB_ERI3;ERI3;ERI2;G12;G12DKH)
         if ((_cls STREQUAL "ERI3") AND NOT LIBINT2_ERI3_PURE_SH)
             list(APPEND Libint2_ERI_COMPONENTS "${_eri3_impure_sh}")
             message(VERBOSE "setting components ${_eri3_impure_sh}")
-        elseif ((_cls STREQUAL "RKB_ERI3") AND NOT LIBINT2_RKB_ERI3_PURE_SH)
+        elseif (_cls STREQUAL "RKB_ERI3")  # RKB 3-center kernels never assume a solid harmonics fitting center
             list(APPEND Libint2_ERI_COMPONENTS "${_rkb_eri3_impure_sh}")
             message(VERBOSE "setting components ${_rkb_eri3_impure_sh}")
         elseif ((_cls STREQUAL "ERI2") AND NOT LIBINT2_ERI2_PURE_SH)

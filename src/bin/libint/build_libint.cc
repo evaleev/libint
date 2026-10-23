@@ -1142,9 +1142,6 @@ void try_main(int argc, char* argv[]) {
 #if LIBINT_ERI3_PURE_SH
   iface->to_params(iface->macro_define("ERI3_PURE_SH", 1));
 #endif
-#if LIBINT_RKB_ERI3_PURE_SH
-  iface->to_params(iface->macro_define("RKB_ERI3_PURE_SH", 1));
-#endif
 #endif
 #ifdef LIBINT_INCLUDE_ERI2
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI2; ++d) {
@@ -1661,17 +1658,16 @@ static void build_TwoPRep_1b_2k(
           CGShell c(lc);
           CGShell d(ld);
 #if LIBINT_ERI3_PURE_SH
-          // pure-SH on the fitting center of plain ERI3 (gated separately from
-          // the RKB variant below; see LIBINT_RKB_ERI3_PURE_SH).
+          // pure-SH on the fitting center of plain ERI3 only. The RKB
+          // operators cannot use it: pure_sh() enables the Ahlrichs
+          // simplification in the VRR, which is only valid if the shell's
+          // cartesian components are projected to solid harmonics as is. The
+          // RKB kernels are built from derivative TwoPRep children, and
+          // translational invariance routes a derivative onto the fitting
+          // shell; the derivative of a (pure) shell needs exactly the
+          // components the simplification drops. The same reason restricts
+          // pure_sh to deriv_level == 0 for plain ERI3.
           if constexpr (std::is_same<OperType, TwoPRep>::value) {
-            if (dummy_center == 1 && deriv_level == 0) a.pure_sh(true);
-            if (dummy_center == 0 && deriv_level == 0) b.pure_sh(true);
-          }
-#endif
-#if LIBINT_RKB_ERI3_PURE_SH
-          // pure-SH on the (density fitting/auxiliary) center of RKB 3-center
-          // ERIs, mirroring the plain-ERI3 path for the non-TwoPRep operators.
-          if constexpr (!std::is_same<OperType, TwoPRep>::value) {
             if (dummy_center == 1 && deriv_level == 0) a.pure_sh(true);
             if (dummy_center == 0 && deriv_level == 0) b.pure_sh(true);
           }
@@ -1717,12 +1713,6 @@ static void build_TwoPRep_1b_2k(
           CGShell d(ld);
 #if LIBINT_ERI3_PURE_SH
           if constexpr (std::is_same<OperType, TwoPRep>::value) {
-            if (dummy_center == 1 && deriv_level == 0) a.pure_sh(true);
-            if (dummy_center == 0 && deriv_level == 0) b.pure_sh(true);
-          }
-#endif
-#if LIBINT_RKB_ERI3_PURE_SH
-          if constexpr (!std::is_same<OperType, TwoPRep>::value) {
             if (dummy_center == 1 && deriv_level == 0) a.pure_sh(true);
             if (dummy_center == 0 && deriv_level == 0) b.pure_sh(true);
           }
