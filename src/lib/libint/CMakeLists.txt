@@ -47,8 +47,64 @@ configure_file(
   "include/libint2/basis.h"
   @ONLY)
 
+# source files that populate.cmake copies into the export; keep in sync with it.
+#   CONFIGURE_DEPENDS makes added/removed files trigger a re-glob.
+set(_populate_src_globs
+  "doc/progman/*.cc"
+  "export/tests/*.c" "export/tests/*.cc" "export/tests/*.h" "export/tests/*.hpp"
+  "export/tests/*.F90" "export/tests/*.py" "export/tests/*.xyz"
+  "export/tests/*hftest.cmake" "export/tests/*CMakeLists.txt"
+  "export/lib/basis/*.g94"
+  "export/python/*.h" "export/python/*.cc" "export/python/*.py"
+  "export/python/*.py.in" "export/python/*.toml" "export/python/*CMakeLists.txt"
+  "src/lib/libint/*.h"
+  "include/libint2/*.h" "include/libint2/*.h.cmake.in" "include/libint2/*basis.h.in"
+  )
+list(TRANSFORM _populate_src_globs PREPEND "${PROJECT_SOURCE_DIR}/")
+file(GLOB_RECURSE _populate_src_files CONFIGURE_DEPENDS ${_populate_src_globs})
+list(APPEND _populate_src_files
+  "${PROJECT_SOURCE_DIR}/doc/progman/progman.tex"
+  "${PROJECT_SOURCE_DIR}/doc/progman/refs.bib"
+  "${PROJECT_SOURCE_DIR}/doc/Libint_Logo3_alt.pdf"
+  "${PROJECT_SOURCE_DIR}/doc/Libint_Logo3_alt.eps"
+  "${PROJECT_SOURCE_DIR}/external/boost.tar.gz"
+  "${PROJECT_SOURCE_DIR}/export/fortran/fortran_example.F90"
+  "${PROJECT_SOURCE_DIR}/export/fortran/test.cc"
+  "${PROJECT_SOURCE_DIR}/export/fortran/test-eri.cc"
+  "${PROJECT_SOURCE_DIR}/export/fortran/c_to_f.py"
+  "${PROJECT_SOURCE_DIR}/export/fortran/make_defs.py"
+  "${PROJECT_SOURCE_DIR}/export/fortran/libint_f.F90"
+  "${PROJECT_SOURCE_DIR}/src/bin/test_eri/eri.h"
+  "${PROJECT_SOURCE_DIR}/src/bin/test_eri/prep_libint2.h"
+  "${PROJECT_SOURCE_DIR}/src/bin/libint/util_types.h"
+  "${PROJECT_SOURCE_DIR}/include/libint2.h"
+  "${PROJECT_SOURCE_DIR}/include/libint2.hpp"
+  "${PROJECT_SOURCE_DIR}/export/engine.cpp"
+  "${PROJECT_SOURCE_DIR}/export/configuration.cc.cmake.in"
+  "${PROJECT_SOURCE_DIR}/export/LICENSE.export"
+  "${PROJECT_SOURCE_DIR}/cmake/modules/autocmake_safeguards.cmake"
+  "${PROJECT_SOURCE_DIR}/cmake/modules/int_orderings.cmake"
+  "${PROJECT_SOURCE_DIR}/cmake/modules/options.cmake"
+  "${PROJECT_SOURCE_DIR}/cmake/modules/int_userreal.cmake"
+  "${PROJECT_SOURCE_DIR}/cmake/modules/int_checkboost.cmake"
+  "${PROJECT_SOURCE_DIR}/cmake/modules/FindMultiprecision.cmake"
+  "${PROJECT_SOURCE_DIR}/cmake/modules/FindEigen3.cmake"
+  "${PROJECT_SOURCE_DIR}/cmake/modules/AddCustomTargetSubproject.cmake"
+  "${PROJECT_BINARY_DIR}/cmake/modules/int_computed.cmake"
+  "${PROJECT_SOURCE_DIR}/INSTALL.md"
+  "${PROJECT_SOURCE_DIR}/README.md"
+  "${PROJECT_SOURCE_DIR}/CITATION"
+  "${PROJECT_SOURCE_DIR}/COPYING"
+  "${PROJECT_SOURCE_DIR}/COPYING.LESSER"
+  )
+
+# populate.cmake leaves up-to-date files untouched, so track it with a stamp
+#   rather than with the files it produces
+set(POPULATE_STAMP "${EXPORT_STAGE_DIR}.populate.stamp")
 add_custom_command(
   OUTPUT
+    "${POPULATE_STAMP}"
+  BYPRODUCTS
     ${EXPORT_STAGE_DIR}/CMakeLists.txt
     ${EXPORT_STAGE_DIR}/include/libint2_params.h
     ${EXPORT_STAGE_DIR}/include/HRRPart0bra0ket0pp.h
@@ -58,6 +114,7 @@ add_custom_command(
           "-DPROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}"
           "-DEXPORT_STAGE_DIR=${EXPORT_STAGE_DIR}"
           -P ${CMAKE_CURRENT_SOURCE_DIR}/populate.cmake
+  COMMAND ${CMAKE_COMMAND} -E touch "${POPULATE_STAMP}"
   DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/populate.cmake"
     "${PROJECT_SOURCE_DIR}/export/CMakeLists.txt.export"
@@ -65,10 +122,11 @@ add_custom_command(
     "${PROJECT_BINARY_DIR}/generated/libint2_params.h"
     "${PROJECT_BINARY_DIR}/generated/HRRPart0bra0ket0pp.h"
     "${PROJECT_BINARY_DIR}/generated/HRRPart0bra0ket0pp.cc"
+    ${_populate_src_files}
     libint-library-generate
   COMMENT "Populating Libint2 library"
   )
-add_custom_target(libint-library-populate DEPENDS ${EXPORT_STAGE_DIR}/CMakeLists.txt)
+add_custom_target(libint-library-populate DEPENDS "${POPULATE_STAMP}")
 
 
 # <<<  Export The Library Source  >>>
@@ -81,7 +139,7 @@ add_custom_command(
   DEPENDS
     libint-library-generate
     libint-library-populate
-    ${EXPORT_STAGE_DIR}/CMakeLists.txt
+    "${POPULATE_STAMP}"
   WORKING_DIRECTORY "${EXPORT_STAGE_DIR}/.."
   COMMENT "Exporting tarball of Libint2 library source: ${EXPORT_TARBALL}"
   )
@@ -105,14 +163,25 @@ else()
     message(FATAL_ERROR "No C language support; invoke CMake with -D CMAKE_C_COMPILER=/path/to/C/compiler to resolve")
 endif()
 
+# keep the archived timestamps when unpacking the tarball, so that unchanged
+#   sources are not recompiled after re-export
+set(_extract_timestamp_arg)
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
+    set(_extract_timestamp_arg DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+endif()
+
 if (LIBINT2_BUILD_LIBRARY_AS_SUBPROJECT)
     include(FetchContent)
 
     if (EXISTS "${EXPORT_TARBALL}")
         message("Unpacking ${EXPORT_TARBALL} and setting up as a subproject")
+        # the hash makes FetchContent unpack the tarball again when it changes
+        file(SHA256 "${EXPORT_TARBALL}" _export_tarball_sha256)
         FetchContent_Declare(
           libint-library
           URL "${EXPORT_TARBALL}"
+          URL_HASH SHA256=${_export_tarball_sha256}
+          ${_extract_timestamp_arg}
           )
         FetchContent_MakeAvailable(libint-library)
     else()
@@ -190,6 +259,7 @@ else()
       # * DOWNLOAD_DIR <SOURCE_DIR> is tidier but fails on Windows
       URL "${EXPORT_TARBALL}"
       LOG_DOWNLOAD 1
+      ${_extract_timestamp_arg}
       CMAKE_ARGS "${library_CMAKE_ARGS}"
       CMAKE_CACHE_ARGS
         -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS}
@@ -205,6 +275,8 @@ else()
         build
         install
       )
+    # unpack the tarball again when it changes
+    ExternalProject_Add_StepDependencies(library download "${EXPORT_TARBALL}")
     ExternalProject_Get_property(library BINARY_DIR)
 
     # instead of running tests by default, replicate check-libint2 target here
