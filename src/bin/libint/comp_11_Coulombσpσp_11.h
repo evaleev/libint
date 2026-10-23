@@ -95,30 +95,43 @@ class CR_11_Coulombσpσp_11
     return rkb_fold_adapt_dims(dims);
   }
 
-  /// Hand-emit a simple element-wise loop function.
+  /// Hand-emit a simple element-wise loop function. The right-hand side is
+  /// selected by the target's quaternion component; the child order it relies
+  /// on is fixed by the constructor:
   /// comp 0: target = src0 + src1 + src2 (dot product)
   /// comp 1-3: target = src0 - src1 (cross product components)
   void generate_code(const std::shared_ptr<CodeContext>& context,
                      const std::shared_ptr<ImplicitDimensions>& dims,
                      const std::string& funcname, std::ostream& decl,
                      std::ostream& def) override {
-    const unsigned int nc = this->num_children();
+    const int comp = target_->oper()->descr().quaternion_index();
     std::string rhs;
-    if (nc == 3) {
-      rhs = "src0[hsi] + src1[hsi] + src2[hsi]";
-    } else if (nc == 2) {
-      rhs = "src0[hsi] - src1[hsi]";
-    } else {
-      // Sign pattern is keyed on the child count (3 or 2). If canonicalization
-      // ever changes the count, fail the export loudly instead of emitting a
-      // wrong or empty target expression.
-      throw std::logic_error(
-          "Coulombσpσp generate_code(): unexpected num_children() (expected 3 "
-          "or 2)");
+    unsigned int nchildren;
+    switch (comp) {
+      case 0:
+        rhs = "src0[hsi] + src1[hsi] + src2[hsi]";
+        nchildren = 3;
+        break;
+      case 1:
+      case 2:
+      case 3:
+        rhs = "src0[hsi] - src1[hsi]";
+        nchildren = 2;
+        break;
+      default:
+        throw std::runtime_error(
+            "CR_11_Coulombσpσp_11::generate_code: invalid quaternionic index");
     }
-    const unsigned int nflops = (nc > 1) ? nc - 1 : 0;
+    // add_child() deduplicates children by instance (see generic_rr.h), so a
+    // collision among the deriv-ERI children would silently shift the src
+    // slots; fail the export loudly instead of emitting a wrong expression.
+    if (this->num_children() != nchildren)
+      throw std::logic_error("CR_11_Coulombσpσp_11::generate_code: component " +
+                             std::to_string(comp) + " expects " +
+                             std::to_string(nchildren) + " children, got " +
+                             std::to_string(this->num_children()));
     rkb_fold_generate_code(*this, context, dims, funcname, decl, def, rhs,
-                           nflops);
+                           nchildren - 1);
   }
 };
 

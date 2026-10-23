@@ -124,48 +124,55 @@ class CR_11_σpσpCoulombσpσp_11
     return rkb_fold_adapt_dims(dims);
   }
 
-  /// Hand-emit a simple element-wise loop function.
-  /// Cannot use S-shell dummy because TwoPRep particle-swap canonicalization
-  /// deduplicates children (e.g., (S_x S_x|S_y S_y) = (S_y S_y|S_x S_x)),
-  /// giving fewer children than the real instance.
+  /// Hand-emit a simple element-wise loop function. The right-hand side is
+  /// selected by the target's component index (4 * bra_spin + ket_spin, with
+  /// spin indices S=0, X=1, Y=2, Z=3); the child order it relies on is fixed by
+  /// the constructor:
+  ///   SS:                9 children, all +1
+  ///   SX,SY,SZ,XS,YS,ZS: 6 children, alternating +1,-1
+  ///   XX..ZZ:            4 children, pattern -1,+1,+1,-1
   void generate_code(const std::shared_ptr<CodeContext>& context,
                      const std::shared_ptr<ImplicitDimensions>& dims,
                      const std::string& funcname, std::ostream& decl,
                      std::ostream& def) override {
-    // Sign patterns for each component, indexed by child order in constructor.
-    // comp 0 (SS): 9 children, all +1
-    // comp 1-3 (SX,SY,SZ): 6 children, alternating +1,-1
-    // comp 4,8,12 (XS,YS,ZS): 6 children, alternating +1,-1
-    // comp 5-7,9-11,13-15 (XX..ZZ): 4 children, pattern -1,+1,+1,-1
-    const unsigned int nc = this->num_children();
+    const int comp = target_->oper()->descr().quaternion_index();
+    if (comp < 0 || comp > 15)
+      throw std::runtime_error(
+          "CR_11_σpσpCoulombσpσp_11::generate_code: invalid component index "
+          "(expected 0-15)");
+    const bool bra_scalar = (comp / 4 == 0);
+    const bool ket_scalar = (comp % 4 == 0);
     std::ostringstream rhs;
-    if (nc == 9) {
-      // SS component: all positive
-      for (unsigned int c = 0; c < 9; c++) {
+    unsigned int nchildren;
+    if (bra_scalar && ket_scalar) {
+      // SS: all positive
+      nchildren = 9;
+      for (unsigned int c = 0; c < nchildren; c++) {
         if (c > 0) rhs << " + ";
         rhs << "src" << c << "[hsi]";
       }
-    } else if (nc == 6) {
+    } else if (bra_scalar || ket_scalar) {
       // SX,SY,SZ,XS,YS,ZS: alternating +/-
-      for (unsigned int c = 0; c < 6; c++) {
+      nchildren = 6;
+      for (unsigned int c = 0; c < nchildren; c++) {
         rhs << ((c % 2 == 0) ? " + " : " - ");
         rhs << "src" << c << "[hsi]";
       }
-    } else if (nc == 4) {
-      // XX,XY,...,ZZ: -src0 + src1 + src2 - src3
-      rhs << "- src0[hsi] + src1[hsi] + src2[hsi] - src3[hsi]";
     } else {
-      // The σ·σ-fold sign pattern is keyed on the child count (9/6/4). If
-      // particle-swap canonicalization ever deduplicates children to a
-      // different count, the branches above would emit a wrong or empty target
-      // expression; fail the export loudly instead of generating broken code.
-      throw std::logic_error(
-          "σpσpCoulombσpσp generate_code(): unexpected num_children() (expected "
-          "9, 6, or 4)");
+      // XX,XY,...,ZZ: -src0 + src1 + src2 - src3
+      nchildren = 4;
+      rhs << "- src0[hsi] + src1[hsi] + src2[hsi] - src3[hsi]";
     }
-    const unsigned int nflops = (nc > 1) ? nc - 1 : 0;
+    // add_child() deduplicates children by instance (see generic_rr.h), so a
+    // collision among the deriv-ERI children would silently shift the src
+    // slots; fail the export loudly instead of emitting a wrong expression.
+    if (this->num_children() != nchildren)
+      throw std::logic_error(
+          "CR_11_σpσpCoulombσpσp_11::generate_code: component " +
+          std::to_string(comp) + " expects " + std::to_string(nchildren) +
+          " children, got " + std::to_string(this->num_children()));
     rkb_fold_generate_code(*this, context, dims, funcname, decl, def, rhs.str(),
-                           nflops);
+                           nchildren - 1);
   }
 };
 
