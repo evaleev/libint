@@ -212,11 +212,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   assert((s1.ncontr() == 1 && s2.ncontr() == 1) &&
          "generally-contracted shells not yet supported");
 
-  const auto oper_is_nuclear =
-      (oper_ == Operator::nuclear || oper_ == Operator::erf_nuclear ||
-       oper_ == Operator::erfc_nuclear || oper_ == Operator::erfx_nuclear ||
-       oper_ == Operator::q_gau || oper_ == Operator::opVop ||
-       oper_ == Operator::op_q_gau_op);
+  const auto oper_is_nuclear = is_nuclear_type(oper_);
 
   const auto l1 = s1.contr[0].l;
   const auto l2 = s2.contr[0].l;
@@ -261,6 +257,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   const auto nderivcoord = 3 * nderivcenters_shset;
   const auto num_shellsets_computed =
       nopers() * num_geometrical_derivatives(nderivcenters_shset, deriv_order_);
+  // targets_ and scratch_ are sized by reset_scratch() for
+  // compute_nshellsets() shell sets, the two must agree
+  if (num_shellsets_computed > targets_.size())
+    throw std::logic_error(
+        "Engine::compute1: buffers are too small for the computed shell sets");
 
   // will use scratch_ if:
   // - Coulomb ints are computed 1 charge at a time, contributions are
@@ -364,23 +365,22 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
         if (deriv_order_ > 0) {
           switch (deriv_order_) {
             case 1: {
-              // first 6 shellsets are derivatives with respect to Gaussian
-              // positions
+              // N.B. shellsets are ordered as deriv index * nopers + oper
+              // first 6 derivatives are with respect to Gaussian positions
               // following them are derivs with respect to nuclear coordinates
               // (3 per nucleus)
-              assert(ntargets == 6 && "unexpected # of targets");
-              auto dest = &scratch_[0] + (6 + pset * 3) * ncart12;
-              for (auto s = 0; s != 3; ++s, dest += ncart12) {
-                auto src = primdata_[0].targets[s];
-                for (auto i = 0; i != ncart12; ++i) {
-                  dest[i] = -src[i];
-                }
-              }
-              dest -= 3 * ncart12;
-              for (auto s = 3; s != 6; ++s, dest += ncart12) {
-                auto src = primdata_[0].targets[s];
-                for (auto i = 0; i != ncart12; ++i) {
-                  dest[i] -= src[i];
+              const auto nopers = this->nopers();
+              assert(ntargets == 6 * nopers && "unexpected # of targets");
+              for (auto xyz = 0; xyz != 3; ++xyz) {
+                for (auto op = 0u; op != nopers; ++op) {
+                  const auto src_A = primdata_[0].targets[xyz * nopers + op];
+                  const auto src_B =
+                      primdata_[0].targets[(3 + xyz) * nopers + op];
+                  auto dest =
+                      &scratch_[((6 + pset * 3 + xyz) * nopers + op) * ncart12];
+                  for (auto i = 0; i != ncart12; ++i) {
+                    dest[i] = -src_A[i] - src_B[i];
+                  }
                 }
               }
             } break;
@@ -398,144 +398,136 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
                                                 std::max(i, j));
               };
 
-              // accumulate ints for this pset to scratch in locations
-              // remapped to overall deriv index
-              const auto ncoords_times_two = nderivcoord * 2;
-              for (auto d0 = 0, d01 = 0; d0 != 6; ++d0) {
-                for (auto d1 = d0; d1 != 6; ++d1, ++d01) {
-                  const auto d01_full =
-                      upper_triangle_index_ord(ncoords_times_two, d0, d1);
-                  auto tgt = &scratch_[d01_full * ncart12];
-                  if (pset != 0)
-                    std::transform(primdata_[0].targets[d01],
-                                   primdata_[0].targets[d01] + ncart12, tgt,
-                                   tgt, std::plus<value_type>());
-                  else
-                    std::copy(primdata_[0].targets[d01],
-                              primdata_[0].targets[d01] + ncart12, tgt);
-                }
-              }
+              // N.B. shellsets are ordered as deriv index * nopers + oper
+              const auto nopers = this->nopers();
+              assert(ntargets == 21 * nopers && "unexpected # of targets");
+              // shellset computed by libint for this pset
+              auto src_shellset = [&](int deriv_idx, unsigned int op) {
+                return primdata_[0].targets[deriv_idx * nopers + op];
+              };
+              // accumulated shellset in scratch
+              auto tgt_shellset = [&](int deriv_idx, unsigned int op) {
+                return &scratch_[(deriv_idx * nopers + op) * ncart12];
+              };
 
-              // use translational invariance to build derivatives w.r.t.
-              // operator centers
-              {
-                // mixed derivatives: first deriv w.r.t. Gaussian, second
-                // w.r.t. operator coord pset
-                const auto c1 = 2 + pset;
-                for (auto c0 = 0; c0 != 2; ++c0) {
+              const auto ncoords_times_two = nderivcoord * 2;
+              for (auto op = 0u; op != nopers; ++op) {
+                // accumulate ints for this pset to scratch in locations
+                // remapped to overall deriv index
+                for (auto d0 = 0, d01 = 0; d0 != 6; ++d0) {
+                  for (auto d1 = d0; d1 != 6; ++d1, ++d01) {
+                    const auto d01_full =
+                        upper_triangle_index_ord(ncoords_times_two, d0, d1);
+                    auto tgt = tgt_shellset(d01_full, op);
+                    const auto src = src_shellset(d01, op);
+                    if (pset != 0)
+                      std::transform(src, src + ncart12, tgt, tgt,
+                                     std::plus<value_type>());
+                    else
+                      std::copy(src, src + ncart12, tgt);
+                  }
+                }
+
+                // use translational invariance to build derivatives w.r.t.
+                // operator centers
+                {
+                  // mixed derivatives: first deriv w.r.t. Gaussian, second
+                  // w.r.t. operator coord pset
+                  const auto c1 = 2 + pset;
+                  for (auto c0 = 0; c0 != 2; ++c0) {
+                    for (auto xyz0 = 0; xyz0 != 3; ++xyz0) {
+                      const auto coord0 = c0 * 3 + xyz0;
+                      for (auto xyz1 = 0; xyz1 != 3; ++xyz1) {
+                        const auto coord1 = c1 * 3 + xyz1;  // coord1 > coord0
+
+                        const auto coord01_abs = upper_triangle_index_ord(
+                            ncoords_times_two, coord0, coord1);
+                        auto tgt = tgt_shellset(coord01_abs, op);
+
+                        // d2 / dAi dOj = - d2 / dAi dAj
+                        {
+                          auto coord1_A = xyz1;
+                          const auto coord01_A =
+                              upper_triangle_index(12, coord0, coord1_A);
+                          const auto src = src_shellset(coord01_A, op);
+                          for (auto i = 0; i != ncart12; ++i) tgt[i] = -src[i];
+                        }
+
+                        // d2 / dAi dOj -= d2 / dAi dBj
+                        {
+                          auto coord1_B = 3 + xyz1;
+                          const auto coord01_B =
+                              upper_triangle_index(12, coord0, coord1_B);
+                          const auto src = src_shellset(coord01_B, op);
+                          for (auto i = 0; i != ncart12; ++i) tgt[i] -= src[i];
+                        }
+                      }
+                    }
+                  }
+                }  // mixed derivs
+                {
+                  // operator derivs
+                  const auto c0 = 2 + pset;
+                  const auto c1 = c0;
                   for (auto xyz0 = 0; xyz0 != 3; ++xyz0) {
                     const auto coord0 = c0 * 3 + xyz0;
-                    for (auto xyz1 = 0; xyz1 != 3; ++xyz1) {
+                    for (auto xyz1 = xyz0; xyz1 != 3; ++xyz1) {
                       const auto coord1 = c1 * 3 + xyz1;  // coord1 > coord0
 
                       const auto coord01_abs = upper_triangle_index_ord(
                           ncoords_times_two, coord0, coord1);
-                      auto tgt = &scratch_[coord01_abs * ncart12];
+                      auto tgt = tgt_shellset(coord01_abs, op);
 
-                      // d2 / dAi dOj = - d2 / dAi dAj
+                      // d2 / dOi dOj = d2 / dAi dAj
                       {
+                        auto coord0_A = xyz0;
                         auto coord1_A = xyz1;
-                        const auto coord01_A =
-                            upper_triangle_index(12, coord0, coord1_A);
-                        const auto src = primdata_[0].targets[coord01_A];
-                        for (auto i = 0; i != ncart12; ++i) tgt[i] = -src[i];
+                        const auto coord01_AA =
+                            upper_triangle_index_ord(12, coord0_A, coord1_A);
+                        const auto src = src_shellset(coord01_AA, op);
+                        for (auto i = 0; i != ncart12; ++i) tgt[i] = src[i];
                       }
 
-                      // d2 / dAi dOj -= d2 / dAi dBj
+                      // d2 / dOi dOj += d2 / dAi dBj
                       {
+                        auto coord0_A = xyz0;
                         auto coord1_B = 3 + xyz1;
-                        const auto coord01_B =
-                            upper_triangle_index(12, coord0, coord1_B);
-                        const auto src = primdata_[0].targets[coord01_B];
-                        for (auto i = 0; i != ncart12; ++i) tgt[i] -= src[i];
+                        const auto coord01_AB =
+                            upper_triangle_index_ord(12, coord0_A, coord1_B);
+                        const auto src = src_shellset(coord01_AB, op);
+                        for (auto i = 0; i != ncart12; ++i) tgt[i] += src[i];
+                      }
+
+                      // d2 / dOi dOj += d2 / dBi dAj
+                      {
+                        auto coord0_B = 3 + xyz0;
+                        auto coord1_A = xyz1;
+                        const auto coord01_BA =
+                            upper_triangle_index_ord(12, coord1_A, coord0_B);
+                        const auto src = src_shellset(coord01_BA, op);
+                        for (auto i = 0; i != ncart12; ++i) tgt[i] += src[i];
+                      }
+
+                      // d2 / dOi dOj += d2 / dBi dBj
+                      {
+                        auto coord0_B = 3 + xyz0;
+                        auto coord1_B = 3 + xyz1;
+                        const auto coord01_BB =
+                            upper_triangle_index_ord(12, coord0_B, coord1_B);
+                        const auto src = src_shellset(coord01_BB, op);
+                        for (auto i = 0; i != ncart12; ++i) tgt[i] += src[i];
                       }
                     }
                   }
-                }
-              }  // mixed derivs
-              {
-                // operator derivs
-                const auto c0 = 2 + pset;
-                const auto c1 = c0;
-                for (auto xyz0 = 0; xyz0 != 3; ++xyz0) {
-                  const auto coord0 = c0 * 3 + xyz0;
-                  for (auto xyz1 = xyz0; xyz1 != 3; ++xyz1) {
-                    const auto coord1 = c1 * 3 + xyz1;  // coord1 > coord0
-
-                    const auto coord01_abs = upper_triangle_index_ord(
-                        ncoords_times_two, coord0, coord1);
-                    auto tgt = &scratch_[coord01_abs * ncart12];
-
-                    // d2 / dOi dOj = d2 / dAi dAj
-                    {
-                      auto coord0_A = xyz0;
-                      auto coord1_A = xyz1;
-                      const auto coord01_AA =
-                          upper_triangle_index_ord(12, coord0_A, coord1_A);
-                      const auto src = primdata_[0].targets[coord01_AA];
-                      for (auto i = 0; i != ncart12; ++i) tgt[i] = src[i];
-                    }
-
-                    // d2 / dOi dOj += d2 / dAi dBj
-                    {
-                      auto coord0_A = xyz0;
-                      auto coord1_B = 3 + xyz1;
-                      const auto coord01_AB =
-                          upper_triangle_index_ord(12, coord0_A, coord1_B);
-                      const auto src = primdata_[0].targets[coord01_AB];
-                      for (auto i = 0; i != ncart12; ++i) tgt[i] += src[i];
-                    }
-
-                    // d2 / dOi dOj += d2 / dBi dAj
-                    {
-                      auto coord0_B = 3 + xyz0;
-                      auto coord1_A = xyz1;
-                      const auto coord01_BA =
-                          upper_triangle_index_ord(12, coord1_A, coord0_B);
-                      const auto src = primdata_[0].targets[coord01_BA];
-                      for (auto i = 0; i != ncart12; ++i) tgt[i] += src[i];
-                    }
-
-                    // d2 / dOi dOj += d2 / dBi dBj
-                    {
-                      auto coord0_B = 3 + xyz0;
-                      auto coord1_B = 3 + xyz1;
-                      const auto coord01_BB =
-                          upper_triangle_index_ord(12, coord0_B, coord1_B);
-                      const auto src = primdata_[0].targets[coord01_BB];
-                      for (auto i = 0; i != ncart12; ++i) tgt[i] += src[i];
-                    }
-                  }
-                }
-              }  // operator derivs
+                }  // operator derivs
+              }    // operator components
 
             } break;
 
-            default: {
-              assert(deriv_order_ <= 2 && "feature not implemented");
-
-              // 1. since # of derivatives changes, remap derivatives computed
-              //    by libint; targets_ will hold the "remapped" pointers to
-              //    the data
-              using ShellSetDerivIterator =
-                  libint2::FixedOrderedIntegerPartitionIterator<
-                      std::vector<unsigned int>>;
-              ShellSetDerivIterator shellset_gaussian_diter(deriv_order_, 2);
-              ShellSetDerivIterator shellset_full_diter(deriv_order_,
-                                                        nderivcenters_shset);
-              std::vector<unsigned int> full_deriv(3 * nderivcenters_shset, 0);
-              std::size_t s = 0;
-              while (shellset_gaussian_diter) {  // loop over derivs computed
-                                                 // by libint
-                const auto& s1s2_deriv = *shellset_gaussian_diter;
-                std::copy(std::begin(s1s2_deriv), std::end(s1s2_deriv),
-                          std::begin(full_deriv));
-                const auto full_rank = ShellSetDerivIterator::rank(full_deriv);
-                targets_[full_rank] = primdata_[0].targets[s];
-              }
-              // use translational invariance to build derivatives w.r.t.
-              // operator centers
-            }
+            default:
+              throw std::logic_error(
+                  "Engine::compute1: geometric derivatives of order > 2 of "
+                  "nuclear-type integrals are not implemented");
 
           }  // deriv_order_ switch
         }    // reconstruct derivatives
@@ -1003,11 +995,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   assert(LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD &&
          "non-standard shell ordering");
 
-  const auto oper_is_nuclear =
-      (oper_ == Operator::nuclear || oper_ == Operator::erf_nuclear ||
-       oper_ == Operator::erfc_nuclear || oper_ == Operator::erfx_nuclear ||
-       oper_ == Operator::q_gau || oper_ == Operator::opVop ||
-       oper_ == Operator::op_q_gau_op);
+  const auto oper_is_nuclear = is_nuclear_type(oper_);
 
   // need to use HRR? see strategy.cc
   const auto l1 = s1.contr[0].l;
