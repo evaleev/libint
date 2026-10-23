@@ -56,6 +56,7 @@ file(GLOB_RECURSE _populate_inputs CONFIGURE_DEPENDS
   "${PROJECT_SOURCE_DIR}/doc/progman/*"
   "${PROJECT_SOURCE_DIR}/cmake/modules/*.cmake"
   "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/truncated_coulomb*.cc"
   )
 list(FILTER _populate_inputs EXCLUDE REGEX "/\\.[^/]*$")
 list(APPEND _populate_inputs

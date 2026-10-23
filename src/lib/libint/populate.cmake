@@ -198,6 +198,13 @@ file(
 
 # ====  /src  ===================================================================
 
+# Truncated-Coulomb kernel and the generator of its independent test data.
+file(GLOB truncated_coulomb_sources
+    "${PROJECT_SOURCE_DIR}/src/lib/libint/truncated_coulomb*.cc")
+file(INSTALL ${truncated_coulomb_sources} DESTINATION "${EXPORT_STAGE_DIR}/src")
+file(INSTALL "${PROJECT_SOURCE_DIR}/tools/generate_truncated_coulomb_reference.py"
+     DESTINATION "${EXPORT_STAGE_DIR}/tools")
+
 file(
   INSTALL
     "${PROJECT_SOURCE_DIR}/export/engine.cpp"
