@@ -184,7 +184,15 @@ jobs:
       if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       shell: bash
       working-directory: ${{github.workspace}}/build/compiler
-      run: cmake --install build --prefix ${{github.workspace}}/build/library
+      run: |
+        # make basis.h.in owner-only (as with a restrictive umask at checkout) to check that
+        # its mode does not leak into the installed basis.h
+        find "${{github.workspace}}" -name basis.h.in -exec chmod 600 {} +
+        cmake --install build --prefix "${{github.workspace}}/build/library"
+        hdr=${{github.workspace}}/build/library/include/libint2/basis.h
+        ls -l "$hdr"
+        test -n "$(find "$hdr" -perm 644)" || { echo "installed basis.h is not 0644"; exit 1; }
+        grep -qxF "$hdr" build/install_manifest.txt || { echo "installed basis.h is missing from install_manifest.txt"; exit 1; }
 
     - name: Test installed Libint library (find_package + hartree-fock++)
       if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
@@ -258,6 +266,13 @@ jobs:
               -D CMAKE_CXX_COMPILER=icpx
               -D CMAKE_CXX_FLAGS="--gcc-toolchain=${CONDA_PREFIX} --sysroot=${CONDA_PREFIX}/${HOST}/sysroot -target ${HOST}"
 
+          - runs-on: ubuntu-latest
+            lane: ubuntu-c-only
+            c_only: true
+            libargs: >
+              -D BUILD_SHARED_LIBS=ON
+            testargs: ""
+
     name: "Export • ${{ matrix.cfg.lane }}"
     runs-on: ${{ matrix.cfg.runs-on }}
 
@@ -278,8 +293,9 @@ jobs:
         dependencies:
           - cmake
           - ninja
-          - cxx-compiler
-          - fortran-compiler
+          # 2.x no longer pulls in the activation packages that set CXX/FC
+          - cxx-compiler<2
+          - fortran-compiler<2
           - python
           - boost
           - eigen
@@ -322,9 +338,35 @@ jobs:
       with:
         arch: x64
 
+    - name: Write compiler environment fixup
+      shell: bash -l {0}
+      run: |
+        # conda-forge compiler packages (since ~Oct 2026 builds) no longer export
+        # CC/CXX/FC on activation, and CMake then fails to find a C++ compiler;
+        # point them at the conda env's compilers (and drop values that do not
+        # resolve). Activation reruns in every login shell, so steps that invoke
+        # compilers must source this file.
+        cat > "${{github.workspace}}/compilers.sh" <<'EOF'
+        for _v in CC CXX FC; do
+          _val="${!_v}"
+          if [[ -n "${_val}" ]] && ! command -v "${_val%% *}" >/dev/null 2>&1; then
+            echo "::warning::${_v}=${_val} not found; unsetting it"
+            unset "${_v}"
+          fi
+        done
+        _pick() { local c; for c in "${@:2}"; do if [[ -x "${CONDA_PREFIX}/bin/${c}" ]]; then export "$1=${CONDA_PREFIX}/bin/${c}"; return; fi; done; }
+        [[ -n "${CC}" ]] || _pick CC gcc clang
+        [[ -n "${CXX}" ]] || _pick CXX g++ clang++
+        [[ -n "${FC}" ]] || _pick FC gfortran
+        echo "compilers: CC=${CC} CXX=${CXX} FC=${FC}"
+        EOF
+        source "${{github.workspace}}/compilers.sh"
+        ls "${CONDA_PREFIX}/bin" | grep -E 'c\+\+|g\+\+|clang|gcc|gfortran' || true
+
     - name: Extract, Build, Install Libint Library
       shell: bash -l {0}
       run: |
+        source "${{github.workspace}}/compilers.sh"
         tar -zxf libint*tgz
         mkdir libint && mv libint-2*/* libint/ && cd libint/
         cmake \
@@ -332,11 +374,42 @@ jobs:
           -B build \
           -G Ninja \
           -D CMAKE_INSTALL_PREFIX="${{github.workspace}}/installed" \
-          -D LIBINT2_REQUIRE_CXX_API_COMPILED=ON \
-          -D LIBINT2_ENABLE_PYTHON=ON \
+          -D CMAKE_CXX_COMPILER=${CXX} \
+          ${{ matrix.cfg.c_only && '-D LIBINT2_REQUIRE_CXX_API=OFF' || '-D LIBINT2_REQUIRE_CXX_API_COMPILED=ON -D LIBINT2_ENABLE_PYTHON=ON' }} \
           -D CMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
           ${{ matrix.cfg.libargs }}
-        cmake --build build --target install libint2-python-test
+        cmake --build build --target install ${{ !matrix.cfg.c_only && 'libint2-python-test' || '' }}
+
+    - name: Test Libint library - DESTDIR install and absolute data dir
+      if: ${{ runner.os != 'Windows' }}
+      shell: bash -l {0}
+      working-directory: ${{github.workspace}}/libint
+      run: |
+        # DESTDIR: basis.h is installed under DESTDIR and recorded in the manifest, but the data
+        # path baked into it does not include DESTDIR
+        destdir="${{github.workspace}}/destdir"
+        DESTDIR="$destdir" cmake --install build
+        hdr="$destdir${{github.workspace}}/installed/include/libint2/basis.h"
+        ls -l "$hdr"
+        test -n "$(find "$hdr" -perm 644)" || { echo "basis.h is not 0644"; exit 1; }
+        grep -qxF "${{github.workspace}}/installed/include/libint2/basis.h" build/install_manifest.txt || { echo "basis.h is missing from install_manifest.txt"; exit 1; }
+        grep -qF "\"${{github.workspace}}/installed/share/libint/" "$hdr" || { echo "basis.h does not point to the installed data dir"; exit 1; }
+        if grep -qF "$destdir" "$hdr"; then echo "DESTDIR leaked into basis.h"; exit 1; fi
+        # an absolute LIBINT2_INSTALL_DATADIR is used as is (configure-time check only)
+        source "${{github.workspace}}/compilers.sh"
+        cmake \
+          -S . \
+          -B build-absdata \
+          -G Ninja \
+          -D CMAKE_CXX_COMPILER=${CXX} \
+          ${{ matrix.cfg.c_only && '-D LIBINT2_REQUIRE_CXX_API=OFF' || '' }} \
+          -D CMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
+          -D LIBINT2_INSTALL_DATADIR=/opt/libint2-data \
+          ${{ matrix.cfg.libargs }}
+        grep -qF '"/opt/libint2-data"' build-absdata/include/libint2/basis.h || { echo "basis.h does not use the absolute data dir"; exit 1; }
+        if [[ "${{ matrix.cfg.c_only }}" != "true" ]]; then
+          grep -rqF 'LIBINT_DATADIR=\"/opt/libint2-data\"' build-absdata/CMakeFiles/Export || { echo "exported LIBINT_DATADIR does not use the absolute data dir"; exit 1; }
+        fi
 
     - name: Test Libint library - unit tests
       shell: bash -l {0}
@@ -344,9 +417,52 @@ jobs:
       run: |
         cmake --build . --target check
 
-    - name: Test Libint library - consume installation for SCF [from build+install]
+    - name: Test Libint library - consume C-only installation [from build+install]
+      if: ${{ matrix.cfg.c_only }}
       shell: bash -l {0}
       run: |
+        source "${{github.workspace}}/compilers.sh"
+        mkdir test_installed_c_library && cd test_installed_c_library
+        cat > main.c <<EOF
+        #include <libint2.h>
+        int main(void) { LIBINT2_PREFIXED_NAME(libint2_static_init)(); LIBINT2_PREFIXED_NAME(libint2_static_cleanup)(); return 0; }
+        EOF
+        echo '#include <libint2.hpp>' > cxx.cc
+        cat > CMakeLists.txt <<EOF
+        cmake_minimum_required(VERSION 3.8)
+        project(c_consumer C CXX)
+        # C-only install must not require Eigen3 or Boost
+        set(CMAKE_DISABLE_FIND_PACKAGE_Eigen3 ON)
+        set(CMAKE_DISABLE_FIND_PACKAGE_Boost ON)
+        find_package(Libint2 REQUIRED)
+        if (TARGET Libint2::cxx)
+          message(FATAL_ERROR "Libint2::cxx must not exist in a C-only installation")
+        endif()
+        find_package(Libint2 QUIET COMPONENTS CXX)
+        if (Libint2_FOUND)
+          message(FATAL_ERROR "find_package(Libint2 COMPONENTS CXX) must fail for a C-only installation")
+        endif()
+        add_executable(c_consumer main.c)
+        target_link_libraries(c_consumer Libint2::int2)
+        # C++ API headers must fail loudly
+        try_compile(_l2_cxx_ok \${CMAKE_BINARY_DIR}/cxx_check \${CMAKE_SOURCE_DIR}/cxx.cc
+          LINK_LIBRARIES Libint2::int2 OUTPUT_VARIABLE _l2_cxx_out)
+        if (_l2_cxx_ok OR NOT _l2_cxx_out MATCHES "built without the C[+][+] API")
+          message(FATAL_ERROR "including libint2.hpp from a C-only installation must hit the #error guard:\n\${_l2_cxx_out}")
+        endif()
+        EOF
+        cmake -S . -B from_build_tree -DCMAKE_PREFIX_PATH="${{github.workspace}}/libint/build" ${{ matrix.cfg.testargs }}
+        cmake --build from_build_tree --target c_consumer
+        from_build_tree/c_consumer
+        cmake -S . -B from_install_tree -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
+        cmake --build from_install_tree --target c_consumer
+        from_install_tree/c_consumer
+
+    - name: Test Libint library - consume installation for SCF [from build+install]
+      if: ${{ !matrix.cfg.c_only }}
+      shell: bash -l {0}
+      run: |
+        source "${{github.workspace}}/compilers.sh"
         mkdir test_installed_library && cd test_installed_library
         cat > CMakeLists.txt <<EOF
         cmake_minimum_required(VERSION 3.8)
@@ -368,9 +484,11 @@ jobs:
         from_install_tree/hf++ ../libint/tests/hartree-fock/h2o_rotated.xyz | python ../libint/tests/hartree-fock/hartree-fock++-validate.py ../libint/features
 
     - name: Build & Test Python bindings (again, independently)
+      if: ${{ !matrix.cfg.c_only }}
       shell: bash -l {0}
       working-directory: ${{github.workspace}}/libint/python
       run: |
+        source "${{github.workspace}}/compilers.sh"
         cmake . -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
         cmake --build . --target libint2-python
         cmake --build . --target libint2-python-test

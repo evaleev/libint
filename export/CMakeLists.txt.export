@@ -114,16 +114,28 @@ include(autocmake_safeguards)
 
 # Set install paths ====================================================================================================
 
+# N.B. STRING, not PATH: CMake converts a relative value given untyped on the command line
+# (-DLIBINT2_INSTALL_DATADIR=share/foo) for a PATH cache variable into an absolute path relative
+# to the current working directory, which would then be treated as an absolute install dir
 set(LIBINT2_INSTALL_BINDIR "${CMAKE_INSTALL_BINDIR}"
-        CACHE PATH "LIBINT2 binary install directory")
+        CACHE STRING "LIBINT2 binary install directory")
 set(LIBINT2_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}"
-        CACHE PATH "LIBINT2 INCLUDE install directory")
+        CACHE STRING "LIBINT2 INCLUDE install directory")
 set(LIBINT2_INSTALL_LIBDIR "${CMAKE_INSTALL_LIBDIR}"
-        CACHE PATH "LIBINT2 LIB install directory")
+        CACHE STRING "LIBINT2 LIB install directory")
 set(LIBINT2_INSTALL_DATADIR "${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}"
-        CACHE PATH "LIBINT2 DATA install directory")
+        CACHE STRING "LIBINT2 DATA install directory")
 set(LIBINT2_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/libint2"
-        CACHE PATH "LIBINT2 CMAKE install directory")
+        CACHE STRING "LIBINT2 CMAKE install directory")
+
+# libint2_install_path(<out> <dir> <prefix>): <dir> if it is absolute, else <prefix>/<dir>
+function(libint2_install_path out dir prefix)
+    if (IS_ABSOLUTE "${dir}")
+        set(${out} "${dir}" PARENT_SCOPE)
+    else()
+        set(${out} "${prefix}/${dir}" PARENT_SCOPE)
+    endif()
+endfunction()
 
 
 # ====  Dependencies  ===========================================================
@@ -197,6 +209,9 @@ endif()
 ################################# Main Project #################################
 include(CMakePackageConfigHelpers)
 
+if (NOT LIBINT2_REQUIRE_CXX_API)
+    set(LIBINT2_CXX_API_DISABLED 1)
+endif()
 configure_file(
   include/libint2/config2.h.cmake.in
   include/libint2/config2.h
@@ -209,11 +224,14 @@ configure_file(
   src/configuration.cc
   @ONLY)
 
-set(LIBINT_DATADIR_ABSOLUTE ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION})
+libint2_install_path(LIBINT_DATADIR_ABSOLUTE "${LIBINT2_INSTALL_DATADIR}" "${CMAKE_INSTALL_PREFIX}")
 configure_file(
   include/libint2/basis.h.in  # temp until libtool dropped and moved to basis.h.cmake.in
   include/libint2/basis.h
   @ONLY)
+
+# value of the LIBINT_DATADIR definition for the installed C++ API targets
+libint2_install_path(_libint2_installed_datadir "${LIBINT2_INSTALL_DATADIR}" "\$\{_IMPORT_PREFIX\}")
 
 include(srclist.cmake)
 list(LENGTH LIBINT2_LIBRARY_CXX_SRC _source_count)
@@ -408,7 +426,7 @@ if (L2_BUILD_SHARED_LIBS)
             target_compile_definitions(
               int-cxx-headeronly-shared
               INTERFACE
-                $<INSTALL_INTERFACE:LIBINT_DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_DATADIR}">
+                $<INSTALL_INTERFACE:LIBINT_DATADIR="${_libint2_installed_datadir}">
               )
         endif()
         target_link_libraries(
@@ -524,6 +542,14 @@ if (L2_BUILD_STATIC_LIBS)
           INTERFACE
             $<BUILD_INTERFACE:LIBINT_SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
           )
+        if (NOT MSVC)
+            # see the LIBINT_DATADIR TODO for int-cxx-headeronly-shared
+            target_compile_definitions(
+              int-cxx-headeronly-static
+              INTERFACE
+                $<INSTALL_INTERFACE:LIBINT_DATADIR="${_libint2_installed_datadir}">
+              )
+        endif()
         target_link_libraries(
           int-cxx-headeronly-static
           INTERFACE
@@ -773,6 +799,7 @@ install(
     ${PROJECT_SOURCE_DIR}/include/libint2_iface.h
     ${PROJECT_SOURCE_DIR}/include/libint2_types.h
   DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}/libint2"
+  COMPONENT ${L2}_Development
   )
 
 # install generated headers from binary tree
@@ -780,23 +807,49 @@ install(
   FILES
     ${PROJECT_BINARY_DIR}/include/libint2/config2.h
   DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}/libint2"
+  COMPONENT ${L2}_Development
   )
 
 # install basis.h at install time so LIBINT_DATADIR_ABSOLUTE reflects
-# any --prefix override. $ENV{DESTDIR} must be prepended manually
-# here: install(CODE) runs custom code and does not get the automatic
-# DESTDIR handling that install(FILES) etc. have.
+# any --prefix override. configure_file into the build tree, then
+# file(INSTALL) with explicit FILE_PERMISSIONS: configure_file copies the
+# mode of basis.h.in, which is 0600 if the sources were unpacked under a
+# restrictive umask (git itself only records 0644). file(INSTALL) is what
+# install(FILES) uses under the hood, so it also prepends $ENV{DESTDIR},
+# records basis.h in install_manifest.txt, and prints the usual
+# "-- Installing:" line. (configure_file's NO_SOURCE_PERMISSIONS would also
+# work but needs CMake 3.19, newer than the 3.16 minimum required here.)
+# Other details:
+# * configure-time values are embedded as [==[bracket arguments]==] so that
+#   paths containing " or ${ cannot break the generated install script
+# * the intermediate file is keyed by the install prefix so that concurrent
+#   installs to different prefixes from one build tree do not race, and is
+#   touched so that file(INSTALL), which skips files whose timestamp matches
+#   the destination's, always copies it
 install(CODE "
-  set(LIBINT_VERSION \"${LIBINT_VERSION}\")
-  set(LIBINT_DATADIR_ABSOLUTE \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}\")
-  configure_file(
-    \"${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in\"
-    \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_INCLUDEDIR}/libint2/basis.h\"
-    @ONLY)
-")
+  set(LIBINT_VERSION [==[${LIBINT_VERSION}]==])
+  set(LIBINT_DATADIR_ABSOLUTE [==[${LIBINT2_INSTALL_DATADIR}]==])
+  if (NOT IS_ABSOLUTE \"\${LIBINT_DATADIR_ABSOLUTE}\")
+    set(LIBINT_DATADIR_ABSOLUTE \"\${CMAKE_INSTALL_PREFIX}/\${LIBINT_DATADIR_ABSOLUTE}\")
+  endif()
+  set(_libint2_includedir [==[${LIBINT2_INSTALL_INCLUDEDIR}]==])
+  if (NOT IS_ABSOLUTE \"\${_libint2_includedir}\")
+    set(_libint2_includedir \"\${CMAKE_INSTALL_PREFIX}/\${_libint2_includedir}\")
+  endif()
+  string(MD5 _libint2_prefix_hash \"\${CMAKE_INSTALL_PREFIX}\")
+  set(_libint2_basis_h [==[${PROJECT_BINARY_DIR}/basis.h.install]==])
+  set(_libint2_basis_h \"\${_libint2_basis_h}/\${_libint2_prefix_hash}/basis.h\")
+  configure_file([==[${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in]==] \"\${_libint2_basis_h}\" @ONLY)
+  file(TOUCH \"\${_libint2_basis_h}\")
+  file(INSTALL \"\${_libint2_basis_h}\"
+    DESTINATION \"\${_libint2_includedir}/libint2\"
+    FILE_PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
+"
+  COMPONENT ${L2}_Development
+  )
 
 # install bundled Boost headers if needed
-if (NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+if (LIBINT2_REQUIRE_CXX_API AND NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
     install(
       DIRECTORY ${PROJECT_BINARY_DIR}/include/libint2/boost
       DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}/libint2"
@@ -844,7 +897,7 @@ if (LIBINT2_ENABLE_FORTRAN)
 endif()
 
 # Eigen local install
-if (LIBINT2_LOCAL_Eigen3_INSTALL AND TARGET Eigen3::Eigen)
+if (LIBINT2_REQUIRE_CXX_API AND LIBINT2_LOCAL_Eigen3_INSTALL AND TARGET Eigen3::Eigen)
 
     add_library(Eigen INTERFACE)
     foreach(prop
