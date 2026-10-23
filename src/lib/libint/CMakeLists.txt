@@ -47,8 +47,39 @@ configure_file(
   "include/libint2/basis.h"
   @ONLY)
 
+# populate.cmake copies whole directory trees, so glob them for its dependencies;
+#   CONFIGURE_DEPENDS re-globs at build time so that added files are picked up too.
+#   Dotfiles (e.g. .DS_Store) are skipped to avoid spurious re-exports.
+file(GLOB_RECURSE _populate_inputs CONFIGURE_DEPENDS
+  "${PROJECT_SOURCE_DIR}/export/*"
+  "${PROJECT_SOURCE_DIR}/include/libint2/*"
+  "${PROJECT_SOURCE_DIR}/doc/progman/*"
+  "${PROJECT_SOURCE_DIR}/cmake/modules/*.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
+  )
+list(FILTER _populate_inputs EXCLUDE REGEX "/\\.[^/]*$")
+list(APPEND _populate_inputs
+  "${PROJECT_SOURCE_DIR}/include/libint2.h"
+  "${PROJECT_SOURCE_DIR}/include/libint2.hpp"
+  "${PROJECT_SOURCE_DIR}/src/bin/libint/util_types.h"
+  "${PROJECT_SOURCE_DIR}/src/bin/test_eri/eri.h"
+  "${PROJECT_SOURCE_DIR}/src/bin/test_eri/prep_libint2.h"
+  "${PROJECT_SOURCE_DIR}/external/boost.tar.gz"
+  "${PROJECT_SOURCE_DIR}/doc/Libint_Logo3_alt.pdf"
+  "${PROJECT_SOURCE_DIR}/doc/Libint_Logo3_alt.eps"
+  "${PROJECT_SOURCE_DIR}/INSTALL.md"
+  "${PROJECT_SOURCE_DIR}/COPYING"
+  "${PROJECT_SOURCE_DIR}/COPYING.LESSER"
+  "${PROJECT_SOURCE_DIR}/CITATION"
+  "${PROJECT_SOURCE_DIR}/README.md"
+  "${PROJECT_BINARY_DIR}/cmake/modules/int_computed.cmake"
+  )
+
+# N.B. populate.cmake leaves unchanged files untouched, so the tarball keys off a stamp
+set(POPULATE_STAMP "${CMAKE_CURRENT_BINARY_DIR}/libint-library-populate.stamp")
 add_custom_command(
   OUTPUT
+    "${POPULATE_STAMP}"
     ${EXPORT_STAGE_DIR}/CMakeLists.txt
     ${EXPORT_STAGE_DIR}/include/libint2_params.h
     ${EXPORT_STAGE_DIR}/include/HRRPart0bra0ket0pp.h
@@ -58,17 +89,18 @@ add_custom_command(
           "-DPROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}"
           "-DEXPORT_STAGE_DIR=${EXPORT_STAGE_DIR}"
           -P ${CMAKE_CURRENT_SOURCE_DIR}/populate.cmake
+  COMMAND ${CMAKE_COMMAND} -E touch "${POPULATE_STAMP}"
   DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/populate.cmake"
-    "${PROJECT_SOURCE_DIR}/export/CMakeLists.txt.export"
     "${PROJECT_SOURCE_DIR}/cmake/libint2-config.cmake.in"
+    ${_populate_inputs}
     "${PROJECT_BINARY_DIR}/generated/libint2_params.h"
     "${PROJECT_BINARY_DIR}/generated/HRRPart0bra0ket0pp.h"
     "${PROJECT_BINARY_DIR}/generated/HRRPart0bra0ket0pp.cc"
     libint-library-generate
   COMMENT "Populating Libint2 library"
   )
-add_custom_target(libint-library-populate DEPENDS ${EXPORT_STAGE_DIR}/CMakeLists.txt)
+add_custom_target(libint-library-populate DEPENDS "${POPULATE_STAMP}")
 
 
 # <<<  Export The Library Source  >>>
@@ -81,7 +113,7 @@ add_custom_command(
   DEPENDS
     libint-library-generate
     libint-library-populate
-    ${EXPORT_STAGE_DIR}/CMakeLists.txt
+    "${POPULATE_STAMP}"
   WORKING_DIRECTORY "${EXPORT_STAGE_DIR}/.."
   COMMENT "Exporting tarball of Libint2 library source: ${EXPORT_TARBALL}"
   )
@@ -110,9 +142,12 @@ if (LIBINT2_BUILD_LIBRARY_AS_SUBPROJECT)
 
     if (EXISTS "${EXPORT_TARBALL}")
         message("Unpacking ${EXPORT_TARBALL} and setting up as a subproject")
+        # the hash makes FetchContent re-unpack a re-exported tarball at the same URL
+        file(SHA256 "${EXPORT_TARBALL}" _export_tarball_sha256)
         FetchContent_Declare(
           libint-library
           URL "${EXPORT_TARBALL}"
+          URL_HASH SHA256=${_export_tarball_sha256}
           )
         FetchContent_MakeAvailable(libint-library)
     else()
@@ -121,6 +156,15 @@ if (LIBINT2_BUILD_LIBRARY_AS_SUBPROJECT)
 
 else()
     include(ExternalProject)
+
+    # the library is installed into a staging area and from there into CMAKE_INSTALL_PREFIX (see
+    # below); an absolute install dir would make the library install bypass the staging area, the
+    # install prefix, and DESTDIR
+    foreach(_dir INCLUDEDIR LIBDIR DATADIR)
+      if (IS_ABSOLUTE "${CMAKE_INSTALL_${_dir}}")
+        message(FATAL_ERROR "CMAKE_INSTALL_${_dir}=${CMAKE_INSTALL_${_dir}} is an absolute path; this is not supported when the library is built as an ExternalProject. Use relative install directories, set LIBINT2_BUILD_LIBRARY_AS_SUBPROJECT=ON, or build the exported library (target 'export') separately.")
+      endif()
+    endforeach()
 
     set(LIBRARY_INSTALL_STAGE_DIR "${CMAKE_CURRENT_BINARY_DIR}/library-install-stage")
     list(APPEND library_CMAKE_ARGS
@@ -171,6 +215,25 @@ else()
         # Note: not handling CMAKE_Fortran_COMPILER_ARG1
         list(APPEND library_CMAKE_ARGS "-DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}")
     endif()
+    # N.B. the library is installed into LIBRARY_INSTALL_STAGE_DIR and then copied
+    #   from there, so the module dir must be passed relative to the prefix: an
+    #   absolute one (e.g. Fedora's %{_fmoddir}) would be installed into directly
+    #   at build time, bypassing the stage. Accept absolute paths below
+    #   CMAKE_INSTALL_PREFIX by making them relative, reject any others.
+    if (LIBINT2_ENABLE_FORTRAN AND LIBINT2_INSTALL_FMODDIR)
+        file(TO_CMAKE_PATH "${LIBINT2_INSTALL_FMODDIR}" _l2_fmoddir)
+        if (IS_ABSOLUTE "${_l2_fmoddir}")
+            file(TO_CMAKE_PATH "${CMAKE_INSTALL_PREFIX}" _l2_prefix)
+            file(RELATIVE_PATH _l2_fmoddir_rel "${_l2_prefix}" "${_l2_fmoddir}")
+            if (_l2_fmoddir_rel MATCHES "^\\.\\.(/|$)" OR IS_ABSOLUTE "${_l2_fmoddir_rel}")
+                message(FATAL_ERROR "LIBINT2_INSTALL_FMODDIR=${LIBINT2_INSTALL_FMODDIR} is not below CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}; use a path relative to, or below, CMAKE_INSTALL_PREFIX")
+            endif()
+            set(_l2_fmoddir "${_l2_fmoddir_rel}")
+            unset(_l2_fmoddir_rel)
+            unset(_l2_prefix)
+        endif()
+        list(APPEND library_CMAKE_ARGS "-DLIBINT2_INSTALL_FMODDIR=${_l2_fmoddir}")
+    endif()
 
     ExternalProject_Add(
       library
@@ -197,6 +260,20 @@ else()
         install
       )
     ExternalProject_Get_property(library BINARY_DIR)
+    # the download (i.e. unpack) step otherwise only reruns if the URL changes,
+    #   so a re-exported tarball would not be picked up by an existing build tree
+    ExternalProject_Add_StepDependencies(library download "${EXPORT_TARBALL}")
+    # start each library install from an empty stage, so that the files left
+    #   behind by a differently-configured earlier build (e.g. shared libraries
+    #   after switching to BUILD_SHARED_LIBS=OFF) do not get installed
+    ExternalProject_Add_Step(
+      library clear-stage
+      COMMAND ${CMAKE_COMMAND} -E rm -rf "${LIBRARY_INSTALL_STAGE_DIR}"
+      COMMENT "Clearing Libint2 library install stage"
+      DEPENDEES build
+      DEPENDERS install
+      ALWAYS TRUE
+      )
 
     # instead of running tests by default, replicate check-libint2 target here
     #   and use it to invoke library's check-libint2 target
@@ -222,7 +299,15 @@ else()
     endif()
 
     # install library from ExternalProject staging area into CMAKE_INSTALL_PREFIX
-    foreach(_dir ${CMAKE_INSTALL_INCLUDEDIR} ${CMAKE_INSTALL_LIBDIR} ${CMAKE_INSTALL_DATADIR})
+    # N.B. LIBINT2_INSTALL_FMODDIR defaults to CMAKE_INSTALL_INCLUDEDIR but a packager
+    #   may point it outside the three dirs below (e.g. lib64/gfortran/modules while
+    #   CMAKE_INSTALL_LIBDIR=lib), in which case the staged modules need their own pass
+    set(_stage_dirs ${CMAKE_INSTALL_INCLUDEDIR} ${CMAKE_INSTALL_LIBDIR} ${CMAKE_INSTALL_DATADIR})
+    if (DEFINED _l2_fmoddir)
+        list(APPEND _stage_dirs ${_l2_fmoddir})
+    endif()
+    list(REMOVE_DUPLICATES _stage_dirs)
+    foreach(_dir ${_stage_dirs})
       install(
         DIRECTORY "${LIBRARY_INSTALL_STAGE_DIR}/${_dir}/"
         DESTINATION "${_dir}"
@@ -230,13 +315,24 @@ else()
         )
     endforeach()
 
-    # generate basis.h at install time so LIBINT_DATADIR_ABSOLUTE reflects any --prefix override
+    # generate basis.h at install time so LIBINT_DATADIR_ABSOLUTE reflects any --prefix override.
+    # Same approach as in export/CMakeLists.txt.export (see the comment there): configure_file into
+    # the build tree, then file(INSTALL) with explicit FILE_PERMISSIONS, so that the installed
+    # header does not inherit basis.h.in's mode, $ENV{DESTDIR} is honored, and basis.h is recorded
+    # in install_manifest.txt.
     install(CODE "
-      set(LIBINT_VERSION \"${LIBINT_VERSION}\")
-      set(LIBINT_DATADIR_ABSOLUTE \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}\")
-      configure_file(
-        \"${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in\"
-        \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/libint2/basis.h\"
-        @ONLY)
+      set(LIBINT_VERSION [==[${LIBINT_VERSION}]==])
+      set(LIBINT_DATADIR_ABSOLUTE [==[${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}]==])
+      set(LIBINT_DATADIR_ABSOLUTE \"\${CMAKE_INSTALL_PREFIX}/\${LIBINT_DATADIR_ABSOLUTE}\")
+      set(_libint2_includedir [==[${CMAKE_INSTALL_INCLUDEDIR}]==])
+      set(_libint2_includedir \"\${CMAKE_INSTALL_PREFIX}/\${_libint2_includedir}\")
+      string(MD5 _libint2_prefix_hash \"\${CMAKE_INSTALL_PREFIX}\")
+      set(_libint2_basis_h [==[${CMAKE_CURRENT_BINARY_DIR}/basis.h.install]==])
+      set(_libint2_basis_h \"\${_libint2_basis_h}/\${_libint2_prefix_hash}/basis.h\")
+      configure_file([==[${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in]==] \"\${_libint2_basis_h}\" @ONLY)
+      file(TOUCH \"\${_libint2_basis_h}\")
+      file(INSTALL \"\${_libint2_basis_h}\"
+        DESTINATION \"\${_libint2_includedir}/libint2\"
+        FILE_PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
     ")
 endif()

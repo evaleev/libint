@@ -18,6 +18,10 @@
  *
  */
 
+// CGShellOrdering is defined in cgshell_ordering.h, which in turn includes this
+// file; including it before the guard makes this header usable on its own
+#include <libint2/cgshell_ordering.h>
+
 #ifndef _libint2_src_bin_libint_cgshellinfo_h_
 #define _libint2_src_bin_libint_cgshellinfo_h_
 

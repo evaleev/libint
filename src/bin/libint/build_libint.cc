@@ -249,12 +249,15 @@ static void build_TwoPRep_1b_1k(
 #endif
 
 #ifdef LIBINT_INCLUDE_G12
+#if LIBINT_USE_COMPOSITE_EVALUATORS
 static void build_R12kG12_2b_2k(
     std::ostream& os, const std::shared_ptr<CompilationParameters>& cparams,
     std::shared_ptr<Libint2Iface>& iface);
+#else
 static void build_R12kG12_2b_2k_separate(
     std::ostream& os, const std::shared_ptr<CompilationParameters>& cparams,
     std::shared_ptr<Libint2Iface>& iface);
+#endif
 #endif
 
 #ifdef LIBINT_INCLUDE_G12DKH
@@ -1996,12 +1999,14 @@ void build_TwoPRep_1b_1k(std::ostream& os,
 #endif
       dg_xxx->reset();
       memman->reset();
+      ++g_progress.done;
+      g_progress.print();
     }  // end of ket loop
   }    // end of bra loop
 }
 #endif  // LIBINT_INCLUDE_ERI2
 
-#ifdef LIBINT_INCLUDE_G12
+#if defined(LIBINT_INCLUDE_G12) && LIBINT_USE_COMPOSITE_EVALUATORS
 void build_R12kG12_2b_2k(std::ostream& os,
                          const std::shared_ptr<CompilationParameters>& cparams,
                          std::shared_ptr<Libint2Iface>& iface) {
@@ -2202,9 +2207,9 @@ void build_R12kG12_2b_2k(std::ostream& os,
   }        // end of a loop
 }
 
-#endif  // LIBINT_INCLUDE_G12
+#endif  // defined(LIBINT_INCLUDE_G12) && LIBINT_USE_COMPOSITE_EVALUATORS
 
-#ifdef LIBINT_INCLUDE_G12
+#if defined(LIBINT_INCLUDE_G12) && !LIBINT_USE_COMPOSITE_EVALUATORS
 void build_R12kG12_2b_2k_separate(
     std::ostream& os, const std::shared_ptr<CompilationParameters>& cparams,
     std::shared_ptr<Libint2Iface>& iface) {
@@ -2348,7 +2353,7 @@ void build_R12kG12_2b_2k_separate(
   }          // end of task loop
 }
 
-#endif  // LIBINT_INCLUDE_G12
+#endif  // defined(LIBINT_INCLUDE_G12) && !LIBINT_USE_COMPOSITE_EVALUATORS
 
 #ifdef LIBINT_INCLUDE_G12DKH
 void build_G12DKH_2b_2k(std::ostream& os,

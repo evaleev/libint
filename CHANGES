@@ -3,7 +3,7 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- unreleased
+- unreleased:
   - PR #399: relativistic restricted kinetic balance (RKB) integrals: 2-body Operator::coulomb_opop,
     Operator::coulomb_op, Operator::opop_coulomb_opop, Operator::op_coulomb_op (enabled by
     LIBINT2_ENABLE_RKB_ERI and LIBINT2_ENABLE_RKB_ERI3, off by default; no geometric derivatives yet)
@@ -11,6 +11,13 @@ Following is a brief summary of changes made in each release of Libint.
     operators, hence the numeric values of all 2-body Operator enumerators increase by 1.
     Engine::compute() now throws Engine::missing_kernel if the library was not configured to
     compute the requested operator/braket/derivative order (previously the result was undefined).
+  - PR #436: GenericGmEval no longer copies the core evaluator on every call; fixes poor thread
+             scaling of erf/erfc/erfx, q_gau and r12 integrals (#431, HT @mgoldey);
+             N.B. removed detail::CoreEvalScratch specializations for r12_xx_K_gm_eval<Real,1>,
+             erfx_coulomb_gm_eval and q_gau_gm_eval, and their base_type typedefs
+  - PR #420: libint2::molden::Export orders solid harmonics according to the runtime
+             libint2::solid_harmonics_ordering() instead of the build-time default
+             (fixes Molden output when the two differ); silence compiler warnings
 
 - 2025-2-2: 2.13.1
   - PR #397: cmake boost check supports in-tree (non-IMPORTED) targets, including modularized Boost

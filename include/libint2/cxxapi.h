@@ -28,13 +28,18 @@
 
 #include <libint2.h>  // NB this loads libint2/config.h and libint2/util/configuration.h
 
+#ifdef LIBINT2_CXX_API_DISABLED
+#error \
+    "Libint2 was built without the C++ API; reconfigure Libint2 with -DLIBINT2_REQUIRE_CXX_API=ON"
+#endif
+
 #ifdef LIBINT_USER_DEFINED_REAL
 #error \
     "C++11 API does not support with user-defined real types yet; omit --with-real-type when configuring"
 #endif
 
-#if !defined(LIBINT_INCLUDE_ONEBODY) ||                              \
-    !(defined(LIBINT_INCLUDE_ERI) || defined(LIBINT_INCLUDE_ERI3) || \
+#if !defined(LIBINT_INCLUDE_ONEBODY) ||                                  \
+    !(defined(LIBINT_INCLUDE_ERI) || defined(LIBINT_INCLUDE_ERI3) ||     \
       defined(LIBINT_INCLUDE_ERI2) || defined(LIBINT_INCLUDE_RKB_ERI) || \
       defined(LIBINT_INCLUDE_RKB_ERI3))
 #error \
