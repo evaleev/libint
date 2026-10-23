@@ -4,6 +4,8 @@
 Following is a brief summary of changes made in each release of Libint.
 
 - unreleased:
+  - PR #440: incremental builds re-export the library when include/libint2, export/tests, etc. change,
+             without recompiling unchanged library sources (#438)
   - PR #420: libint2::molden::Export orders solid harmonics according to the runtime
              libint2::solid_harmonics_ordering() instead of the build-time default
              (fixes Molden output when the two differ); silence compiler warnings
