@@ -80,7 +80,7 @@ class CR_11_σpCoulombσp_11
   // All shell quartets with the same quaternion component share one function.
 
   std::string generate_label() const override {
-    return "CR_σpCoulombσp_" +
+    return "CR_opCoulombop_" +
            std::to_string(target_->oper()->descr().component_index());
   }
 
@@ -96,7 +96,8 @@ class CR_11_σpCoulombσp_11
   }
 
   /// Hand-emit the per-component irrep linear combination over deriv-ERI
-  /// children. The combination depends on the target's component index.
+  /// children. The combination is selected by the target's component index;
+  /// the child order it relies on is fixed by the constructor.
   void generate_code(const std::shared_ptr<CodeContext>& context,
                      const std::shared_ptr<ImplicitDimensions>& dims,
                      const std::string& funcname, std::ostream& decl,
@@ -104,10 +105,12 @@ class CR_11_σpCoulombσp_11
     const int comp = this->target_->oper()->descr().component_index();
     std::string rhs;
     unsigned int nflops = 0;
+    unsigned int nchildren = 0;
     switch (comp) {
       case σpCoulombσp_Descr::Scalar:
         rhs = "src0[hsi] + src1[hsi] + src2[hsi]";
         nflops = 2;
+        nchildren = 3;
         break;
       case σpCoulombσp_Descr::AntisymX:
       case σpCoulombσp_Descr::AntisymY:
@@ -115,21 +118,32 @@ class CR_11_σpCoulombσp_11
       case σpCoulombσp_Descr::SymTLDiagA:
         rhs = "src0[hsi] - src1[hsi]";
         nflops = 1;
+        nchildren = 2;
         break;
       case σpCoulombσp_Descr::SymTLDiagB:
         rhs = "2.0*src0[hsi] - src1[hsi] - src2[hsi]";
         nflops = 3;
+        nchildren = 3;
         break;
       case σpCoulombσp_Descr::SymTLOffXY:
       case σpCoulombσp_Descr::SymTLOffXZ:
       case σpCoulombσp_Descr::SymTLOffYZ:
         rhs = "src0[hsi] + src1[hsi]";
         nflops = 1;
+        nchildren = 2;
         break;
       default:
         throw std::runtime_error(
             "CR_11_σpCoulombσp_11::generate_code: invalid component index");
     }
+    // add_child() deduplicates children by instance (see generic_rr.h), so a
+    // collision among the deriv-ERI children would silently shift the src
+    // slots; fail the export loudly instead of emitting a wrong expression.
+    if (this->num_children() != nchildren)
+      throw std::logic_error("CR_11_σpCoulombσp_11::generate_code: component " +
+                             std::to_string(comp) + " expects " +
+                             std::to_string(nchildren) + " children, got " +
+                             std::to_string(this->num_children()));
     rkb_fold_generate_code(*this, context, dims, funcname, decl, def, rhs,
                            nflops);
   }
