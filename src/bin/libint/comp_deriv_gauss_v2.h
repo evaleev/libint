@@ -411,17 +411,22 @@ std::string DerivGaussV2<IntType, part, where, trans_inv_part,
   // For translational invariance, children depend on ALL shells, so
   // the label must include full integral info (no code sharing).
   // For direct differentiation, only the differentiated shell matters.
+  // Either way the direction is part of the identity: a shell carrying
+  // derivative quanta in two directions is a valid target for two instances
+  // whose children and coefficients (a[dir]) differ, and the RRStack
+  // deduplicates generated functions by this label.
   if constexpr (using_trans_inv) {
     typedef typename TargetType::AuxIndexType mType;
     static std::shared_ptr<mType> aux0(new mType(0u));
     os << "CR_DerivGauss"
-       << "P" << part << to_string(where)
+       << "P" << part << to_string(where) << "D" << dir_
        << genintegralset_label(target_->bra(), target_->ket(), aux0,
                                target_->oper());
     return os.str();
   }
 
-  os << "DerivGaussV2 P" << part << " " << to_string(where) << " ";
+  os << "DerivGaussV2 P" << part << " " << to_string(where) << " D" << dir_
+     << " ";
 
   // Only encode the differentiated shell — not spectators
   if (where == InBra) {
@@ -506,8 +511,6 @@ bool DerivGaussV2<IntType, part, where, trans_inv_part,
   unsigned int np = IntType::OperType::Properties::np;
   // need explicit low dim unless this is the last position
   if (static_cast<int>(np) - 1 == part && where == InKet) return false;
-  // corner case: 1-particle operator
-  if (np == 1) return true;
   return true;
 }
 
