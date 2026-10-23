@@ -1379,6 +1379,8 @@ void build_TwoPRep_1b_2k(std::ostream& os,
         dg_xxx->reset();
         memman->reset();
 
+        std::cout << "done" << std::endl;
+
       }  // end of d loop
     }    // end of c loop
   }      // end of bra loop
@@ -1575,6 +1577,8 @@ void build_TwoPRep_1b_1k(std::ostream& os,
 #endif
       dg_xxx->reset();
       memman->reset();
+
+      std::cout << "done" << std::endl;
 
     }  // end of ket loop
   }    // end of bra loop
