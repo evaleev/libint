@@ -349,7 +349,7 @@ class FmEval_Chebyshev7 {
   inline void eval(Real* Fm, Real x, int m_max) const {
     // large T => use upward recursion
     // cost = 1 div + 1 sqrt + (1 + 2*(m-1)) muls
-    if (x > T_crit) {
+    if (x >= T_crit) {
       const double one_over_x = 1 / x;
       Fm[0] = 0.88622692545275801365 *
               sqrt(one_over_x);  // see Eq. (9.8.9) in Helgaker-Jorgensen-Olsen
