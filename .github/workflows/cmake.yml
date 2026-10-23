@@ -180,8 +180,8 @@ jobs:
       run: |
         # make basis.h.in owner-only (as with a restrictive umask at checkout) to check that
         # its mode does not leak into the installed basis.h
-        find ${{github.workspace}} -name basis.h.in -exec chmod 600 {} +
-        cmake --install build --prefix ${{github.workspace}}/build/library
+        find "${{github.workspace}}" -name basis.h.in -exec chmod 600 {} +
+        cmake --install build --prefix "${{github.workspace}}/build/library"
         hdr=${{github.workspace}}/build/library/include/libint2/basis.h
         ls -l "$hdr"
         test -n "$(find "$hdr" -perm 644)" || { echo "installed basis.h is not 0644"; exit 1; }
@@ -371,6 +371,37 @@ jobs:
           -D CMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
           ${{ matrix.cfg.libargs }}
         cmake --build build --target install ${{ !matrix.cfg.c_only && 'libint2-python-test' || '' }}
+
+    - name: Test Libint library - DESTDIR install and absolute data dir
+      if: ${{ runner.os != 'Windows' }}
+      shell: bash -l {0}
+      working-directory: ${{github.workspace}}/libint
+      run: |
+        # DESTDIR: basis.h is installed under DESTDIR and recorded in the manifest, but the data
+        # path baked into it does not include DESTDIR
+        destdir="${{github.workspace}}/destdir"
+        DESTDIR="$destdir" cmake --install build
+        hdr="$destdir${{github.workspace}}/installed/include/libint2/basis.h"
+        ls -l "$hdr"
+        test -n "$(find "$hdr" -perm 644)" || { echo "basis.h is not 0644"; exit 1; }
+        grep -qxF "${{github.workspace}}/installed/include/libint2/basis.h" build/install_manifest.txt || { echo "basis.h is missing from install_manifest.txt"; exit 1; }
+        grep -qF "\"${{github.workspace}}/installed/share/libint/" "$hdr" || { echo "basis.h does not point to the installed data dir"; exit 1; }
+        if grep -qF "$destdir" "$hdr"; then echo "DESTDIR leaked into basis.h"; exit 1; fi
+        # an absolute LIBINT2_INSTALL_DATADIR is used as is (configure-time check only)
+        source "${{github.workspace}}/compilers.sh"
+        cmake \
+          -S . \
+          -B build-absdata \
+          -G Ninja \
+          -D CMAKE_CXX_COMPILER=${CXX} \
+          ${{ matrix.cfg.c_only && '-D LIBINT2_REQUIRE_CXX_API=OFF' || '' }} \
+          -D CMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
+          -D LIBINT2_INSTALL_DATADIR=/opt/libint2-data \
+          ${{ matrix.cfg.libargs }}
+        grep -qF '"/opt/libint2-data"' build-absdata/include/libint2/basis.h || { echo "basis.h does not use the absolute data dir"; exit 1; }
+        if [[ "${{ matrix.cfg.c_only }}" != "true" ]]; then
+          grep -rqF 'LIBINT_DATADIR=\"/opt/libint2-data\"' build-absdata/CMakeFiles/Export || { echo "exported LIBINT_DATADIR does not use the absolute data dir"; exit 1; }
+        fi
 
     - name: Test Libint library - unit tests
       shell: bash -l {0}

@@ -122,6 +122,15 @@ if (LIBINT2_BUILD_LIBRARY_AS_SUBPROJECT)
 else()
     include(ExternalProject)
 
+    # the library is installed into a staging area and from there into CMAKE_INSTALL_PREFIX (see
+    # below); an absolute install dir would make the library install bypass the staging area, the
+    # install prefix, and DESTDIR
+    foreach(_dir INCLUDEDIR LIBDIR DATADIR)
+      if (IS_ABSOLUTE "${CMAKE_INSTALL_${_dir}}")
+        message(FATAL_ERROR "CMAKE_INSTALL_${_dir}=${CMAKE_INSTALL_${_dir}} is an absolute path; this is not supported when the library is built as an ExternalProject. Use relative install directories, set LIBINT2_BUILD_LIBRARY_AS_SUBPROJECT=ON, or build the exported library (target 'export') separately.")
+      endif()
+    endforeach()
+
     set(LIBRARY_INSTALL_STAGE_DIR "${CMAKE_CURRENT_BINARY_DIR}/library-install-stage")
     list(APPEND library_CMAKE_ARGS
         -G${CMAKE_GENERATOR}
@@ -236,21 +245,17 @@ else()
     # header does not inherit basis.h.in's mode, $ENV{DESTDIR} is honored, and basis.h is recorded
     # in install_manifest.txt.
     install(CODE "
-      set(LIBINT_VERSION \"${LIBINT_VERSION}\")
-      set(LIBINT_DATADIR_ABSOLUTE \"${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}\")
-      if (NOT IS_ABSOLUTE \"\${LIBINT_DATADIR_ABSOLUTE}\")
-        set(LIBINT_DATADIR_ABSOLUTE \"\${CMAKE_INSTALL_PREFIX}/\${LIBINT_DATADIR_ABSOLUTE}\")
-      endif()
-      set(_libint2_includedir \"${CMAKE_INSTALL_INCLUDEDIR}\")
-      if (NOT IS_ABSOLUTE \"\${_libint2_includedir}\")
-        set(_libint2_includedir \"\${CMAKE_INSTALL_PREFIX}/\${_libint2_includedir}\")
-      endif()
-      configure_file(
-        \"${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in\"
-        \"${CMAKE_CURRENT_BINARY_DIR}/basis.h.install/basis.h\"
-        @ONLY)
-      file(INSTALL
-        \"${CMAKE_CURRENT_BINARY_DIR}/basis.h.install/basis.h\"
+      set(LIBINT_VERSION [==[${LIBINT_VERSION}]==])
+      set(LIBINT_DATADIR_ABSOLUTE [==[${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}]==])
+      set(LIBINT_DATADIR_ABSOLUTE \"\${CMAKE_INSTALL_PREFIX}/\${LIBINT_DATADIR_ABSOLUTE}\")
+      set(_libint2_includedir [==[${CMAKE_INSTALL_INCLUDEDIR}]==])
+      set(_libint2_includedir \"\${CMAKE_INSTALL_PREFIX}/\${_libint2_includedir}\")
+      string(MD5 _libint2_prefix_hash \"\${CMAKE_INSTALL_PREFIX}\")
+      set(_libint2_basis_h [==[${CMAKE_CURRENT_BINARY_DIR}/basis.h.install]==])
+      set(_libint2_basis_h \"\${_libint2_basis_h}/\${_libint2_prefix_hash}/basis.h\")
+      configure_file([==[${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in]==] \"\${_libint2_basis_h}\" @ONLY)
+      file(TOUCH \"\${_libint2_basis_h}\")
+      file(INSTALL \"\${_libint2_basis_h}\"
         DESTINATION \"\${_libint2_includedir}/libint2\"
         FILE_PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
     ")
