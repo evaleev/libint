@@ -270,8 +270,9 @@ jobs:
         dependencies:
           - cmake
           - ninja
-          - cxx-compiler
-          - fortran-compiler
+          # 2.x no longer pulls in the activation packages that set CXX/FC
+          - cxx-compiler<2
+          - fortran-compiler<2
           - python
           - boost
           - eigen
