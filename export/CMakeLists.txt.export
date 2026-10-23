@@ -285,12 +285,27 @@ target_include_directories(
     ${PROJECT_BINARY_DIR}/include/
   )
 
+# The C++ API keeps its state in function-local statics of inline functions (e.g.
+#   libint2::detail::solid_harmonics_ordering_accessor(), the Boys function
+#   singletons). On Darwin, Clang's -fvisibility-inlines-hidden (in conda-forge's
+#   default CXXFLAGS) also hides such statics, so libint2-cxx.dylib and its consumers
+#   each get a private copy: the state set up by libint2::initialize() in the
+#   consumer is not seen by the engine in the dylib (wrong integrals, crashes).
+#   Keep the statics visible, in the library and (via int-cxx-shared) its consumers.
+set(_l2_cxx_static_local_visibility
+  "$<$<AND:$<PLATFORM_ID:Darwin>,$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>>:-fno-visibility-inlines-hidden-static-local-var>")
+
 if (LIBINT2_REQUIRE_CXX_API_COMPILED)
 
     add_library(
       int-cxx-obj
       OBJECT
         src/engine.cpp
+      )
+    target_compile_options(
+      int-cxx-obj
+      PRIVATE
+        ${_l2_cxx_static_local_visibility}
       )
     target_compile_features(
       int-cxx-obj
@@ -460,6 +475,7 @@ if (L2_BUILD_SHARED_LIBS)
               int-cxx-shared
               PUBLIC
                 $<$<BOOL:${MSVC}>:/EHsc>
+                ${_l2_cxx_static_local_visibility}
               )
             set_target_properties(
               int-cxx-shared
