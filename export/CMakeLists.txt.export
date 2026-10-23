@@ -197,6 +197,9 @@ endif()
 ################################# Main Project #################################
 include(CMakePackageConfigHelpers)
 
+if (NOT LIBINT2_REQUIRE_CXX_API)
+    set(LIBINT2_CXX_API_DISABLED 1)
+endif()
 configure_file(
   include/libint2/config2.h.cmake.in
   include/libint2/config2.h
@@ -796,7 +799,7 @@ install(CODE "
 ")
 
 # install bundled Boost headers if needed
-if (NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+if (LIBINT2_REQUIRE_CXX_API AND NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
     install(
       DIRECTORY ${PROJECT_BINARY_DIR}/include/libint2/boost
       DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}/libint2"
@@ -844,7 +847,7 @@ if (LIBINT2_ENABLE_FORTRAN)
 endif()
 
 # Eigen local install
-if (LIBINT2_LOCAL_Eigen3_INSTALL AND TARGET Eigen3::Eigen)
+if (LIBINT2_REQUIRE_CXX_API AND LIBINT2_LOCAL_Eigen3_INSTALL AND TARGET Eigen3::Eigen)
 
     add_library(Eigen INTERFACE)
     foreach(prop
