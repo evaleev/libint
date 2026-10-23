@@ -21,6 +21,8 @@
 #include <libint2/deriv_iter.h>
 
 #include <algorithm>
+#include <limits>
+#include <sstream>
 
 #include "catch.hpp"
 #include "fixture.h"
@@ -344,6 +346,206 @@ TEST_CASE("eri geometric derivatives", "[engine][2-body]") {
       }
     }
   }
+}
+
+// Validates geometric derivatives of Coulomb integrals against 5-point central
+// finite differences of the derivatives of the next lower order, for every
+// combination of s, p, d shells (and up to f on the fitting center), with
+// contracted and uncontracted shells, in all brakets with derivative kernels.
+// Complements "eri geometric derivatives" above, which compares (pp|pp) against
+// an independent reference: this covers every kernel in the build, including
+// the code-sharing paths that only appear with spectator shells of unequal
+// size, at the cost of relying on the correctness of the next lower order.
+namespace {
+
+// index of the second derivative with respect to coordinates i and j: second
+// derivatives are the upper triangle of the Hessian, in row-major order
+size_t hessian_index(size_t ncoords, size_t i, size_t j) {
+  const auto row = std::min(i, j);
+  const auto col = std::max(i, j);
+  return row * (2 * ncoords - row - 1) / 2 + col;
+}
+
+// all centers distinct and in general position
+Shell make_fd_shell(int l, bool contracted, int center) {
+  const std::array<double, 3> O[] = {{{0.0, 0.0, 0.0}},
+                                     {{0.7, 0.2, -0.3}},
+                                     {{-0.4, 0.9, 0.5}},
+                                     {{0.3, -0.6, 1.1}}};
+  const double scale = 1.0 + 0.2 * center;
+  if (contracted)
+    return Shell{{2.3 * scale, 0.8 * scale, 0.31 * scale},
+                 {{l, false, {0.5, 0.4, 0.3}}},
+                 O[center]};
+  return Shell{{0.65 * scale}, {{l, false, {1.0}}}, O[center]};
+}
+
+std::vector<std::vector<double>> compute_fd_shellsets(
+    Engine &engine, BraKet braket, const std::vector<Shell> &shells) {
+  const Engine::target_ptr_vec *results = nullptr;
+  switch (braket) {
+    case BraKet::xx_xx:
+      results = &engine.compute(shells[0], shells[1], shells[2], shells[3]);
+      break;
+    case BraKet::xs_xx:
+      results = &engine.compute(shells[0], shells[1], shells[2]);
+      break;
+    case BraKet::xs_xs:
+      results = &engine.compute(shells[0], shells[1]);
+      break;
+    default:
+      FAIL("unsupported braket");
+  }
+  size_t n = 1;
+  for (const auto &sh : shells) n *= sh.size();
+  std::vector<std::vector<double>> shellsets;
+  for (const auto *target : *results) {
+    if (target == nullptr)  // screened out
+      shellsets.emplace_back(n, 0.0);
+    else
+      shellsets.emplace_back(target, target + n);
+  }
+  return shellsets;
+}
+
+// checks derivatives of order deriv_order of a shell set with the given
+// angular momenta against finite differences of order deriv_order - 1;
+// returns false if the library lacks the kernels for this shell set
+bool check_fd_derivs(BraKet braket, int deriv_order, const std::vector<int> &l,
+                     const std::vector<bool> &contracted) {
+  const auto ncenters = l.size();
+  std::vector<Shell> shells;
+  for (size_t c = 0; c != ncenters; ++c)
+    shells.push_back(make_fd_shell(l[c], contracted[c], c));
+  const auto nprim = libint2::max_nprim(shells);
+  const auto lmax = libint2::max_l(shells);
+  const auto eps = std::numeric_limits<double>::epsilon();
+  Engine engine, engine_lower;
+  try {
+    engine = Engine(Operator::coulomb, nprim, lmax, deriv_order, eps,
+                    libint2::default_params(Operator::coulomb), braket);
+    engine_lower = Engine(Operator::coulomb, nprim, lmax, deriv_order - 1, eps,
+                          libint2::default_params(Operator::coulomb), braket);
+  } catch (Engine::lmax_exceeded &) {
+    return false;
+  }
+  engine.set_precision(0.0);
+  engine_lower.set_precision(0.0);
+
+  const auto analytic = compute_fd_shellsets(engine, braket, shells);
+  const auto ncoords = 3 * ncenters;
+  REQUIRE(analytic.size() ==
+          libint2::num_geometrical_derivatives(ncenters, deriv_order));
+
+  const double h = 1e-3;
+  for (size_t coord1 = 0; coord1 != ncoords; ++coord1) {
+    // derivatives of order deriv_order - 1 at a displaced geometry;
+    // N.B. displace Shell::O in place, Shell's constructor would renormalize
+    // the contraction coefficients
+    auto lower = [&](double delta) {
+      auto displaced = shells;
+      displaced[coord1 / 3].O[coord1 % 3] += delta;
+      return compute_fd_shellsets(engine_lower, braket, displaced);
+    };
+    const auto m2 = lower(-2 * h);
+    const auto m1 = lower(-h);
+    const auto p1 = lower(h);
+    const auto p2 = lower(2 * h);
+
+    for (size_t s = 0; s != p1.size(); ++s) {
+      const auto deriv_index =
+          deriv_order == 1 ? coord1 : hessian_index(ncoords, s, coord1);
+      const auto &a = analytic.at(deriv_index);
+      double max_error = 0, max_numeric = 0;
+      for (size_t i = 0; i != a.size(); ++i) {
+        const auto numeric =
+            (m2[s][i] - 8 * m1[s][i] + 8 * p1[s][i] - p2[s][i]) / (12 * h);
+        max_error = std::max(max_error, std::abs(a[i] - numeric));
+        max_numeric = std::max(max_numeric, std::abs(numeric));
+      }
+      std::ostringstream oss;
+      for (size_t c = 0; c != ncenters; ++c)
+        oss << (contracted[c] ? "LPDF"[l[c]] : "lpdf"[l[c]]);
+      INFO("braket=" << static_cast<int>(braket)
+                     << " deriv_order=" << deriv_order
+                     << " shells=" << oss.str() << " coord=" << coord1
+                     << " lower_shellset=" << s << " max_error=" << max_error);
+      // 5-point stencil with h=1e-3: truncation and roundoff errors are both
+      // ~1e-12 relative to the scale of the derivatives
+      REQUIRE(max_error <= 1e-9 * std::max(1.0, max_numeric));
+    }
+  }
+  return true;
+}
+
+// contraction pattern for a shell set, cycling through the patterns so that
+// each angular momentum combination is tested once
+std::vector<bool> fd_contraction_pattern(const std::vector<int> &l) {
+  int key = 0;
+  for (size_t c = 0; c != l.size(); ++c) key += (c + 1) * l[c];
+  std::vector<bool> contracted(l.size(), false);
+  switch (key % 3) {
+    case 0:
+      break;
+    case 1:
+      for (size_t c = 0; c < l.size(); c += 2) contracted[c] = true;
+      break;
+    case 2:
+      contracted.assign(l.size(), true);
+      break;
+  }
+  return contracted;
+}
+
+}  // namespace
+
+TEST_CASE("eri geometric derivatives vs finite differences",
+          "[engine][2-body][deriv]") {
+  size_t ntested = 0;
+#if defined(LIBINT2_SUPPORT_ERI) && LIBINT2_DERIV_ERI_ORDER > 0
+  SECTION("4-center") {
+    const int lmax = std::min(2, LIBINT2_MAX_AM_eri);
+    for (int d = 1; d <= LIBINT2_DERIV_ERI_ORDER; ++d)
+      for (int la = 0; la <= lmax; ++la)
+        for (int lb = 0; lb <= lmax; ++lb)
+          for (int lc = 0; lc <= lmax; ++lc)
+            for (int ld = 0; ld <= lmax; ++ld) {
+              const std::vector<int> l{la, lb, lc, ld};
+              if (check_fd_derivs(BraKet::xx_xx, d, l,
+                                  fd_contraction_pattern(l)))
+                ++ntested;
+            }
+    REQUIRE(ntested > 0);
+  }
+#endif
+#if defined(LIBINT2_SUPPORT_ERI3) && LIBINT2_DERIV_ERI3_ORDER > 0
+  SECTION("3-center") {
+    const int lmax_fit = std::min(3, LIBINT2_MAX_AM_3eri);
+    const int lmax = std::min(2, LIBINT2_MAX_AM_default);
+    for (int d = 1; d <= LIBINT2_DERIV_ERI3_ORDER; ++d)
+      for (int lp = 0; lp <= lmax_fit; ++lp)
+        for (int lc = 0; lc <= lmax; ++lc)
+          for (int ld = 0; ld <= lmax; ++ld) {
+            const std::vector<int> l{lp, lc, ld};
+            if (check_fd_derivs(BraKet::xs_xx, d, l, fd_contraction_pattern(l)))
+              ++ntested;
+          }
+    REQUIRE(ntested > 0);
+  }
+#endif
+#if defined(LIBINT2_SUPPORT_ERI2) && LIBINT2_DERIV_ERI2_ORDER > 0
+  SECTION("2-center") {
+    const int lmax = std::min(3, LIBINT2_MAX_AM_2eri);
+    for (int d = 1; d <= LIBINT2_DERIV_ERI2_ORDER; ++d)
+      for (int lp = 0; lp <= lmax; ++lp)
+        for (int lq = 0; lq <= lmax; ++lq) {
+          const std::vector<int> l{lp, lq};
+          if (check_fd_derivs(BraKet::xs_xs, d, l, fd_contraction_pattern(l)))
+            ++ntested;
+        }
+    REQUIRE(ntested > 0);
+  }
+#endif
 }
 
 TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
