@@ -36,6 +36,7 @@
 typedef unsigned int uint;
 
 TEST_CASE("Slater/Yukawa integrals", "[engine][2-body]") {
+#if defined(LIBINT2_SUPPORT_ERI)
   std::vector<Shell> obs{
       // pseudorandom d
       Shell{{1.0, 3.0}, {{2, true, {1.0, 0.3}}}, {{0.0, 0.0, 0.0}}},
@@ -124,11 +125,13 @@ TEST_CASE("Slater/Yukawa integrals", "[engine][2-body]") {
       }
     }
   }
+#endif  // LIBINT2_SUPPORT_ERI
 }
 
 // see https://github.com/evaleev/libint/issues/216
 TEST_CASE_METHOD(libint2::unit::DefaultFixture, "bra-ket permutation",
                  "[engine][2-body]") {
+#if defined(LIBINT2_SUPPORT_ERI)
   if (LIBINT2_MAX_AM_eri < 2) return;
   using libint2::BasisSet;
   using libint2::Engine;
@@ -190,9 +193,11 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "bra-ket permutation",
       }
     }
   }
+#endif  // LIBINT2_SUPPORT_ERI
 }
 
 TEST_CASE("eri geometric derivatives", "[engine][2-body]") {
+#if defined(LIBINT2_SUPPORT_ERI)
   std::vector<Shell> obs{
       // pseudorandom p
       Shell{{1.0, 0.3}, {{1, false, {0.9, 0.3}}}, {{0.0, 0.0, 0.0}}},
@@ -346,6 +351,7 @@ TEST_CASE("eri geometric derivatives", "[engine][2-body]") {
       }
     }
   }
+#endif  // LIBINT2_SUPPORT_ERI
 }
 
 // Validates geometric derivatives of Coulomb integrals against 5-point central
@@ -1221,7 +1227,246 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
 #endif  // LIBINT2_TASK_EXISTS_3coulomb_op
 }
 
+// RKB integrals over solid harmonics shells. The RKB reference tests above use
+// cartesian shells only; the engine's cartesian-to-solid-harmonics transform
+// shares the scratch/permute path with the per-component sign corrections of
+// the RKB operators, so verify here that the two compose: the result for pure
+// shells must equal the cartesian result transformed with the library's own
+// solid harmonics routines. Also covers the xx_xs alias of coulomb_op and a
+// solid harmonics fitting center.
+namespace {
+
+typedef std::vector<std::vector<double>> rkb_shellsets_t;
+
+rkb_shellsets_t rkb_copy_results(const Engine::target_ptr_vec &results,
+                                 const std::vector<Shell> &shells) {
+  size_t n = 1;
+  for (const auto &sh : shells) n *= sh.size();
+  rkb_shellsets_t sets;
+  for (const auto *target : results) {
+    REQUIRE(target != nullptr);
+    sets.emplace_back(target, target + n);
+  }
+  return sets;
+}
+
+/// transforms shell sets computed over @c src_shells to the basis of
+/// @c tgt_shells; the two differ only in which shells are pure
+rkb_shellsets_t rkb_to_pure(const rkb_shellsets_t &sets,
+                            const std::vector<Shell> &src_shells,
+                            const std::vector<Shell> &tgt_shells) {
+  REQUIRE(src_shells.size() == tgt_shells.size());
+  const auto nsh = src_shells.size();
+  rkb_shellsets_t result;
+  for (const auto &set : sets) {
+    auto src = set;
+    for (size_t k = 0; k != nsh; ++k) {
+      const auto l = src_shells[k].contr[0].l;
+      REQUIRE(l == tgt_shells[k].contr[0].l);
+      if (src_shells[k].contr[0].pure == tgt_shells[k].contr[0].pure || l == 0)
+        continue;
+      REQUIRE(tgt_shells[k].contr[0].pure);
+      // dimensions before k are already transformed, those after are not
+      size_t n1 = 1, n2 = 1;
+      for (size_t i = 0; i != k; ++i) n1 *= tgt_shells[i].size();
+      for (size_t i = k + 1; i != nsh; ++i) n2 *= src_shells[i].size();
+      std::vector<double> tgt(n1 * (2 * l + 1) * n2);
+      if (k == 0)
+        libint2::solidharmonics::transform_first(l, n2, src.data(), tgt.data());
+      else if (k + 1 == nsh)
+        libint2::solidharmonics::transform_last(n1, l, src.data(), tgt.data());
+      else
+        libint2::solidharmonics::transform_inner(n1, l, n2, src.data(),
+                                                 tgt.data());
+      src = std::move(tgt);
+    }
+    result.push_back(std::move(src));
+  }
+  return result;
+}
+
+void rkb_require_equal(const rkb_shellsets_t &a, const rkb_shellsets_t &b,
+                       const std::string &what) {
+  REQUIRE(a.size() == b.size());
+  for (size_t c = 0; c != a.size(); ++c) {
+    REQUIRE(a[c].size() == b[c].size());
+    for (size_t i = 0; i != a[c].size(); ++i) {
+      const auto abs_err = std::abs(a[c][i] - b[c][i]);
+      const auto rel_err =
+          std::abs(b[c][i]) > 1e-30 ? abs_err / std::abs(b[c][i]) : 0.0;
+      INFO(what << " comp=" << c << " elem=" << i << " value=" << a[c][i]
+                << " ref=" << b[c][i]);
+      REQUIRE(!(rel_err > 1e-10 && abs_err > 1e-13));
+    }
+  }
+}
+
+Shell rkb_shell(const Shell &sh, bool pure) {
+  auto result = sh;
+  result.contr[0].pure = pure;
+  return result;
+}
+
+}  // namespace
+
+TEST_CASE("RKB integrals with solid harmonics shells", "[engine][2-body]") {
+  // cartesian s, p, contracted p, d; the solid harmonics variants of the same
+  const std::vector<Shell> cart_shells{
+      Shell{{1.0}, {{0, false, {1.0}}}, {{0.0, 0.0, 0.0}}},
+      Shell{{2.0}, {{1, false, {1.0}}}, {{1.0, 1.0, 1.0}}},
+      Shell{{3.0, 0.7}, {{1, false, {0.4, 0.8}}}, {{-0.5, 0.2, 0.9}}},
+      Shell{{1.2}, {{2, false, {1.0}}}, {{0.3, -0.8, 0.4}}}};
+  std::vector<Shell> pure_shells;
+  for (const auto &sh : cart_shells) pure_shells.push_back(rkb_shell(sh, true));
+  const auto nprim = libint2::max_nprim(cart_shells);
+
+  auto upto = [](const std::vector<Shell> &shells, int lmax) {
+    std::vector<Shell> result;
+    for (const auto &sh : shells)
+      if (sh.contr[0].l <= lmax) result.push_back(sh);
+    return result;
+  };
+
+  // 4-center: compare pure vs transformed cartesian for every quartet
+  auto check_4center = [&](Operator oper, int lmax_oper) {
+    const auto cart = upto(cart_shells, lmax_oper);
+    const auto pure = upto(pure_shells, lmax_oper);
+    Engine engine(oper, nprim, libint2::max_l(cart), 0);
+    const auto nsh = cart.size();
+    for (size_t a = 0; a != nsh; ++a)
+      for (size_t b = 0; b != nsh; ++b)
+        for (size_t c = 0; c != nsh; ++c)
+          for (size_t d = 0; d != nsh; ++d) {
+            const std::vector<Shell> cs{cart[a], cart[b], cart[c], cart[d]};
+            const std::vector<Shell> ps{pure[a], pure[b], pure[c], pure[d]};
+            const auto ref =
+                rkb_to_pure(rkb_copy_results(
+                                engine.compute(cs[0], cs[1], cs[2], cs[3]), cs),
+                            cs, ps);
+            const auto val = rkb_copy_results(
+                engine.compute(ps[0], ps[1], ps[2], ps[3]), ps);
+            std::ostringstream oss;
+            oss << "oper=" << static_cast<int>(oper) << " (" << a << b << "|"
+                << c << d << ")";
+            rkb_require_equal(val, ref, oss.str());
+          }
+  };
+
+#if LIBINT2_TASK_EXISTS_4coulomb_opop
+  SECTION("coulomb_opop 4-center") {
+    check_4center(Operator::coulomb_opop, LIBINT2_MAX_AM_coulomb_opop);
+  }
+#endif
+#if LIBINT2_TASK_EXISTS_4opop_coulomb_opop
+  SECTION("opop_coulomb_opop 4-center") {
+    check_4center(Operator::opop_coulomb_opop,
+                  LIBINT2_MAX_AM_opop_coulomb_opop);
+  }
+#endif
+#if LIBINT2_TASK_EXISTS_4op_coulomb_op
+  SECTION("op_coulomb_op 4-center") {
+    check_4center(Operator::op_coulomb_op, LIBINT2_MAX_AM_op_coulomb_op);
+  }
+#endif
+
+  // 3-center: fitting shells s and d, AO shells s, p, d, cartesian vs pure,
+  // both brakets
+  auto check_3center = [&](Operator oper, int lmax_fit, int lmax_ao) {
+    const std::vector<Shell> fit_pure{
+        Shell{{1.5}, {{0, true, {1.0}}}, {{-1.0, 0.5, 0.0}}},
+        Shell{{0.9}, {{2, true, {1.0}}}, {{-1.0, 0.5, 0.0}}}};
+    const auto fit = upto(fit_pure, lmax_fit);
+    const auto cart = upto(cart_shells, lmax_ao);
+    const auto pure = upto(pure_shells, lmax_ao);
+    const auto nprim_3c = std::max(nprim, libint2::max_nprim(fit));
+    const auto lmax_3c = std::max(libint2::max_l(cart), libint2::max_l(fit));
+    const auto eps = std::numeric_limits<double>::epsilon();
+    Engine eng_xs(oper, nprim_3c, lmax_3c, 0, eps,
+                  libint2::default_params(oper), BraKet::xs_xx);
+    Engine eng_xxs(oper, nprim_3c, lmax_3c, 0, eps,
+                   libint2::default_params(oper), BraKet::xx_xs);
+
+    for (size_t p = 0; p != fit.size(); ++p) {
+      const auto fit_ref = rkb_shell(fit[p], false);
+      for (size_t a = 0; a != cart.size(); ++a)
+        for (size_t b = 0; b != cart.size(); ++b) {
+          const std::vector<Shell> rs{fit_ref, cart[a], cart[b]};
+          const std::vector<Shell> ps{fit[p], pure[a], pure[b]};
+          const auto ref = rkb_to_pure(
+              rkb_copy_results(eng_xs.compute(rs[0], rs[1], rs[2]), rs), rs,
+              ps);
+          const auto val =
+              rkb_copy_results(eng_xs.compute(ps[0], ps[1], ps[2]), ps);
+          std::ostringstream oss;
+          oss << "oper=" << static_cast<int>(oper) << " (" << p << "|" << a << b
+              << ")";
+          rkb_require_equal(val, ref, oss.str() + " xs_xx");
+
+          // xx_xs alias: same integrals, (a b | fit) layout
+          const auto val_xxs =
+              rkb_copy_results(eng_xxs.compute(ps[1], ps[2], ps[0]),
+                               std::vector<Shell>{ps[1], ps[2], ps[0]});
+          const auto n_fit = ps[0].size(), n_a = ps[1].size(),
+                     n_b = ps[2].size();
+          rkb_shellsets_t val_xxs_as_xs(val_xxs.size());
+          for (size_t c = 0; c != val_xxs.size(); ++c) {
+            val_xxs_as_xs[c].resize(n_fit * n_a * n_b);
+            for (size_t i_f = 0; i_f != n_fit; ++i_f)
+              for (size_t i_a = 0; i_a != n_a; ++i_a)
+                for (size_t i_b = 0; i_b != n_b; ++i_b)
+                  val_xxs_as_xs[c][(i_f * n_a + i_a) * n_b + i_b] =
+                      val_xxs[c][(i_a * n_b + i_b) * n_fit + i_f];
+          }
+          rkb_require_equal(val_xxs_as_xs, val, oss.str() + " xx_xs");
+        }
+    }
+  };
+
+#if LIBINT2_TASK_EXISTS_3coulomb_opop
+  SECTION("coulomb_opop 3-center") {
+    check_3center(Operator::coulomb_opop, LIBINT2_MAX_AM_3coulomb_opop,
+                  LIBINT2_MAX_AM_default);
+  }
+#if LIBINT2_TASK_EXISTS_4coulomb_opop
+  SECTION("coulomb_opop 3-center vs 4-center, pure fitting shell") {
+    // the 3-center kernel is generated with a dummy shell next to the fitting
+    // shell; check against the 4-center kernel, which has no such structure
+    const Shell fit{{0.9}, {{2, true, {1.0}}}, {{-1.0, 0.5, 0.0}}};
+    const auto lmax_ao = std::min(
+        LIBINT2_MAX_AM_default,
+        std::min(LIBINT2_MAX_AM_3coulomb_opop, LIBINT2_MAX_AM_coulomb_opop));
+    if (LIBINT2_MAX_AM_3coulomb_opop >= 2 && LIBINT2_MAX_AM_coulomb_opop >= 2) {
+      const auto pure = upto(pure_shells, lmax_ao);
+      const auto eps = std::numeric_limits<double>::epsilon();
+      Engine eng_3c(Operator::coulomb_opop, nprim, 2, 0, eps,
+                    libint2::default_params(Operator::coulomb_opop),
+                    BraKet::xs_xx);
+      Engine eng_4c(Operator::coulomb_opop, nprim, 2, 0);
+      for (size_t a = 0; a != pure.size(); ++a)
+        for (size_t b = 0; b != pure.size(); ++b) {
+          const std::vector<Shell> ps{fit, pure[a], pure[b]};
+          const auto val =
+              rkb_copy_results(eng_3c.compute(fit, pure[a], pure[b]), ps);
+          const auto ref = rkb_copy_results(
+              eng_4c.compute(fit, Shell::unit(), pure[a], pure[b]), ps);
+          std::ostringstream oss;
+          oss << "(d|" << a << b << ") 3c vs 4c";
+          rkb_require_equal(val, ref, oss.str());
+        }
+    }
+  }
+#endif
+#endif
+#if LIBINT2_TASK_EXISTS_3coulomb_op
+  SECTION("coulomb_op 3-center") {
+    check_3center(Operator::coulomb_op, LIBINT2_MAX_AM_3coulomb_op,
+                  LIBINT2_MAX_AM_default);
+  }
+#endif
+}
+
 TEST_CASE("Erfx_Coulomb integrals", "[engine][2-body]") {
+#if defined(LIBINT2_SUPPORT_ERI)
   // pseudorandom s shells
   std::vector<Shell> obs{
       Shell{{1.0}, {{0, true, {1.0}}}, {{0.0, 0.0, 0.0}}},
@@ -1296,4 +1541,5 @@ TEST_CASE("Erfx_Coulomb integrals", "[engine][2-body]") {
       }
     }
   }
+#endif  // LIBINT2_SUPPORT_ERI
 }
