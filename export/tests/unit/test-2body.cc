@@ -20,6 +20,8 @@
 
 #include <libint2/deriv_iter.h>
 
+#include <algorithm>
+
 #include "catch.hpp"
 #include "fixture.h"
 
@@ -345,13 +347,23 @@ TEST_CASE("eri geometric derivatives", "[engine][2-body]") {
 }
 
 TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
-  std::vector<Shell> obs{// pseudorandom s
-                         Shell{{1.0}, {{0, false, {1.0}}}, {{0.0, 0.0, 0.0}}},
-                         // pseudorandom p
-                         Shell{{2.0}, {{1, false, {1.0}}}, {{1.0, 1.0, 1.0}}}};
+  const std::vector<Shell> all_shells{
+      // pseudorandom s
+      Shell{{1.0}, {{0, false, {1.0}}}, {{0.0, 0.0, 0.0}}},
+      // pseudorandom p
+      Shell{{2.0}, {{1, false, {1.0}}}, {{1.0, 1.0, 1.0}}},
+      // pseudorandom contracted p
+      Shell{{3.0, 0.7}, {{1, false, {0.4, 0.8}}}, {{-0.5, 0.2, 0.9}}},
+      // pseudorandom d
+      Shell{{1.2}, {{2, false, {1.0}}}, {{0.3, -0.8, 0.4}}}};
+  // the subset of all_shells supported by a kernel with max AM lmax
+  auto shells_upto = [&all_shells](int lmax) {
+    std::vector<Shell> result;
+    for (const auto &sh : all_shells)
+      if (sh.contr[0].l <= lmax) result.push_back(sh);
+    return result;
+  };
 
-  const auto max_nprim = libint2::max_nprim(obs);
-  const auto max_l = libint2::max_l(obs);
   typedef std::array<unsigned int, 12> der_idx;
 
   // e.g. d_xx maps the derivative index of derivative w.r.t x
@@ -367,29 +379,40 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
   der_idx d_xy = {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0};
   der_idx d_yx = {0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0};
 
+#if LIBINT2_TASK_EXISTS_4coulomb_opop && LIBINT2_TASK_EXISTS_4opop_coulomb_opop
   SECTION("Coulombσpσp and σpσpCoulombσpσp") {
-    Engine engine_llss, engine_ssss;
-    try {
-      engine_llss = Engine(Operator::coulomb_opop, max_nprim, max_l, 0);
-      engine_ssss = Engine(Operator::opop_coulomb_opop, max_nprim, max_l, 0);
-      // TODO: need another unit test for derivatives of RKB ERIs
-    } catch (
-        Engine::lmax_exceeded &) {  // skip the test if lmax exceeded or libint2
-                                    // not configured with RKB support
-      return;
-    }
+    // the reference is expensive: skip the uncontracted p shell (the
+    // contracted p shell covers p)
+    auto obs = shells_upto(std::min(LIBINT2_MAX_AM_coulomb_opop,
+                                    LIBINT2_MAX_AM_opop_coulomb_opop));
+    obs.erase(std::remove_if(obs.begin(), obs.end(),
+                             [](const Shell &sh) {
+                               return sh.contr[0].l == 1 && sh.nprim() == 1;
+                             }),
+              obs.end());
+    const auto max_nprim = libint2::max_nprim(obs);
+    const auto max_l = libint2::max_l(obs);
+    Engine engine_llss(Operator::coulomb_opop, max_nprim, max_l, 0);
+    Engine engine_ssss(Operator::opop_coulomb_opop, max_nprim, max_l, 0);
 
     const auto nshell = obs.size();
     for (int s0 = 0; s0 != nshell; ++s0) {
       for (int s1 = 0; s1 != nshell; ++s1) {
         for (int s2 = 0; s2 != nshell; ++s2) {
           for (int s3 = 0; s3 != nshell; ++s3) {
+            // the reference is expensive, include at most 1 d shell
+            if ((obs[s0].contr[0].l > 1) + (obs[s1].contr[0].l > 1) +
+                    (obs[s2].contr[0].l > 1) + (obs[s3].contr[0].l > 1) >
+                1)
+              continue;
             const auto &results_llss =
                 engine_llss.compute(obs[s0], obs[s1], obs[s2], obs[s3]);
             const auto &results_ssss =
                 engine_ssss.compute(obs[s0], obs[s1], obs[s2], obs[s3]);
-            assert(results_llss.size() ==
-                   4);  // 4 buffers for single-spin quaternion components
+            // 4 buffers for single-spin quaternion components
+            REQUIRE(results_llss.size() == 4);
+            // 16 buffers for two independent spin-space quaternions
+            REQUIRE(results_ssss.size() == 16);
 
             LIBINT2_REF_REALTYPE Aref[3];
             for (int i = 0; i < 3; ++i) Aref[i] = obs[s0].O[i];
@@ -560,7 +583,9 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
               REQUIRE(!llss_not_ok);
             }
 
-            // (SS|SS) has 16 components (two independent spin spaces)
+            // (SS|SS) has 16 components (two independent spin spaces); the
+            // reference involves 4th derivatives and loses more precision
+            const double SSSS_ABSOLUTE_DEVIATION_THRESHOLD = 1.0E-12;
             for (auto comp = 0; comp < 16; ++comp) {
               auto abs_err_ssss =
                   abs(ref_opop_coulomb_opop[comp] - results_ssss[comp][ijkl]);
@@ -569,7 +594,7 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
 
               bool ssss_not_ok =
                   rel_abs_err_ssss > RELATIVE_DEVIATION_THRESHOLD &&
-                  abs_err_ssss > ABSOLUTE_DEVIATION_THRESHOLD;
+                  abs_err_ssss > SSSS_ABSOLUTE_DEVIATION_THRESHOLD;
 
               if (ssss_not_ok) {
                 std::cout << "(l0 l1| l2 l3) = "
@@ -595,13 +620,14 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
     }
   }
 
+#endif  // 4-center Coulombσpσp and σpσpCoulombσpσp
+
+#if LIBINT2_TASK_EXISTS_4op_coulomb_op
   SECTION("op_coulomb_op") {
-    Engine engine_opCop;
-    try {
-      engine_opCop = Engine(Operator::op_coulomb_op, max_nprim, max_l, 0);
-    } catch (Engine::lmax_exceeded &) {
-      return;
-    }
+    const auto obs = shells_upto(LIBINT2_MAX_AM_op_coulomb_op);
+    const auto max_nprim = libint2::max_nprim(obs);
+    const auto max_l = libint2::max_l(obs);
+    Engine engine_opCop(Operator::op_coulomb_op, max_nprim, max_l, 0);
 
     const auto nshell = obs.size();
     for (int s0 = 0; s0 != nshell; ++s0) {
@@ -610,7 +636,7 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
           for (int s3 = 0; s3 != nshell; ++s3) {
             const auto &results =
                 engine_opCop.compute(obs[s0], obs[s1], obs[s2], obs[s3]);
-            assert(results.size() == 9);
+            REQUIRE(results.size() == 9);
 
             LIBINT2_REF_REALTYPE Aref[3], Bref[3], Cref[3], Dref[3];
             for (int i = 0; i < 3; ++i) Aref[i] = obs[s0].O[i];
@@ -725,13 +751,12 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
     }
   }
 
+#endif  // 4-center op_coulomb_op
+
 // The 3-center RKB sections below exercise kernels that exist only when
-// LIBINT2_ENABLE_RKB_ERI3 >= 0. The 4-center coulomb_opop engine still
-// constructs successfully without them (so the lmax_exceeded catch does not
-// fire), but compute() on the 3-center braket would dispatch to the absent
-// kernel and abort in the `default` task. Guard at compile time on the
-// generated task-exists macro.
-#if LIBINT2_TASK_EXISTS_3coulomb_opop
+// LIBINT2_ENABLE_RKB_ERI3 >= 0 (else compute() throws Engine::missing_kernel).
+// Guard at compile time on the generated task-exists macros.
+#if LIBINT2_TASK_EXISTS_3coulomb_opop && LIBINT2_TASK_EXISTS_4coulomb_opop
   SECTION("Coulombσpσp 3-center xs_xx") {
     // 3-center RKB Coulombσpσp integral, (P | σ·p_μ σ·p_ν / r12) with P on
     // the bra (fitting/DF) and σ·p acting on the AO pair (μ,ν) on the ket.
@@ -750,33 +775,29 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
     std::vector<Shell> dfs{dfsh};
     const auto &unitshell = libint2::Shell::unit();
 
-    Engine engine_3c, engine_4c_ref;
-    try {
-      engine_3c = Engine(Operator::coulomb_opop,
+    const auto obs = shells_upto(
+        std::min(LIBINT2_MAX_AM_3coulomb_opop, LIBINT2_MAX_AM_coulomb_opop));
+    const auto max_nprim = libint2::max_nprim(obs);
+    const auto max_l = libint2::max_l(obs);
+    Engine engine_3c(Operator::coulomb_opop,
+                     std::max(max_nprim, libint2::max_nprim(dfs)),
+                     std::max(max_l, libint2::max_l(dfs)), 0);
+    engine_3c.set(BraKet::xs_xx);
+    // 4-center reference — same operator, default BraKet::xx_xx
+    Engine engine_4c_ref(Operator::coulomb_opop,
                          std::max(max_nprim, libint2::max_nprim(dfs)),
                          std::max(max_l, libint2::max_l(dfs)), 0);
-      engine_3c.set(BraKet::xs_xx);
-      // 4-center reference — same operator, default BraKet::xx_xx
-      engine_4c_ref = Engine(Operator::coulomb_opop,
-                             std::max(max_nprim, libint2::max_nprim(dfs)),
-                             std::max(max_l, libint2::max_l(dfs)), 0);
-    } catch (Engine::lmax_exceeded &) {
-      // skip if libint not configured with -DLIBINT2_ENABLE_RKB_ERI3 >= 0
-      // (or the 4-center RKB ERI was disabled)
-      return;
-    }
 
     const auto nshell = obs.size();
     for (int sa = 0; sa != nshell; ++sa) {
       for (int sb = 0; sb != nshell; ++sb) {
-        const auto &results_3c =
-            engine_3c.compute(dfsh, obs[sa], obs[sb]);
+        const auto &results_3c = engine_3c.compute(dfsh, obs[sa], obs[sb]);
         // 4-center reference: (dfsh, unit | sh_a, sh_b). σ·p still acts on
         // (C, D) = (sh_a, sh_b), matching the 3-center xs_xx mapping.
         const auto &results_4c_ref =
             engine_4c_ref.compute(dfsh, unitshell, obs[sa], obs[sb]);
-        assert(results_3c.size() == 4);
-        assert(results_4c_ref.size() == 4);
+        REQUIRE(results_3c.size() == 4);
+        REQUIRE(results_4c_ref.size() == 4);
 
         const auto n_df = dfsh.size();
         const auto n_a = obs[sa].size();
@@ -797,10 +818,9 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
             bool not_ok = rel_err > REL_TOL && abs_err > ABS_TOL;
             if (not_ok) {
               std::cout << "(df | sa=" << sa << " sb=" << sb
-                        << ") comp=" << comp << " elem=" << k
-                        << ": 3c=" << v_3c << " 4c_ref=" << v_ref
-                        << " abs_err=" << abs_err << " rel_err=" << rel_err
-                        << std::endl;
+                        << ") comp=" << comp << " elem=" << k << ": 3c=" << v_3c
+                        << " 4c_ref=" << v_ref << " abs_err=" << abs_err
+                        << " rel_err=" << rel_err << std::endl;
             }
             REQUIRE(!not_ok);
           }
@@ -818,19 +838,17 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
     Shell dfsh{{1.5}, {{0, false, {1.0}}}, {{-1.0, 0.5, 0.0}}};
     std::vector<Shell> dfs{dfsh};
 
-    Engine eng_xs, eng_xxs;
-    try {
-      eng_xs = Engine(Operator::coulomb_opop,
-                      std::max(max_nprim, libint2::max_nprim(dfs)),
-                      std::max(max_l, libint2::max_l(dfs)), 0);
-      eng_xs.set(BraKet::xs_xx);
-      eng_xxs = Engine(Operator::coulomb_opop,
-                       std::max(max_nprim, libint2::max_nprim(dfs)),
-                       std::max(max_l, libint2::max_l(dfs)), 0);
-      eng_xxs.set(BraKet::xx_xs);
-    } catch (Engine::lmax_exceeded &) {
-      return;
-    }
+    const auto obs = shells_upto(LIBINT2_MAX_AM_3coulomb_opop);
+    const auto max_nprim = libint2::max_nprim(obs);
+    const auto max_l = libint2::max_l(obs);
+    Engine eng_xs(Operator::coulomb_opop,
+                  std::max(max_nprim, libint2::max_nprim(dfs)),
+                  std::max(max_l, libint2::max_l(dfs)), 0);
+    eng_xs.set(BraKet::xs_xx);
+    Engine eng_xxs(Operator::coulomb_opop,
+                   std::max(max_nprim, libint2::max_nprim(dfs)),
+                   std::max(max_l, libint2::max_l(dfs)), 0);
+    eng_xxs.set(BraKet::xx_xs);
 
     for (size_t sa = 0; sa != obs.size(); ++sa) {
       for (size_t sb = 0; sb != obs.size(); ++sb) {
@@ -847,22 +865,19 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
           for (size_t i_df = 0; i_df < n_df; ++i_df) {
             for (size_t i_a = 0; i_a < n_a; ++i_a) {
               for (size_t i_b = 0; i_b < n_b; ++i_b) {
-                const auto v_xs =
-                    res_xs[c][i_df * n_a * n_b + i_a * n_b + i_b];
+                const auto v_xs = res_xs[c][i_df * n_a * n_b + i_a * n_b + i_b];
                 const auto v_xxs =
                     res_xxs[c][i_a * n_b * n_df + i_b * n_df + i_df];
                 const auto abs_err = abs(v_xs - v_xxs);
-                const auto rel_err = std::abs(v_xs) > 1e-30
-                                         ? double(abs(abs_err / v_xs))
-                                         : 0.0;
+                const auto rel_err =
+                    std::abs(v_xs) > 1e-30 ? double(abs(abs_err / v_xs)) : 0.0;
                 bool not_ok = rel_err > 1.0E-9 && abs_err > 5.0E-14;
                 if (not_ok) {
-                  std::cout << "xx_xs alias mismatch: (sa=" << sa
-                            << " sb=" << sb << ") comp=" << c
-                            << " idx(df=" << i_df << ",a=" << i_a
-                            << ",b=" << i_b << "): xs=" << v_xs
-                            << " xxs=" << v_xxs << " abs_err=" << abs_err
-                            << std::endl;
+                  std::cout
+                      << "xx_xs alias mismatch: (sa=" << sa << " sb=" << sb
+                      << ") comp=" << c << " idx(df=" << i_df << ",a=" << i_a
+                      << ",b=" << i_b << "): xs=" << v_xs << " xxs=" << v_xxs
+                      << " abs_err=" << abs_err << std::endl;
                 }
                 REQUIRE(!not_ok);
               }
@@ -872,7 +887,7 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
       }
     }
   }
-#endif  // LIBINT2_TASK_EXISTS_3coulomb_opop
+#endif  // 3-center Coulombσpσp
 
 #if LIBINT2_TASK_EXISTS_3coulomb_op
   SECTION("Coulombσp 3-center xs_xx") {
@@ -895,25 +910,29 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
     Shell dfsh{{1.5}, {{0, false, {1.0}}}, {{-1.0, 0.5, 0.0}}};
     std::vector<Shell> dfs{dfsh};
 
-    Engine engine_3c;
-    Engine engine_3c_default;
-    try {
-      engine_3c = Engine(Operator::coulomb_op,
-                         std::max(max_nprim, libint2::max_nprim(dfs)),
-                         std::max(max_l, libint2::max_l(dfs)), 0);
-      engine_3c.set(BraKet::xs_xx);
-      // Regression (review finding #1): coulomb_op has no 4-center kernel, so a
-      // forgotten set() must NOT silently dispatch to the plain-Coulomb
-      // `default` task. default_braket(coulomb_op) must be the 3-center xs_xx,
-      // so engine_3c_default — built WITHOUT an explicit set() — must produce
-      // results identical to engine_3c.
-      CHECK(default_braket(Operator::coulomb_op) == BraKet::xs_xx);
-      engine_3c_default = Engine(Operator::coulomb_op,
-                                 std::max(max_nprim, libint2::max_nprim(dfs)),
-                                 std::max(max_l, libint2::max_l(dfs)), 0);
-    } catch (Engine::lmax_exceeded &) {
-      // skip if libint not configured with -DLIBINT2_ENABLE_RKB_ERI3 >= 0
-      return;
+    const auto obs = shells_upto(LIBINT2_MAX_AM_3coulomb_op);
+    const auto max_nprim = libint2::max_nprim(obs);
+    const auto max_l = libint2::max_l(obs);
+    Engine engine_3c(Operator::coulomb_op,
+                     std::max(max_nprim, libint2::max_nprim(dfs)),
+                     std::max(max_l, libint2::max_l(dfs)), 0);
+    engine_3c.set(BraKet::xs_xx);
+    // coulomb_op has no 4-center kernel, hence default_braket(coulomb_op)
+    // must be the 3-center xs_xx, so engine_3c_default — built WITHOUT an
+    // explicit set() — must produce results identical to engine_3c.
+    CHECK(default_braket(Operator::coulomb_op) == BraKet::xs_xx);
+    Engine engine_3c_default(Operator::coulomb_op,
+                             std::max(max_nprim, libint2::max_nprim(dfs)),
+                             std::max(max_l, libint2::max_l(dfs)), 0);
+    // no 4-center coulomb_op kernel -> must throw rather than silently
+    // computing plain Coulomb integrals
+    {
+      Engine engine_4c(Operator::coulomb_op,
+                       std::max(max_nprim, libint2::max_nprim(dfs)),
+                       std::max(max_l, libint2::max_l(dfs)), 0);
+      engine_4c.set(BraKet::xx_xx);
+      CHECK_THROWS_AS(engine_4c.compute(obs[0], obs[0], obs[0], obs[0]),
+                      Engine::missing_kernel);
     }
 
     // unit (dummy) shell at the bra-2 position: alpha=0, l=0, at the origin.
@@ -924,7 +943,7 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
     for (int sa = 0; sa != nshell; ++sa) {
       for (int sb = 0; sb != nshell; ++sb) {
         const auto &results_3c = engine_3c.compute(dfsh, obs[sa], obs[sb]);
-        assert(results_3c.size() == 3);
+        REQUIRE(results_3c.size() == 3);
         // default-braket engine (no set()) must match the explicit-xs_xx engine
         const auto &results_3c_default =
             engine_3c_default.compute(dfsh, obs[sa], obs[sb]);
@@ -938,7 +957,7 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
         int ijk = 0;
 
         int l0, m0, n0;
-        FOR_CART(l0, m0, n0, dfsh.contr[0].l)     // P (fitting, s)
+        FOR_CART(l0, m0, n0, dfsh.contr[0].l)  // P (fitting, s)
         int l2, m2, n2;
         FOR_CART(l2, m2, n2, obs[sa].contr[0].l)  // μ
         int l3, m3, n3;

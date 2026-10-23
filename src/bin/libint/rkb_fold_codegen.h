@@ -78,8 +78,6 @@ std::string rkb_fold_spfunction_call(
     delete si;
   }
   os << "," << total_dim;
-  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-  taskmgr.current().params()->max_hrr_hsrank(total_dim);
   os << ")" << context->end_of_stat() << std::endl;
   return os.str();
 }
@@ -87,14 +85,15 @@ std::string rkb_fold_spfunction_call(
 /// generate_code body: emit the full element-wise function. The caller computes
 /// the per-target right-hand-side expression @p rhs (e.g.
 /// "src0[hsi] + src1[hsi]") and its flop count @p nflops; everything else —
-/// symbol assignment, function declaration, and the highdim loop scaffold — is
+/// symbol assignment, function declaration, and the element loop scaffold — is
 /// identical across the four operators and emitted here.
 template <typename RR>
-void rkb_fold_generate_code(
-    const RR& self, const std::shared_ptr<CodeContext>& context,
-    const std::shared_ptr<ImplicitDimensions>& dims, const std::string& funcname,
-    std::ostream& decl, std::ostream& def, const std::string& rhs,
-    unsigned int nflops) {
+void rkb_fold_generate_code(const RR& self,
+                            const std::shared_ptr<CodeContext>& context,
+                            const std::shared_ptr<ImplicitDimensions>& dims,
+                            const std::string& funcname, std::ostream& decl,
+                            std::ostream& def, const std::string& rhs,
+                            unsigned int nflops) {
   // declare_function lives in dg.cc
   extern std::string declare_function(
       const std::shared_ptr<CodeContext>& context,
@@ -118,12 +117,21 @@ void rkb_fold_generate_code(
   const std::string func_decl =
       declare_function(context, localdims, symbols, tlabel, funcname, decl);
   def << context->std_header();
-  def << "#include <" << context->label_to_name(funcname) << ".h>\n\n";
+  def << "#include <" << context->label_to_filename(funcname) << ".h>\n\n";
   def << context->code_prefix();
   def << func_decl << context->open_block() << std::endl;
   def << context->std_function_header();
   def << "#ifdef __INTEL_COMPILER\n#pragma ivdep\n#endif\n";
-  def << "for(int hsi = 0; hsi<highdim; hsi++) {\n";
+  // the fold is element-wise, hence loop over all elements, including the
+  // low and vector dimensions
+  std::string nelem = localdims->high_label();
+  if (!localdims->low_is_static() || localdims->low_label() != "1")
+    nelem += "*" + localdims->low_label();
+  if (!localdims->vecdim_is_static())
+    nelem += "*veclen";
+  else if (localdims->vecdim_label() != "1")
+    nelem += "*" + localdims->vecdim_label();
+  def << "for(int hsi = 0; hsi<" << nelem << "; hsi++) {\n";
   def << "target[hsi] = " << rhs << ";\n}\n";
   def << "/** Number of flops = " << nflops << " */\n";
   def << context->close_block() << std::endl;

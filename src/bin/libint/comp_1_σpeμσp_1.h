@@ -18,8 +18,8 @@
  *
  */
 
-#ifndef LIBINT_COMP_1_ΣPRΣP_1_H
-#define LIBINT_COMP_1_ΣPRΣP_1_H
+#ifndef LIBINT_COMP_1_ΣPEΜΣP_1_H
+#define LIBINT_COMP_1_ΣPEΜΣP_1_H
 
 #include <generic_rr.h>
 #include <rkb_fold_1body.h>
@@ -70,7 +70,7 @@ class CR_1_σpeμσp_1
 
 template <typename F>
 CR_1_σpeμσp_1<F>::CR_1_σpeμσp_1(const std::shared_ptr<TargetType> &Tint,
-                              unsigned int)
+                                unsigned int)
     : ParentType(Tint, 0) {
   assert(Tint->num_func_bra(/* particle */ 0) == 1);
   assert(Tint->num_func_ket(/* particle */ 0) == 1);
@@ -94,14 +94,13 @@ CR_1_σpeμσp_1<F>::CR_1_σpeμσp_1(const std::shared_ptr<TargetType> &Tint,
 
   // σ·p r_k σ·p fold: inner child is the Cartesian-dipole integral
   // (Da | r_k | Db). Shared structure lives in sigma_p_1body_fold().
-  sigma_p_1body_fold(
-      a, b, oper->descr().quaternion_index(), is_simple(), expr_, nflops_,
-      [&](const F &Da, const F &Db) {
-        return factory.make_child(Da, Db, EmptySet(), mu_k);
-      });
+  sigma_p_1body_fold(a, b, oper->descr().quaternion_index(), is_simple(), expr_,
+                     nflops_, [&](const F &Da, const F &Db) {
+                       return factory.make_child(Da, Db, EmptySet(), mu_k);
+                     });
 
 }  // CR_1_σpeμσp_1<F>::CR_1_σpeμσp_1
 
 };  // namespace libint2
 
-#endif  // LIBINT_COMP_1_ΣPRΣP_1_H
+#endif  // LIBINT_COMP_1_ΣPEΜΣP_1_H

@@ -169,8 +169,8 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * `LIBINT2_ENABLE_ERI` - G - Compile with support for up to N-th derivatives of 4-center electron repulsion integrals. Use -1 for OFF. [Default=0]
 * `LIBINT2_ENABLE_ERI3` - G - Compile with support for up to N-th derivatives of 3-center electron repulsion integrals. Use -1 for OFF. [Default=-1]
 * `LIBINT2_ENABLE_ERI2` - G - Compile with support for up to N-th derivatives of 2-center electron repulsion integrals. Use -1 for OFF. [Default=-1]
-* `LIBINT2_ENABLE_RKB_ERI` - G - Compile with support for up to N-th derivatives of relativistic restricted kinetic balance (RKB) 4-center electron repulsion integrals. Use -1 for OFF. [Default=0]
-* `LIBINT2_ENABLE_RKB_ERI3` - G - Compile with support for up to N-th derivatives of relativistic restricted kinetic balance (RKB) 3-center electron repulsion integrals. Use -1 for OFF. σ·p acts on the two paired (AO) centers; the unpaired/fitting (density-fitting/auxiliary) center is a spectator. [Default=-1]
+* `LIBINT2_ENABLE_RKB_ERI` - G - Compile with support for up to N-th derivatives of relativistic restricted kinetic balance (RKB) 4-center electron repulsion integrals. Use -1 for OFF. Derivatives are not yet implemented, i.e. only N=0 is supported. [Default=-1]
+* `LIBINT2_ENABLE_RKB_ERI3` - G - Compile with support for up to N-th derivatives of relativistic restricted kinetic balance (RKB) 3-center electron repulsion integrals. Use -1 for OFF. σ·p acts on the two paired (AO) centers; the unpaired/fitting (density-fitting/auxiliary) center is a spectator. Derivatives are not yet implemented, i.e. only N=0 is supported. [Default=-1]
 * `LIBINT2_ENABLE_G12` - G - Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
 * `LIBINT2_ENABLE_G12DKH` - G - Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
 

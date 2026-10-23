@@ -441,7 +441,8 @@ typedef GenOper<TwoPRep_Descr> TwoPRep;
 /** Coulombσpσp is the two-body repulsion operator.
  */
 struct Coulombσpσp_Descr : public Contractable<Coulombσpσp_Descr> {
-  typedef MultiplicativeSymm2Body_Props Properties;
+  // σ·p acts on particle 2 only, hence no particle 1<->2 symmetry
+  typedef MultiplicativeNonsymm2Body_Props Properties;
 
   Coulombσpσp_Descr() : quaternion_index_(0) {}
   Coulombσpσp_Descr(int quaternion_index)
@@ -486,7 +487,8 @@ typedef GenOper<Coulombσpσp_Descr> CoulombσpσpOper;
  *  the imaginary unit and Pauli matrix of σ·p are applied by the caller.
  */
 struct Coulombσp_Descr : public Contractable<Coulombσp_Descr> {
-  typedef MultiplicativeSymm2Body_Props Properties;
+  // σ·p acts on particle 2 only, hence no particle 1<->2 symmetry
+  typedef MultiplicativeNonsymm2Body_Props Properties;
 
   Coulombσp_Descr() : cartesian_index_(0) {}
   Coulombσp_Descr(int cartesian_index) : cartesian_index_(cartesian_index) {
@@ -519,6 +521,7 @@ struct Coulombσp_Descr : public Contractable<Coulombσp_Descr> {
 typedef GenOper<Coulombσp_Descr> CoulombσpOper;
 
 struct σpσpCoulombσpσp_Descr : public Contractable<σpσpCoulombσpσp_Descr> {
+  // particle 1<->2 symmetric up to a remap of the components
   typedef MultiplicativeSymm2Body_Props Properties;
 
   σpσpCoulombσpσp_Descr() : quaternion_index_(0) {}
@@ -567,6 +570,7 @@ typedef GenOper<σpσpCoulombσpσp_Descr> σpσpCoulombσpσpOper;
  *  site.
  */
 struct σpCoulombσp_Descr : public Contractable<σpCoulombσp_Descr> {
+  // particle 1<->2 symmetric up to the sign of the antisymmetric components
   typedef MultiplicativeSymm2Body_Props Properties;
 
   /// SO(3) irreducible components of the rank-2 Cartesian tensor T_{ab}.

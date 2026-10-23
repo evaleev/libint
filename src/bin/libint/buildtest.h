@@ -321,9 +321,9 @@ void GenerateCode(const std::shared_ptr<DirectedGraph>& dg,
   }
 #endif
 
-  std::string decl_filename(prefix + context->label_to_name(label));
+  std::string decl_filename(prefix + context->label_to_filename(label));
   decl_filename += ".h";
-  std::string def_filename(prefix + context->label_to_name(label));
+  std::string def_filename(prefix + context->label_to_filename(label));
   def_filename += ".cc";
   std::basic_ofstream<char> declfile(decl_filename.c_str());
   std::basic_ofstream<char> deffile(def_filename.c_str());

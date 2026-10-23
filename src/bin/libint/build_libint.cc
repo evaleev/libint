@@ -623,6 +623,10 @@ void try_main(int argc, char* argv[]) {
   }
 #endif
 
+#if (defined(LIBINT_INCLUDE_RKB_ERI) && LIBINT_INCLUDE_RKB_ERI > 0) || \
+    (defined(LIBINT_INCLUDE_RKB_ERI3) && LIBINT_INCLUDE_RKB_ERI3 > 0)
+#error "geometric derivatives of RKB integrals are not yet implemented"
+#endif
 #ifdef LIBINT_INCLUDE_RKB_ERI
 #define BOOST_PP_RKB_ERI_TASK_TUPLE \
   (coulomb_opop, opop_coulomb_opop, op_coulomb_op)
@@ -821,53 +825,53 @@ void try_main(int argc, char* argv[]) {
   //   - num_bf = 3 (3-center dispatch table is 3-dimensional)
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_RKB_ERI3; ++d) {
 #if defined(LIBINT_RKB_ERI3_MAX_AM_LIST)
-#define BOOST_PP_RKB_ERI3_MCR_MAXAM(r, data, elem)                    \
-  cparams->max_am(task_label(BOOST_PP_STRINGIZE(elem), d),            \
-                  token<unsigned int>(LIBINT_RKB_ERI3_MAX_AM_LIST,    \
-                                      ',', d));
+#define BOOST_PP_RKB_ERI3_MCR_MAXAM(r, data, elem) \
+  cparams->max_am(                                 \
+      task_label(BOOST_PP_STRINGIZE(elem), d),     \
+                 token<unsigned int>(LIBINT_RKB_ERI3_MAX_AM_LIST, ',', d));
     BOOST_PP_LIST_FOR_EACH(BOOST_PP_RKB_ERI3_MCR_MAXAM, _,
                            BOOST_PP_RKB_ERI3_TASK_LIST)
 #undef BOOST_PP_RKB_ERI3_MCR_MAXAM
 #elif defined(LIBINT_RKB_ERI3_MAX_AM)
 #define BOOST_PP_RKB_ERI3_MCR_MAXAM(r, data, elem)         \
   cparams->max_am(task_label(BOOST_PP_STRINGIZE(elem), d), \
-                  LIBINT_RKB_ERI3_MAX_AM);
+                             LIBINT_RKB_ERI3_MAX_AM);
     BOOST_PP_LIST_FOR_EACH(BOOST_PP_RKB_ERI3_MCR_MAXAM, _,
                            BOOST_PP_RKB_ERI3_TASK_LIST)
 #undef BOOST_PP_RKB_ERI3_MCR_MAXAM
 #endif
 #if defined(LIBINT_RKB_ERI3_OPT_AM_LIST)
-#define BOOST_PP_RKB_ERI3_MCR_OPTAM(r, data, elem)                       \
-  cparams->max_am_opt(task_label(BOOST_PP_STRINGIZE(elem), d),           \
-                      token<unsigned int>(LIBINT_RKB_ERI3_OPT_AM_LIST,   \
-                                          ',', d));
+#define BOOST_PP_RKB_ERI3_MCR_OPTAM(r, data, elem) \
+  cparams->max_am_opt(                             \
+      task_label(BOOST_PP_STRINGIZE(elem), d),     \
+                 token<unsigned int>(LIBINT_RKB_ERI3_OPT_AM_LIST, ',', d));
     BOOST_PP_LIST_FOR_EACH(BOOST_PP_RKB_ERI3_MCR_OPTAM, _,
                            BOOST_PP_RKB_ERI3_TASK_LIST)
 #undef BOOST_PP_RKB_ERI3_MCR_OPTAM
 #elif defined(LIBINT_RKB_ERI3_OPT_AM)
 #define BOOST_PP_RKB_ERI3_MCR_OPTAM(r, data, elem)             \
   cparams->max_am_opt(task_label(BOOST_PP_STRINGIZE(elem), d), \
-                      LIBINT_RKB_ERI3_OPT_AM);
+                                 LIBINT_RKB_ERI3_OPT_AM);
     BOOST_PP_LIST_FOR_EACH(BOOST_PP_RKB_ERI3_MCR_OPTAM, _,
                            BOOST_PP_RKB_ERI3_TASK_LIST)
 #undef BOOST_PP_RKB_ERI3_MCR_OPTAM
 #endif
     // Paired centers (1, 2) follow the default basis AM.
 #if defined(LIBINT_MAX_AM_LIST)
-#define BOOST_PP_RKB_ERI3_MCR_PAIRED(r, data, elem)                       \
-  cparams->max_am(task_label(BOOST_PP_STRINGIZE(elem), d),                \
-                  cparams->max_am(task_label("default", d)), 1);          \
-  cparams->max_am(task_label(BOOST_PP_STRINGIZE(elem), d),                \
-                  cparams->max_am(task_label("default", d)), 2);
+#define BOOST_PP_RKB_ERI3_MCR_PAIRED(r, data, elem)                         \
+  cparams->max_am(task_label(BOOST_PP_STRINGIZE(elem), d),                  \
+                             cparams->max_am(task_label("default", d)), 1); \
+  cparams->max_am(task_label(BOOST_PP_STRINGIZE(elem), d),                  \
+                             cparams->max_am(task_label("default", d)), 2);
     BOOST_PP_LIST_FOR_EACH(BOOST_PP_RKB_ERI3_MCR_PAIRED, _,
                            BOOST_PP_RKB_ERI3_TASK_LIST)
 #undef BOOST_PP_RKB_ERI3_MCR_PAIRED
 #else
-#define BOOST_PP_RKB_ERI3_MCR_PAIRED(r, data, elem)        \
-  cparams->max_am(task_label(BOOST_PP_STRINGIZE(elem), d), \
-                  cparams->max_am("default"), 1);          \
-  cparams->max_am(task_label(BOOST_PP_STRINGIZE(elem), d), \
-                  cparams->max_am("default"), 2);
+#define BOOST_PP_RKB_ERI3_MCR_PAIRED(r, data, elem)          \
+  cparams->max_am(task_label(BOOST_PP_STRINGIZE(elem), d),   \
+                             cparams->max_am("default"), 1); \
+  cparams->max_am(task_label(BOOST_PP_STRINGIZE(elem), d),   \
+                             cparams->max_am("default"), 2);
     BOOST_PP_LIST_FOR_EACH(BOOST_PP_RKB_ERI3_MCR_PAIRED, _,
                            BOOST_PP_RKB_ERI3_TASK_LIST)
 #undef BOOST_PP_RKB_ERI3_MCR_PAIRED
@@ -1286,11 +1290,11 @@ static void build_TwoPRep_2b_2k(
   // specific function per side, and IBP cannot recover the sign across the
   // 1/r12 coupling).
   // TODO: the per-operator swappability/component-count rules are spread across
-  // many std::is_same<OperType, ...> branches here (and the descriptor loops and
-  // strategy specializations). These are properties of the operator descriptor;
-  // expose them as descriptor traits (e.g. ncomponents(), p1p2_swappable(),
-  // bra_ket_coswappable()) and query generically so a new operator needs no edit
-  // here.
+  // many std::is_same<OperType, ...> branches here (and the descriptor loops
+  // and strategy specializations). These are properties of the operator
+  // descriptor; expose them as descriptor traits (e.g. ncomponents(),
+  // p1p2_swappable(), bra_ket_coswappable()) and query generically so a new
+  // operator needs no edit here.
   bool p1_p2_swappable = !std::is_same<OperType, CoulombσpσpOper>::value;
   bool bra_ket_coswappable = std::is_same<OperType, σpσpCoulombσpσpOper>::value;
 
@@ -1604,7 +1608,8 @@ static void build_TwoPRep_1b_2k(
 #endif
 
         // operator components: 1 for plain TwoPRep, 4 for RKB CoulombσpσpOper
-        // (σ·p on both AO ket fns), 3 for RKB CoulombσpOper (single σ·p → x,y,z)
+        // (σ·p on both AO ket fns), 3 for RKB CoulombσpOper (single σ·p →
+        // x,y,z)
         std::vector<OperDescrType> descrs(1);
         if constexpr (std::is_same<OperType, CoulombσpσpOper>::value) {
           descrs.resize(0);
@@ -2484,9 +2489,9 @@ void build_G12DKH_2b_2k(std::ostream& os,
             label = os.str();
           }
           std::string prefix(cparams->source_directory());
-          std::string decl_filename(prefix + context->label_to_name(label));
+          std::string decl_filename(prefix + context->label_to_filename(label));
           decl_filename += ".h";
-          std::string src_filename(prefix + context->label_to_name(label));
+          std::string src_filename(prefix + context->label_to_filename(label));
           src_filename += ".cc";
           std::basic_ofstream<char> declfile(decl_filename.c_str());
           std::basic_ofstream<char> srcfile(src_filename.c_str());
@@ -2616,7 +2621,7 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
 
       {  // 2-body ints
 
-#define BOOST_PP_TWOBODY_TASKOPER_TUPLE                                     \
+#define BOOST_PP_TWOBODY_TASKOPER_TUPLE                                       \
   ("eri", "coulomb_opop", "coulomb_op", "opop_coulomb_opop", "op_coulomb_op", \
    "r12kg12", "r12_0_g12", "r12_2_g12", "g12_T1_g12", "g12dkh")
 #define BOOST_PP_TWOBODY_TASKOPER_LIST \

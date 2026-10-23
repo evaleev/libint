@@ -3,6 +3,15 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- unreleased
+  - PR #399: relativistic restricted kinetic balance (RKB) integrals: 2-body Operator::coulomb_opop,
+    Operator::coulomb_op, Operator::opop_coulomb_opop, Operator::op_coulomb_op (enabled by
+    LIBINT2_ENABLE_RKB_ERI and LIBINT2_ENABLE_RKB_ERI3, off by default; no geometric derivatives yet)
+    and 1-body Operator::opemuop. N.B. Operator::opemuop is inserted after the other 1-body
+    operators, hence the numeric values of all 2-body Operator enumerators increase by 1.
+    Engine::compute() now throws Engine::missing_kernel if the library was not configured to
+    compute the requested operator/braket/derivative order (previously the result was undefined).
+
 - 2025-2-2: 2.13.1
   - PR #397: cmake boost check supports in-tree (non-IMPORTED) targets, including modularized Boost
   - PR #s 395, 398: support for Eigen 5.0.0 (HT @EricaCMitchell)

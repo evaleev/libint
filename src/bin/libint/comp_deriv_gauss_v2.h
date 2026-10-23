@@ -480,10 +480,6 @@ DerivGaussV2<IntType, part, where, trans_inv_part, trans_inv_where>::
     }
   }
 
-  // Use TaskParameters to keep track of maximum ranks
-  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-  taskmgr.current().params()->max_hrr_hsrank(hsr);
-
   if (expl_high_dim()) os << "," << hsr;
   if (expl_low_dim()) os << "," << lsr;
   os << ")" << context->end_of_stat() << std::endl;

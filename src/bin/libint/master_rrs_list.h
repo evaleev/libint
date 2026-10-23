@@ -25,12 +25,12 @@
 #include <comp_11_Coulombσpσp_11.h>
 #include <comp_11_DivG12prime_xTx_11.h>
 #include <comp_11_g12tig12_11.h>
-#include <comp_11_σpCoulombσp_11.h>
 #include <comp_11_r12kr12lg12_11.h>
 #include <comp_11_tig12_11.h>
+#include <comp_11_σpCoulombσp_11.h>
 #include <comp_11_σpσpCoulombσpσp_11.h>
-#include <comp_1_σpeμσp_1.h>
 #include <comp_1_σpVσp_1.h>
+#include <comp_1_σpeμσp_1.h>
 #include <comp_deriv_gauss.h>
 #include <comp_deriv_gauss_v2.h>
 #include <comp_xyz.h>
@@ -249,31 +249,6 @@ typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11, CGShell, 1, InKet>
     ITR_d_11_TwoPRep_11_sh;
 typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11, CGF, 1, InKet>
     ITR_d_11_TwoPRep_11_int;
-
-typedef CR_DerivGauss<TwoPRep_11_11_sq, 0, InBra, trinvskip2_part,
-                      trinvskip2_where>
-    Deriv_a_11_TwoPRep_11_sh;
-typedef CR_DerivGauss<TwoPRep_11_11_sq, 0, InKet, trinvskip2_part,
-                      trinvskip2_where>
-    Deriv_b_11_TwoPRep_11_sh;
-typedef CR_DerivGauss<TwoPRep_11_11_sq, 1, InBra, trinvskip2_part,
-                      trinvskip2_where>
-    Deriv_c_11_TwoPRep_11_sh;
-typedef CR_DerivGauss<TwoPRep_11_11_sq, 1, InKet, trinvskip2_part,
-                      trinvskip2_where>
-    Deriv_d_11_TwoPRep_11_sh;
-typedef CR_DerivGauss<TwoPRep_11_11_int, 0, InBra, trinvskip2_part,
-                      trinvskip2_where>
-    Deriv_a_11_TwoPRep_11_int;
-typedef CR_DerivGauss<TwoPRep_11_11_int, 0, InKet, trinvskip2_part,
-                      trinvskip2_where>
-    Deriv_b_11_TwoPRep_11_int;
-typedef CR_DerivGauss<TwoPRep_11_11_int, 1, InBra, trinvskip2_part,
-                      trinvskip2_where>
-    Deriv_c_11_TwoPRep_11_int;
-typedef CR_DerivGauss<TwoPRep_11_11_int, 1, InKet, trinvskip2_part,
-                      trinvskip2_where>
-    Deriv_d_11_TwoPRep_11_int;
 
 // DerivGaussV2 for TwoPRep (shell sets)
 typedef DerivGaussV2<TwoPRep_11_11_sq, 0, InBra, trinvskip2_part,

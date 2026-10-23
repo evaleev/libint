@@ -1101,7 +1101,7 @@ void DirectedGraph::generate_code(
   for (FuncNameContainer::const_iterator fn = func_names_.begin();
        fn != func_names_.end(); fn++) {
     string function_name = (*fn).first;
-    def << "#include <" << context->label_to_name(function_name) << ".h>"
+    def << "#include <" << context->label_to_filename(function_name) << ".h>"
         << endl;
   }
   def << endl;

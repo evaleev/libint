@@ -207,29 +207,6 @@ enum class Operator {
   coulomb,
   /// alias for Operator::coulomb
   r12_m1 = coulomb,
-  /// (2-body) \f$ r_{12}^{-1} (σ.p_{k1})(σ.p_{k2})\f$ where k1  & k2 are
-  /// centers of ket1 and ket2, respectively
-  coulomb_opop,
-  /// (2-body) \f$ r_{12}^{-1} (σ.p_{k2}) \f$ where k2 is the center of ket2;
-  /// the 3-center single-σ·p integral (P | μ, σ·p ν). σ·p acts on
-  /// the 2nd ket AO function only. Produces 3 Cartesian components (x=0, y=1,
-  /// z=2) — the SO(3) vector irrep; no σ·σ folding (cf. coulomb_opop). The
-  /// fitting function sits on the bra (BraKet::xs_xx); 3-center only.
-  coulomb_op,
-  /// (2-body) \f$ (σ.p_{b1})(σ.p_{b2}) r_{12}^{-1} (σ.p_{k1})(σ.p_{k2})\f$
-  /// where b1 & b2 are centers of bra1 and bra2 and k1  & k2 are centers of
-  /// ket1 and ket2, respectively
-  opop_coulomb_opop,
-  /// (2-body) \f$ (σ.p_{b2}) r_{12}^{-1} (σ.p_{k2}) \f$ where b2 is the center
-  /// of bra2 and k2 is the center of ket2; Gaunt LS "bilinear" integral.
-  /// Produces 9 components: the SO(3) irreducible decomposition of the 3×3
-  /// derivative dyadic T_ab (a = bra-side ∇, b = ket-side ∇), NOT a raw
-  /// `3*a + b` Cartesian dyadic. Component order matches
-  /// `σpCoulombσp_Descr::Component`: Scalar trace (0); antisymmetric (curl-curl)
-  /// AntisymX,Y,Z (1–3); symmetric-traceless SymTLDiagA,SymTLDiagB (4,5) and
-  /// SymTLOffXY,SymTLOffXZ,SymTLOffYZ (6–8). Unlike coulomb_opop, these
-  /// components are not σ·σ-folded.
-  op_coulomb_op,
   /// contracted Gaussian geminal
   cgtg,
   /// contracted Gaussian geminal times Coulomb
@@ -257,6 +234,29 @@ enum class Operator {
   stg_x_coulomb,
   /// alias for Operator::stg_x_coulomb
   yukawa = stg_x_coulomb,
+  /// (2-body) \f$ r_{12}^{-1} (σ.p_{k1})(σ.p_{k2})\f$ where k1  & k2 are
+  /// centers of ket1 and ket2, respectively
+  coulomb_opop,
+  /// (2-body) \f$ r_{12}^{-1} (σ.p_{k2}) \f$ where k2 is the center of ket2;
+  /// the 3-center single-σ·p integral (P | μ, σ·p ν). σ·p acts on
+  /// the 2nd ket AO function only. Produces 3 Cartesian components (x=0, y=1,
+  /// z=2) — the SO(3) vector irrep; no σ·σ folding (cf. coulomb_opop). The
+  /// fitting function sits on the bra (BraKet::xs_xx); 3-center only.
+  coulomb_op,
+  /// (2-body) \f$ (σ.p_{b1})(σ.p_{b2}) r_{12}^{-1} (σ.p_{k1})(σ.p_{k2})\f$
+  /// where b1 & b2 are centers of bra1 and bra2 and k1  & k2 are centers of
+  /// ket1 and ket2, respectively
+  opop_coulomb_opop,
+  /// (2-body) \f$ (σ.p_{b2}) r_{12}^{-1} (σ.p_{k2}) \f$ where b2 is the center
+  /// of bra2 and k2 is the center of ket2; Gaunt LS "bilinear" integral.
+  /// Produces 9 components: the SO(3) irreducible decomposition of the 3×3
+  /// derivative dyadic T_ab (a = bra-side ∇, b = ket-side ∇), NOT a raw
+  /// `3*a + b` Cartesian dyadic. Component order matches
+  /// `σpCoulombσp_Descr::Component`: Scalar trace (0); antisymmetric
+  /// (curl-curl) AntisymX,Y,Z (1-3); symmetric-traceless SymTLDiagA,SymTLDiagB
+  /// (4,5) and SymTLOffXY,SymTLOffXZ,SymTLOffYZ (6-8). Unlike coulomb_opop,
+  /// these components are not σ·σ-folded.
+  op_coulomb_op,
   // do not modify this
   invalid = -1,
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!keep this
@@ -264,7 +264,7 @@ enum class Operator {
   first_1body_oper = overlap,
   last_1body_oper = opemuop,
   first_2body_oper = delta,
-  last_2body_oper = stg_x_coulomb,
+  last_2body_oper = op_coulomb_op,
   first_oper = first_1body_oper,
   last_oper = last_2body_oper
 };
@@ -493,8 +493,8 @@ struct operator_traits<Operator::op_coulomb_op>
   /// 9 components: the SO(3) irreducible decomposition of the 3×3 derivative
   /// dyadic T_ab (NOT a raw `3*a + b` Cartesian dyadic). Order matches
   /// `σpCoulombσp_Descr::Component`: Scalar trace (0); antisymmetric
-  /// AntisymX,Y,Z (1–3); symmetric-traceless SymTLDiagA,SymTLDiagB (4,5) and
-  /// SymTLOffXY,SymTLOffXZ,SymTLOffYZ (6–8).
+  /// AntisymX,Y,Z (1-3); symmetric-traceless SymTLDiagA,SymTLDiagB (4,5) and
+  /// SymTLOffXY,SymTLOffXZ,SymTLOffYZ (6-8).
   static constexpr auto nopers = 9;
   static constexpr auto intrinsic_deriv_order = 2;
 };
@@ -618,9 +618,10 @@ inline constexpr int rank(BraKet braket) {
 /// @throw std::logic_error if invalid @c oper given
 inline constexpr BraKet default_braket(Operator oper) {
   // coulomb_op (3-center single-σ·p) has no 4-center kernel; its only
-  // valid geometry is the 3-center xs_xx braket. Default to that rather than the
-  // rank-based xx_xx, which has no generated kernel and would silently dispatch
-  // to the plain-Coulomb `default` task (wrong integrals, no error in release).
+  // valid geometry is the 3-center xs_xx braket. Default to that rather than
+  // the rank-based xx_xx, which has no generated kernel and would silently
+  // dispatch to the plain-Coulomb `default` task (wrong integrals, no error in
+  // release).
   return (oper == Operator::coulomb_op)
              ? BraKet::xs_xx
              : ((rank(oper) == 1)
@@ -631,6 +632,15 @@ inline constexpr BraKet default_braket(Operator oper) {
                                  "default_braket(Operator): invalid operator "
                                  "given")));
 }
+
+namespace detail {
+/// @return true if @c oper is one of the 2-body relativistic (restricted
+/// kinetic balance, RKB) operators
+inline constexpr bool is_rkb_2body(Operator oper) {
+  return oper == Operator::coulomb_opop || oper == Operator::coulomb_op ||
+         oper == Operator::opop_coulomb_opop || oper == Operator::op_coulomb_op;
+}
+}  // namespace detail
 
 constexpr size_t nopers_2body = static_cast<int>(Operator::last_2body_oper) -
                                 static_cast<int>(Operator::first_2body_oper) +
@@ -1119,6 +1129,19 @@ class Engine {
     size_t lmax_requested_;
   };
 
+  /// Exception class to be used when the library does not contain the kernels
+  /// for the operator/braket/derivative order this Engine is set up for (e.g.
+  /// the corresponding integral class was not enabled when configuring the
+  /// library)
+  class missing_kernel : virtual public std::logic_error {
+   public:
+    missing_kernel()
+        : std::logic_error(
+              "Engine::missing_kernel -- this library was not configured to "
+              "compute integrals of this operator/braket/derivative order") {}
+    ~missing_kernel() noexcept {}
+  };
+
   /// Exception class to be used when using default-initialized Engine
   class using_default_initialized : virtual public std::logic_error {
    public:
@@ -1182,7 +1205,8 @@ class Engine {
   // scratch2_ points to second such block. It could point into scratch_ or at
   // primdata_[0].stack
   typedef void (*buildfnptr_t)(const Libint_t*);
-  buildfnptr_t* buildfnptrs_;
+  /// null if the library has no kernels for this operator/braket/deriv order
+  buildfnptr_t* buildfnptrs_ = nullptr;
 
   /// reports the number of shell sets that each call to compute() produces.
   unsigned int compute_nshellsets() const {

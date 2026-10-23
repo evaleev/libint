@@ -63,6 +63,13 @@ class CodeContext {
   /// label_to_function_name(label) converts label to a valid function name
   /// with the API prefix prepended
   std::string label_to_function_name(const std::string& label) const;
+  /// label_to_filename(label) converts label to a base name (no extension) for
+  /// the generated source/header files. Same as label_to_name(label) unless
+  /// that name differs only in letter case from a name already handed out
+  /// (e.g. contracted vs primitive shells, \c P vs \c p), in which case a
+  /// suffix is appended so that the files do not clash on case-insensitive
+  /// filesystems (macOS, Windows). The mapping is process-wide and stable.
+  std::string label_to_filename(const std::string& label) const;
   /** declare returns a statement which declares variable named 'name' of
       type 'type'
   */
