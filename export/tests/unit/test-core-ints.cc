@@ -92,6 +92,25 @@ TEST_CASE("Boys reference values", "[core-ints][precision]") {
 
 #endif  // LIBINT_HAS_MPFR
 
+TEST_CASE("Boys interpolation endpoint", "[core-ints][precision]") {
+  const auto evaluator = libint2::FmEval_Chebyshev7<double>::instance(40);
+  // The table covers [0,117); its right endpoint uses the asymptotic branch.
+  for (double T :
+       {std::nextafter(117., 0.), 117., std::nextafter(117., 118.)}) {
+    double values[41];
+    long double reference[41];
+    libint2::FmEval_Reference2<long double>::eval(reference, T, 40);
+    for (int last : {0, 40}) {
+      evaluator->eval(values, T, last);
+      for (int m = 0; m <= last; ++m) {
+        INFO("T=" << T << " m=" << m);
+        CHECK(std::abs(values[m] - reference[m]) <=
+              std::numeric_limits<double>::epsilon());
+      }
+    }
+  }
+}
+
 TEST_CASE("Slater/Yukawa core integral values", "[core-ints]") {
   using scalar_type = libint2::scalar_type;
 

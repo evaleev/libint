@@ -58,6 +58,8 @@
 #include <libint2/boys_fwd.h>
 #include <libint2/initialize.h>
 #include <libint2/numeric.h>
+#include <libint2/truncated_coulomb_v1.h>
+#include <libint2/truncated_coulomb_v2.h>
 
 #if HAVE_LAPACK  // use F77-type interface for now, switch to LAPACKE later
 extern "C" void dgesv_(const int* n, const int* nrhs, double* A, const int* lda,
@@ -349,7 +351,7 @@ class FmEval_Chebyshev7 {
   inline void eval(Real* Fm, Real x, int m_max) const {
     // large T => use upward recursion
     // cost = 1 div + 1 sqrt + (1 + 2*(m-1)) muls
-    if (x > T_crit) {
+    if (x >= T_crit) {
       const double one_over_x = 1 / x;
       Fm[0] = 0.88622692545275801365 *
               sqrt(one_over_x);  // see Eq. (9.8.9) in Helgaker-Jorgensen-Olsen
@@ -1981,6 +1983,15 @@ struct GenericGmEval : private GmEvalFunction {
                                               std::forward<ExtraArgs>(args)...);
   }
 
+  // Available when the underlying evaluator provides a trusted Engine entry.
+  template <typename Real, typename... ExtraArgs>
+  void eval_unchecked(Real* Gm, Real rho, Real T, int mmax,
+                       ExtraArgs... args) const {
+    assert(mmax <= mmax_);
+    static_cast<const GmEvalFunction&>(*this).eval_unchecked(
+        Gm, rho, T, mmax, std::forward<ExtraArgs>(args)...);
+  }
+
   /// @return the maximum value of m for which the \f$ G_m(\rho, T) \f$ can be
   /// computed with this object
   int max_m() const { return mmax_; }
@@ -1994,6 +2005,20 @@ struct GenericGmEval : private GmEvalFunction {
 };
 
 namespace detail {
+/// Interpolation-free truncated Coulomb keeps mutable work with the caller.
+template <typename Real>
+struct CoreEvalScratch<os_core_ints::truncated_coulomb_v2_gm_eval<Real>>
+    : os_core_ints::truncated_coulomb_v2_gm_eval<Real>::scratch_type {
+  explicit CoreEvalScratch(int mmax)
+      : os_core_ints::truncated_coulomb_v2_gm_eval<Real>::scratch_type(mmax) {}
+};
+template <typename Real>
+struct CoreEvalScratch<
+    const GenericGmEval<os_core_ints::truncated_coulomb_v2_gm_eval<Real>>>
+    : CoreEvalScratch<os_core_ints::truncated_coulomb_v2_gm_eval<Real>> {
+  explicit CoreEvalScratch(int mmax)
+      : CoreEvalScratch<os_core_ints::truncated_coulomb_v2_gm_eval<Real>>(mmax) {}
+};
 /// Boys function scratch for core evaluators that need Boys function values
 /// in a separate buffer; lives on the caller's stack, so that evaluators
 /// can be invoked through a const reference from any number of threads
