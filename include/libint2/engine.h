@@ -235,13 +235,20 @@ enum class Operator {
   /// alias for Operator::stg_x_coulomb
   yukawa = stg_x_coulomb,
   /// (2-body) \f$ r_{12}^{-1} (σ.p_{k1})(σ.p_{k2})\f$ where k1  & k2 are
-  /// centers of ket1 and ket2, respectively
+  /// centers of ket1 and ket2, respectively. Produces 4 components (see
+  /// \ref rkb_operators). For 3-center integrals the σ·p pair is the pair of
+  /// AO functions, whichever side of the braket it is on: with BraKet::xs_xx
+  /// σ·p acts on ket1 and ket2, with BraKet::xx_xs (the alias of xs_xx that
+  /// only changes the order of the arguments and of the result) σ·p acts on
+  /// bra1 and bra2 and the fitting function is ket1.
   coulomb_opop,
   /// (2-body) \f$ r_{12}^{-1} (σ.p_{k2}) \f$ where k2 is the center of ket2;
   /// the 3-center single-σ·p integral (P | μ, σ·p ν). σ·p acts on
   /// the 2nd ket AO function only. Produces 3 Cartesian components (x=0, y=1,
   /// z=2) — the SO(3) vector irrep; no σ·σ folding (cf. coulomb_opop). The
-  /// fitting function sits on the bra (BraKet::xs_xx); 3-center only.
+  /// fitting function sits on the bra (BraKet::xs_xx); 3-center only. With
+  /// BraKet::xx_xs (the alias of xs_xx) σ·p acts on bra2, the 2nd AO
+  /// function, and the fitting function is ket1.
   coulomb_op,
   /// (2-body) \f$ (σ.p_{b1})(σ.p_{b2}) r_{12}^{-1} (σ.p_{k1})(σ.p_{k2})\f$
   /// where b1 & b2 are centers of bra1 and bra2 and k1  & k2 are centers of
@@ -272,6 +279,7 @@ enum class Operator {
 /// @param[in] oper an Operator object
 /// @return the particle rank of \c oper
 /// @throw std::logic_error if an invalid @c oper given
+// clang-format off
 /**
  \page rkb_operators Conventions for the relativistic (RKB) 2-body operators
 
@@ -283,19 +291,18 @@ enum class Operator {
  with the Pauli matrices. In chemists' notation (ab|cd) the operator acts on
  the second function of a pair, i.e. on b and/or d.
 
- | Engine (C++ API)     | Compiler           | task label     | #comp |
- component index                                      | spin   |
- |----------------------|--------------------|----------------|-------|------------------------------------------------------|--------|
- | `coulomb_opop`       | `Coulombσpσp`      | `coulomb_opop` |   4   | 0:
- ∇_c·∇_d, 1-3: (∇_c×∇_d)_{x,y,z}                   | folded | | `coulomb_op` |
- `Coulombσp`        | `coulomb_op`   |   3   | ∂_{d,x}, ∂_{d,y}, ∂_{d,z}
- (3-center only)             | n/a    | | `opop_coulomb_opop`  |
- `σpσpCoulombσpσp`  | `opop_coulomb_opop` | 16 | 4·bra + ket, with bra, ket ∈
- {0: ∇·∇, 1-3: (∇×∇)_{x,y,z}} of (a,b) and (c,d); the sign of i² is folded into
- the 1-3 ⊗ 1-3 block | folded | | `op_coulomb_op`      | `σpCoulombσp`      |
- `op_coulomb_op` |   9  | SO(3) irreps of T_ab = ∂_{b,a} ∂_{d,b}: 0: trace, 1-3:
- T_yz−T_zy, T_zx−T_xz, T_xy−T_yx, 4: T_xx−T_yy, 5: 2T_zz−T_xx−T_yy, 6-8:
- T_xy+T_yx, T_xz+T_zx, T_yz+T_zy | not folded |
+ | Engine (C++ API)    | Compiler          | task label          | #comp | component index                                                                                                                                       | spin       |
+ |---------------------|-------------------|---------------------|-------|-------------------------------------------------------------------------------------------------------------------------------------------------------|------------|
+ | `coulomb_opop`      | `Coulombσpσp`     | `coulomb_opop`      |   4   | 0: ∇_c·∇_d, 1-3: (∇_c×∇_d)_{x,y,z}                                                                                                                   | folded     |
+ | `coulomb_op`        | `Coulombσp`       | `coulomb_op`        |   3   | ∂_{d,x}, ∂_{d,y}, ∂_{d,z} (3-center only)                                                                                                            | n/a        |
+ | `opop_coulomb_opop` | `σpσpCoulombσpσp` | `opop_coulomb_opop` |  16   | 4·bra + ket, with bra, ket ∈ {0: ∇·∇, 1-3: (∇×∇)_{x,y,z}} of (a,b) and (c,d); the sign of i² is folded into the 1-3 ⊗ 1-3 block                      | folded     |
+ | `op_coulomb_op`     | `σpCoulombσp`     | `op_coulomb_op`     |   9   | SO(3) irreps of T_ab = ∂_{b,a} ∂_{d,b}: 0: trace, 1-3: T_yz−T_zy, T_zx−T_xz, T_xy−T_yx, 4: T_xx−T_yy, 5: 2T_zz−T_xx−T_yy, 6-8: T_xy+T_yx, T_xz+T_zx, T_yz+T_zy | not folded |
+
+ For the 3-center operators (`coulomb_opop` and `coulomb_op`) the kernels
+ are generated for BraKet::xs_xx, with the fitting function as bra1 and the
+ AO pair as the ket; the Engine accepts BraKet::xx_xs as an alias that only
+ changes the order of the arguments of compute() and the layout of the
+ result (fitting function last), hence with xx_xs σ·p acts on the bra.
 
  The 1-body analog of `opVop` with the dipole operator in the middle is
  `opemuop` (compiler: `σpeμσp`), with 12 = 3 (dipole direction, slow) × 4
@@ -308,6 +315,7 @@ enum class Operator {
  are canonical under these permutations (see the matching descriptor traits
  in the compiler).
  */
+// clang-format on
 
 inline constexpr int rank(Operator oper) {
   return (oper >= Operator::first_1body_oper &&

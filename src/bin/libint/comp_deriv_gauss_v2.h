@@ -22,6 +22,7 @@
 #define _libint2_src_bin_libint_compderivgaussv2_h_
 
 #include <algebra.h>
+#include <comp_deriv_gauss.h>  // CR_DerivGauss_GenericInstantiator
 #include <context.h>
 #include <default_params.h>
 #include <dgvertex.h>
@@ -114,6 +115,22 @@ class DerivGaussV2 : public RecurrenceRelation {
   bool register_with_rrstack() const;
   bool expl_high_dim() const;
   bool expl_low_dim() const;
+
+#if LIBINT_ENABLE_GENERIC_CODE
+  /// Implementation of RecurrenceRelation::has_generic(): the generic
+  /// (runtime-dimensioned) GenericGaussDeriv kernel replaces the explicit code
+  /// of the code-shared function when the differentiated shell is beyond the
+  /// optimized AM range (the spectator dimensions are runtime arguments of the
+  /// shared function anyway, so only the differentiated shell matters here)
+  bool has_generic(
+      const std::shared_ptr<CompilationParameters>& cparams) const override;
+  /// Implementation of RecurrenceRelation::generic_header()
+  std::string generic_header() const override;
+  /// Implementation of RecurrenceRelation::generic_instance()
+  std::string generic_instance(
+      const std::shared_ptr<CodeContext>& context,
+      const std::shared_ptr<CodeSymbols>& args) const override;
+#endif
 
   /// add child, deduplicating
   const std::shared_ptr<DGVertex>& add_child(
@@ -540,6 +557,83 @@ DerivGaussV2<IntType, part, where, trans_inv_part, trans_inv_where>::
       new ImplicitDimensions(high_dim, low_dim, dims->vecdim()));
   return localdims;
 }
+
+#if LIBINT_ENABLE_GENERIC_CODE
+template <class IntType, int part, FunctionPosition where, int trans_inv_part,
+          FunctionPosition trans_inv_where>
+bool DerivGaussV2<IntType, part, where, trans_inv_part, trans_inv_where>::
+    has_generic(const std::shared_ptr<CompilationParameters>& cparams) const {
+  // no generic relation for translational invariance (as in CR_DerivGauss)
+  if (using_trans_inv) return false;
+  // generic code applies to shell sets only
+  if (TrivialBFSet<BasisFunctionType>::result) return false;
+  // the function is shared by all shell sets with the same differentiated
+  // shell, hence base the decision on that shell alone
+  const BasisFunctionType& sh =
+      where == InBra ? target_->bra(part, 0) : target_->ket(part, 0);
+  return sh.norm() > cparams->max_am_opt();
+}
+
+template <class IntType, int part, FunctionPosition where, int trans_inv_part,
+          FunctionPosition trans_inv_where>
+std::string DerivGaussV2<IntType, part, where, trans_inv_part,
+                         trans_inv_where>::generic_header() const {
+  return std::string("GenericGaussDeriv.h");
+}
+
+template <class IntType, int part, FunctionPosition where, int trans_inv_part,
+          FunctionPosition trans_inv_where>
+std::string
+DerivGaussV2<IntType, part, where, trans_inv_part, trans_inv_where>::
+    generic_instance(const std::shared_ptr<CodeContext>& context,
+                     const std::shared_ptr<CodeSymbols>& args) const {
+  std::ostringstream oss;
+
+  oss << "using namespace libint2;" << std::endl;
+
+  BasisFunctionType sh(where == InBra ? target_->bra(part, 0)
+                                      : target_->ket(part, 0));
+
+  const unsigned int L = sh.norm();
+  const bool vectorize = context->cparams()->max_vector_length() != 1;
+  oss << "libint2::GenericGaussDeriv<" << L << ","
+      << (vectorize ? "true" : "false") << ">::compute(inteval";
+
+  oss << "," << args->symbol(0);  // target
+  const unsigned int nargs = args->n();
+  for (unsigned int a = 1; a < nargs; a++) {
+    oss << "," << args->symbol(a);
+  }
+  // L == 0 => second argument not needed
+  if (nargs == 2) oss << ",0";
+
+  // the spectator dimensions: runtime arguments of the (shared) function
+  // where explicit (see adapt_dims_), else 1 by construction (the
+  // differentiated shell is the first/last function)
+  const auto localdims = adapt_dims_(ImplicitDimensions::default_dims());
+  if (expl_high_dim())
+    oss << "," << localdims->high()->id();
+  else
+    oss << ",1";
+  if (expl_low_dim())
+    oss << "," << localdims->low()->id();
+  else
+    oss << ",1";
+
+  // direction
+  oss << "," << dir_;
+
+  // two_alpha prefactor
+  oss << ",inteval->two_alpha" << part << "_"
+      << (where == InBra ? "bra" : "ket");
+
+  oss << ");";
+
+  CR_DerivGauss_GenericInstantiator::instance().add(L, vectorize);
+
+  return oss.str();
+}
+#endif  // LIBINT_ENABLE_GENERIC_CODE
 
 };  // namespace libint2
 

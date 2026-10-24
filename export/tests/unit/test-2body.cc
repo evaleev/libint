@@ -554,6 +554,26 @@ TEST_CASE("eri geometric derivatives vs finite differences",
 #endif
 }
 
+// re-initializing an Engine for a task whose AM limit is below the Engine's
+// lmax must throw Engine::lmax_exceeded and leave the Engine without kernels:
+// the next compute() must throw Engine::missing_kernel rather than use the
+// kernel table of the previous task
+TEST_CASE("lmax_exceeded leaves no kernels", "[engine][2-body]") {
+#if defined(LIBINT2_SUPPORT_ERI) && defined(LIBINT2_SUPPORT_ERI3) && \
+    LIBINT2_MAX_AM_3eri > LIBINT2_MAX_AM_eri
+  const int lmax = LIBINT2_MAX_AM_3eri;  // valid for 3eri, too high for eri
+  const Shell fit{{1.5}, {{lmax, true, {1.0}}}, {{-1.0, 0.5, 0.0}}};
+  const Shell s{{1.0}, {{0, false, {1.0}}}, {{0.0, 0.0, 0.0}}};
+  const auto eps = std::numeric_limits<double>::epsilon();
+  Engine engine(Operator::coulomb, 1, lmax, 0, eps,
+                libint2::default_params(Operator::coulomb), BraKet::xs_xx);
+  REQUIRE(engine.compute(fit, s, s)[0] != nullptr);
+  REQUIRE_THROWS_AS(engine.set(BraKet::xx_xx), Engine::lmax_exceeded);
+  CHECK_THROWS_AS(engine.compute(s, s, s, s), Engine::missing_kernel);
+  CHECK_THROWS_AS(engine.compute(fit, s, s), Engine::missing_kernel);
+#endif
+}
+
 TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
   const std::vector<Shell> all_shells{
       // pseudorandom s

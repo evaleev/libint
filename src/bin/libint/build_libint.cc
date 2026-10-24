@@ -1360,14 +1360,14 @@ static void build_TwoPRep_2b_2k(
                   ? std::numeric_limits<unsigned int>::max()
                   : 0;
           dg_xxxx->registry()->unroll_threshold(unroll_threshold);
-          // For multi-component operators (RKB), components share no
-          // intermediates, so CSE/condense_expr is pure overhead — disable.
-          const bool do_optimize = (nopers > 1) ? false : need_to_optimize;
-          dg_xxxx->registry()->do_cse(do_optimize);
-          dg_xxxx->registry()->condense_expr(
-              do_optimize ? condense_expr(cparams->unroll_threshold(),
-                                          cparams->max_vector_length() > 1)
-                          : false);
+          // CSE and condense_expr act on the unrolled (CGF-level) expressions
+          // only; the integral-set DAG is deduplicated by instance regardless.
+          // Multi-component (RKB) operators rarely unroll (nopers multiplies
+          // the unroll cost above), but LIBINT_<class>_OPT_AM is honored for
+          // them exactly as for every other class.
+          dg_xxxx->registry()->do_cse(need_to_optimize);
+          dg_xxxx->registry()->condense_expr(condense_expr(
+              cparams->unroll_threshold(), cparams->max_vector_length() > 1));
           //  Need to accumulate integrals?
           dg_xxxx->registry()->accumulate_targets(
               cparams->accumulate_targets());
@@ -1600,15 +1600,11 @@ static void build_TwoPRep_1b_2k(
                 ? std::numeric_limits<unsigned int>::max()
                 : 0;
         dg_xxx->registry()->unroll_threshold(unroll_threshold);
-        // For multi-component operators (RKB), components share no
-        // intermediates, so CSE/condense_expr is pure overhead — disable
-        // (mirrors build_TwoPRep_2b_2k).
-        const bool do_optimize = (nopers > 1) ? false : need_to_optimize;
-        dg_xxx->registry()->do_cse(do_optimize);
-        dg_xxx->registry()->condense_expr(
-            do_optimize ? condense_expr(cparams->unroll_threshold(),
-                                        cparams->max_vector_length() > 1)
-                        : false);
+        // see build_TwoPRep_2b_2k: LIBINT_<class>_OPT_AM is honored for
+        // multi-component operators as for every other class
+        dg_xxx->registry()->do_cse(need_to_optimize);
+        dg_xxx->registry()->condense_expr(condense_expr(
+            cparams->unroll_threshold(), cparams->max_vector_length() > 1));
         //  Need to accumulate integrals?
         dg_xxx->registry()->accumulate_targets(cparams->accumulate_targets());
 

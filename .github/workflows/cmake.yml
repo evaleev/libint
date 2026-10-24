@@ -45,12 +45,15 @@ jobs:
             build_shared_libs: ON
             os: macos-15
             do_fortran: ON
-          # exercise a center-dependent AM table for the 3-center RKB ERIs in
-          # one lane only
+          # exercise a center-dependent AM table for the 3-center RKB ERIs and
+          # 2nd geometric derivatives of the 4-center ERIs in one lane only
           - build_type: Release
             os: macos-15
             subproject: OFF
             rkb_eri3_max_am: 3
+            eri_deriv_order: 2
+            max_am: '2;2;1'
+            eri_max_am: '2;2;1'
 
     name: "Repo • ${{ matrix.os }}: ${{ matrix.cxx }} ${{ matrix.build_type }} shared=${{ matrix.build_shared_libs }} fetch=${{ matrix.subproject }}"
     runs-on: ${{ matrix.os }}
@@ -67,10 +70,10 @@ jobs:
         -D BUILD_SHARED_LIBS=${{ matrix.build_shared_libs }}
         -D LIBINT2_BUILD_LIBRARY_AS_SUBPROJECT=${{ matrix.subproject }}
         -D CMAKE_INSTALL_PREFIX=${{github.workspace}}/build/library
-        -D LIBINT2_MAX_AM=2;2
-        -D LIBINT2_ERI_MAX_AM=2;2
+        -D LIBINT2_MAX_AM=${{ matrix.max_am || '2;2' }}
+        -D LIBINT2_ERI_MAX_AM=${{ matrix.eri_max_am || '2;2' }}
         -D LIBINT2_ERI3_MAX_AM=3;2
-        -D LIBINT2_ENABLE_ERI=1
+        -D LIBINT2_ENABLE_ERI=${{ matrix.eri_deriv_order || 1 }}
         -D LIBINT2_ENABLE_ERI3=1
         -D LIBINT2_ENABLE_RKB_ERI=0
         -D LIBINT2_ENABLE_RKB_ERI3=0

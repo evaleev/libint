@@ -18,6 +18,8 @@
  *
  */
 
+#include <functional>
+
 #include "catch.hpp"
 #include "fixture.h"
 
@@ -271,13 +273,91 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "σpeμσp correctness",
   std::vector<Shell> obs{make_shell0(O0), make_shell1(O1)};
 
   const auto lmax = std::min(2, LIBINT2_MAX_AM_opemuop);
+  auto engine = Engine(Operator::opemuop, 2, lmax);
+
+  // independent check of all components of (make0(OA)|make1(OB)) with the
+  // dipole origin at @p origin: the Pauli-quaternion fold of
+  // (∂_a μ|r_k|∂_b ν) = ∂A_a ∂B_b (μ|r_k|ν), with the latter evaluated by
+  // central finite differences of the emultipole1 integrals
+  typedef std::function<Shell(std::array<double, 3>)> shell_factory_t;
+  auto check_vs_fd = [&](const shell_factory_t& make0,
+                         const shell_factory_t& make1,
+                         const std::array<double, 3>& OA,
+                         const std::array<double, 3>& OB,
+                         const std::array<double, 3>& origin) {
+    engine.set_params(origin);
+    engine.compute(make0(OA), make1(OB));
+    auto emu_engine = Engine(Operator::emultipole1, 2, lmax);
+    emu_engine.set_params(origin);
+    const auto n01 = make0(OA).size() * make1(OB).size();
+    const double h = 1e-4;
+    // dAdB[(3*a + b)*3 + k][i] = ∂A_a ∂B_b (μ|r_k|ν)_i
+    std::vector<std::vector<double>> dAdB(27, std::vector<double>(n01, 0.0));
+    for (int a = 0; a != 3; ++a) {
+      for (int b = 0; b != 3; ++b) {
+        for (int sa : {-1, 1}) {
+          for (int sb : {-1, 1}) {
+            auto A = OA;
+            A[a] += sa * h;
+            auto B = OB;
+            B[b] += sb * h;
+            const auto& emu = emu_engine.compute(make0(A), make1(B));
+            for (int k = 0; k != 3; ++k)
+              for (size_t i = 0; i != n01; ++i)
+                dAdB[(3 * a + b) * 3 + k][i] +=
+                    sa * sb * emu[1 + k][i] / (4 * h * h);
+          }
+        }
+      }
+    }
+    auto d = [&](int a, int b, int k, size_t i) {
+      return dAdB[(3 * a + b) * 3 + k][i];
+    };
+    constexpr int x = 0, y = 1, z = 2;
+    for (int k = 0; k != 3; ++k) {
+      for (size_t i = 0; i != n01; ++i) {
+        const double ref[4] = {d(x, x, k, i) + d(y, y, k, i) + d(z, z, k, i),
+                               d(y, z, k, i) - d(z, y, k, i),
+                               d(z, x, k, i) - d(x, z, k, i),
+                               d(x, y, k, i) - d(y, x, k, i)};
+        for (int q = 0; q != 4; ++q) {
+          INFO("l0=" << make0(OA).contr[0].l << " l1=" << make1(OB).contr[0].l
+                     << " nprim0=" << make0(OA).nprim()
+                     << " nprim1=" << make1(OB).nprim() << " k=" << k
+                     << " q=" << q << " i=" << i);
+          REQUIRE(engine.results()[4 * k + q][i] ==
+                  Approx(ref[q]).margin(1e-6));
+        }
+      }
+    }
+  };
+
+  // every pair of s, p, d shells (up to lmax), contracted and uncontracted,
+  // pure and cartesian, with the dipole origin away from both centers
+  {
+    auto make = [](int l, bool contracted, bool pure) {
+      return shell_factory_t([=](std::array<double, 3> O) {
+        if (contracted) return Shell{{1.7, 0.4}, {{l, pure, {0.6, 0.5}}}, O};
+        return Shell{{0.9}, {{l, pure, {1.0}}}, O};
+      });
+    };
+    const std::array<double, 3> A{{0.4, -0.3, 0.2}};
+    const std::array<double, 3> B{{-0.5, 0.7, 1.1}};
+    const std::array<double, 3> origin{{0.1, -0.2, 0.3}};
+    for (int l0 = 0; l0 <= lmax; ++l0)
+      for (int l1 = 0; l1 <= lmax; ++l1)
+        for (bool c0 : {false, true})
+          for (bool c1 : {false, true})
+            for (bool pure : {false, true})
+              check_vs_fd(make(l0, c0, pure), make(l1, c1, pure), A, B, origin);
+  }
+
   if (lmax < 2) return;
 
   constexpr int l0 = 2;
   constexpr int l1 = 2;
   constexpr int n1 = 2 * l1 + 1;
 
-  auto engine = Engine(Operator::opemuop, 2, lmax);
   engine.set_params(std::array<double, 3>{{0.0, 0.0, 0.0}});
   engine.compute(obs[0], obs[1]);
 
@@ -487,51 +567,9 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "σpeμσp correctness",
     LIBINT2_TEST_ONEBODY_MARGIN(1.0, 11, 1e-10);
   }
 
-  // independent check of all components: the Pauli-quaternion fold of
-  // (∂_a μ|r_k|∂_b ν) = ∂A_a ∂B_b (μ|r_k|ν), with the latter evaluated by
-  // central finite differences of the emultipole1 integrals
-  {
-    engine.compute(obs[0], obs[1]);
-    auto emu_engine = Engine(Operator::emultipole1, 2, lmax);
-    emu_engine.set_params(std::array<double, 3>{{0.0, 0.0, 0.0}});
-    const auto n01 = obs[0].size() * obs[1].size();
-    const double h = 1e-4;
-    // dAdB[(3*a + b)*3 + k][i] = ∂A_a ∂B_b (μ|r_k|ν)_i
-    std::vector<std::vector<double>> dAdB(27, std::vector<double>(n01, 0.0));
-    for (int a = 0; a != 3; ++a) {
-      for (int b = 0; b != 3; ++b) {
-        for (int sa : {-1, 1}) {
-          for (int sb : {-1, 1}) {
-            auto A = O0;
-            A[a] += sa * h;
-            auto B = O1;
-            B[b] += sb * h;
-            const auto& emu =
-                emu_engine.compute(make_shell0(A), make_shell1(B));
-            for (int k = 0; k != 3; ++k)
-              for (size_t i = 0; i != n01; ++i)
-                dAdB[(3 * a + b) * 3 + k][i] +=
-                    sa * sb * emu[1 + k][i] / (4 * h * h);
-          }
-        }
-      }
-    }
-    auto d = [&](int a, int b, int k, size_t i) {
-      return dAdB[(3 * a + b) * 3 + k][i];
-    };
-    constexpr int x = 0, y = 1, z = 2;
-    for (int k = 0; k != 3; ++k) {
-      for (size_t i = 0; i != n01; ++i) {
-        const double ref[4] = {d(x, x, k, i) + d(y, y, k, i) + d(z, z, k, i),
-                               d(y, z, k, i) - d(z, y, k, i),
-                               d(z, x, k, i) - d(x, z, k, i),
-                               d(x, y, k, i) - d(y, x, k, i)};
-        for (int q = 0; q != 4; ++q)
-          REQUIRE(engine.results()[4 * k + q][i] ==
-                  Approx(ref[q]).margin(1e-6));
-      }
-    }
-  }
+  // the independent check for the (d|d) pair above
+  check_vs_fd(make_shell0, make_shell1, O0, O1,
+              std::array<double, 3>{{0.0, 0.0, 0.0}});
 
 #endif  // LIBINT2_SUPPORT_ONEBODY
 }
