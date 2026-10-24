@@ -22,8 +22,12 @@
 #include <context.h>
 #include <default_params.h>
 
+#include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <cstdio>
+#include <map>
+#include <vector>
 
 using namespace std;
 using namespace libint2;
@@ -101,6 +105,22 @@ void CodeContext::reset() { zero_out_counters(); }
 std::string CodeContext::label_to_function_name(
     const std::string& label) const {
   return cparams()->api_prefix() + label_to_name(label_to_funcname(label));
+}
+
+std::string CodeContext::label_to_filename(const std::string& label) const {
+  const std::string name = label_to_name(label);
+  std::string folded_name = name;
+  std::transform(folded_name.begin(), folded_name.end(), folded_name.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+  // folded name -> distinct names seen so far; index in vector = suffix
+  static std::map<std::string, std::vector<std::string>> registry;
+  auto& names = registry[folded_name];
+  auto it = std::find(names.begin(), names.end(), name);
+  const auto idx = std::distance(names.begin(), it);
+  if (it == names.end()) names.push_back(name);
+  // '-' cannot appear in label_to_name() output, so suffixed names cannot
+  // collide with unsuffixed ones
+  return idx == 0 ? name : name + "-" + std::to_string(idx);
 }
 
 std::string CodeContext::replace_chars(const std::string& S,

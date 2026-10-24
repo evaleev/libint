@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
+#include <stdexcept>
 #include <vector>
 
 namespace libint2 {
@@ -94,11 +95,15 @@ class DerivMapGenerator {
         return braket_xs_xx()[deriv_order_ - 1];
       }
       default:
-        assert(false &&
-               "Derivative index permutation maps for this braket type not yet "
-               "supported.");
+        // Derivative index-permutation maps are implemented only for xx_xx and
+        // xs_xx. Other brakets (e.g. xx_xs) are accepted for energies — where
+        // they canonicalize to xs_xx — but have no derivative map, so fail with
+        // a catchable error rather than std::abort()-ing the host process.
+        throw std::logic_error(
+            "DerivMapGenerator::instance(): derivative index permutation maps "
+            "are only implemented for the xx_xx and xs_xx brakets; "
+            "deriv_order > 0 is not supported for this braket.");
     }
-    std::abort();
   }
 
  private:

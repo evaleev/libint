@@ -192,6 +192,15 @@ enum class Operator {
   /// \sa operator_traits<Operator::op_q_gau_op>
   /// \sa Surjuse, Deng, Asadchev, Valeev, arXiv:2603.16989 (2025)
   op_q_gau_op,
+  /// (1-body) σp . r . σp, the σ·p-on-both-sides analog of the dipole moment.
+  /// Produces 12 components = 3 dipole directions × 4 Pauli quaternion
+  /// components (trace + 3 antisym), indexed as `4*k + q` with `k ∈ {x,y,z}`
+  /// the dipole direction and `q ∈ {0=trace, 1=σ_x, 2=σ_y, 3=σ_z}` the Pauli
+  /// piece. Origin set via `engine.set_params(std::array<double,3>)`.
+  ///
+  /// Engine-enum names are ASCII (`op` = σ·p); the σ·p·r·σ·p math name σpeμσp
+  /// lives on the compiler side (σpeμσp_Descr) and in the codegen label.
+  opemuop,
   /// \f$ \delta(\vec{r}_1 - \vec{r}_2) \f$
   delta,
   /// (2-body) Coulomb operator = \f$ r_{12}^{-1} \f$
@@ -225,14 +234,44 @@ enum class Operator {
   stg_x_coulomb,
   /// alias for Operator::stg_x_coulomb
   yukawa = stg_x_coulomb,
+  /// (2-body) \f$ r_{12}^{-1} (σ.p_{k1})(σ.p_{k2})\f$ where k1  & k2 are
+  /// centers of ket1 and ket2, respectively. Produces 4 components (see
+  /// \ref rkb_operators). For 3-center integrals the σ·p pair is the pair of
+  /// AO functions, whichever side of the braket it is on: with BraKet::xs_xx
+  /// σ·p acts on ket1 and ket2, with BraKet::xx_xs (the alias of xs_xx that
+  /// only changes the order of the arguments and of the result) σ·p acts on
+  /// bra1 and bra2 and the fitting function is ket1.
+  coulomb_opop,
+  /// (2-body) \f$ r_{12}^{-1} (σ.p_{k2}) \f$ where k2 is the center of ket2;
+  /// the 3-center single-σ·p integral (P | μ, σ·p ν). σ·p acts on
+  /// the 2nd ket AO function only. Produces 3 Cartesian components (x=0, y=1,
+  /// z=2) — the SO(3) vector irrep; no σ·σ folding (cf. coulomb_opop). The
+  /// fitting function sits on the bra (BraKet::xs_xx); 3-center only. With
+  /// BraKet::xx_xs (the alias of xs_xx) σ·p acts on bra2, the 2nd AO
+  /// function, and the fitting function is ket1.
+  coulomb_op,
+  /// (2-body) \f$ (σ.p_{b1})(σ.p_{b2}) r_{12}^{-1} (σ.p_{k1})(σ.p_{k2})\f$
+  /// where b1 & b2 are centers of bra1 and bra2 and k1  & k2 are centers of
+  /// ket1 and ket2, respectively
+  opop_coulomb_opop,
+  /// (2-body) \f$ (σ.p_{b2}) r_{12}^{-1} (σ.p_{k2}) \f$ where b2 is the center
+  /// of bra2 and k2 is the center of ket2; Gaunt LS "bilinear" integral.
+  /// Produces 9 components: the SO(3) irreducible decomposition of the 3×3
+  /// derivative dyadic T_ab (a = bra-side ∇, b = ket-side ∇), NOT a raw
+  /// `3*a + b` Cartesian dyadic. Component order matches
+  /// `σpCoulombσp_Descr::Component`: Scalar trace (0); antisymmetric
+  /// (curl-curl) AntisymX,Y,Z (1-3); symmetric-traceless SymTLDiagA,SymTLDiagB
+  /// (4,5) and SymTLOffXY,SymTLOffXZ,SymTLOffYZ (6-8). Unlike coulomb_opop,
+  /// these components are not σ·σ-folded.
+  op_coulomb_op,
   // do not modify this
   invalid = -1,
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!keep this
   // updated!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   first_1body_oper = overlap,
-  last_1body_oper = op_q_gau_op,
+  last_1body_oper = opemuop,
   first_2body_oper = delta,
-  last_2body_oper = stg_x_coulomb,
+  last_2body_oper = op_coulomb_op,
   first_oper = first_1body_oper,
   last_oper = last_2body_oper
 };
@@ -240,6 +279,44 @@ enum class Operator {
 /// @param[in] oper an Operator object
 /// @return the particle rank of \c oper
 /// @throw std::logic_error if an invalid @c oper given
+// clang-format off
+/**
+ \page rkb_operators Conventions for the relativistic (RKB) 2-body operators
+
+ The four operators built from σ·p and 1/r₁₂ expose their components in
+ different ways; this table is the single reference for their layouts.
+ "Folded" means that the Pauli matrices were contracted using
+ σ_a σ_b = δ_ab + i ε_abc σ_c, so the user must not apply them again;
+ "not folded" means the result is the spatial tensor and the user contracts it
+ with the Pauli matrices. In chemists' notation (ab|cd) the operator acts on
+ the second function of a pair, i.e. on b and/or d.
+
+ | Engine (C++ API)    | Compiler          | task label          | #comp | component index                                                                                                                                       | spin       |
+ |---------------------|-------------------|---------------------|-------|-------------------------------------------------------------------------------------------------------------------------------------------------------|------------|
+ | `coulomb_opop`      | `Coulombσpσp`     | `coulomb_opop`      |   4   | 0: ∇_c·∇_d, 1-3: (∇_c×∇_d)_{x,y,z}                                                                                                                   | folded     |
+ | `coulomb_op`        | `Coulombσp`       | `coulomb_op`        |   3   | ∂_{d,x}, ∂_{d,y}, ∂_{d,z} (3-center only)                                                                                                            | n/a        |
+ | `opop_coulomb_opop` | `σpσpCoulombσpσp` | `opop_coulomb_opop` |  16   | 4·bra + ket, with bra, ket ∈ {0: ∇·∇, 1-3: (∇×∇)_{x,y,z}} of (a,b) and (c,d); the sign of i² is folded into the 1-3 ⊗ 1-3 block                      | folded     |
+ | `op_coulomb_op`     | `σpCoulombσp`     | `op_coulomb_op`     |   9   | SO(3) irreps of T_ab = ∂_{b,a} ∂_{d,b}: 0: trace, 1-3: T_yz−T_zy, T_zx−T_xz, T_xy−T_yx, 4: T_xx−T_yy, 5: 2T_zz−T_xx−T_yy, 6-8: T_xy+T_yx, T_xz+T_zx, T_yz+T_zy | not folded |
+
+ For the 3-center operators (`coulomb_opop` and `coulomb_op`) the kernels
+ are generated for BraKet::xs_xx, with the fitting function as bra1 and the
+ AO pair as the ket; the Engine accepts BraKet::xx_xs as an alias that only
+ changes the order of the arguments of compute() and the layout of the
+ result (fitting function last), hence with xx_xs σ·p acts on the bra.
+
+ The 1-body analog of `opVop` with the dipole operator in the middle is
+ `opemuop` (compiler: `σpeμσp`), with 12 = 3 (dipole direction, slow) × 4
+ (folded Pauli component, fast) components.
+
+ The behavior of the components under the permutations Engine uses to
+ canonicalize shell sets is encoded in operator_traits<Operator>:
+ pair_swap, braket_swap, pair_swap_phase(), braket_swap_phase() and
+ braket_swap_remap(). The generated library covers exactly the shell sets that
+ are canonical under these permutations (see the matching descriptor traits
+ in the compiler).
+ */
+// clang-format on
+
 inline constexpr int rank(Operator oper) {
   return (oper >= Operator::first_1body_oper &&
           oper <= Operator::last_1body_oper)
@@ -262,6 +339,19 @@ inline constexpr bool is_nuclear_type(Operator oper) {
          oper == Operator::op_q_gau_op;
 }
 
+/// which swaps of the two functions within the bra and within the ket of a
+/// 2-body integral Engine may perform to canonicalize a shell set; the
+/// generated kernels cover exactly the shell sets that are canonical with
+/// respect to these swaps
+enum class PairSwap {
+  /// bra and ket are sorted independently of each other
+  independent,
+  /// bra and ket are swapped together, or not at all (the ket is sorted)
+  coupled,
+  /// neither bra nor ket may be swapped
+  none
+};
+
 namespace detail {
 struct default_operator_traits {
   typedef struct {
@@ -271,6 +361,21 @@ struct default_operator_traits {
   // N.B.: Below field means we *should* template specialize operator_traits for
   // Operator::kinetic, but L2 doesn't use that anywhere.
   static constexpr auto intrinsic_deriv_order = 0u;
+  /// which swaps within bra and within ket of a 2-body integral the engine
+  /// may perform to canonicalize a shell set
+  static constexpr auto pair_swap = PairSwap::independent;
+  /// whether the engine may swap bra and ket (particles 1 and 2) of a 2-body
+  /// integral to canonicalize a shell set
+  static constexpr bool braket_swap = true;
+  /// @return the phase acquired by component @p c when the two functions of
+  /// the ket (and, if pair_swap is PairSwap::coupled, of the bra) are swapped
+  static constexpr int pair_swap_phase(unsigned int /* c */) { return 1; }
+  /// @return the phase acquired by component @p c when bra and ket are
+  /// swapped
+  static constexpr int braket_swap_phase(unsigned int /* c */) { return 1; }
+  /// @return the index of the component that component @p c becomes when bra
+  /// and ket are swapped
+  static constexpr unsigned int braket_swap_remap(unsigned int c) { return c; }
   struct _core_eval_type {
     template <typename... params>
     static std::shared_ptr<const _core_eval_type> instance(params...) {
@@ -302,6 +407,7 @@ struct operator_traits<Operator::nuclear>
   typedef const libint2::FmEval_Reference<scalar_type> core_eval_type;
 #endif
 };
+
 /// opVop: 4 quaternionic components (scalar, x, y, z) of (σ·p)V(σ·p).
 /// Inherits point-charge params from nuclear; uses Boys function core eval.
 template <>
@@ -427,6 +533,13 @@ struct operator_traits<Operator::sphemultipole>
 };
 
 template <>
+struct operator_traits<Operator::opemuop>
+    : public operator_traits<Operator::emultipole1> {
+  static constexpr auto nopers = 12;
+  static constexpr auto intrinsic_deriv_order = 2;
+};
+
+template <>
 struct operator_traits<Operator::coulomb>
     : public detail::default_operator_traits {
 #ifndef LIBINT_USER_DEFINED_REAL
@@ -435,6 +548,72 @@ struct operator_traits<Operator::coulomb>
   typedef const libint2::FmEval_Reference<scalar_type> core_eval_type;
 #endif
 };
+
+template <>
+struct operator_traits<Operator::coulomb_opop>
+    : public operator_traits<Operator::coulomb> {
+  static constexpr auto nopers = 4;
+  static constexpr auto intrinsic_deriv_order = 2;
+  /// σ·p acts on the ket only, hence bra and ket cannot be swapped
+  static constexpr bool braket_swap = false;
+  /// swapping the ket functions swaps the two ∇ in ∇_c × ∇_d: the vector
+  /// components (1-3) change sign, the scalar (0) does not
+  static constexpr int pair_swap_phase(unsigned int c) {
+    return c > 0 ? -1 : 1;
+  }
+};
+template <>
+struct operator_traits<Operator::coulomb_op>
+    : public operator_traits<Operator::coulomb> {
+  /// 3 Cartesian components of the single σ·p applied to the 2nd ket function.
+  /// index = a, a ∈ {x=0, y=1, z=2}. One intrinsic derivative (σ·p = one ∇).
+  static constexpr auto nopers = 3;
+  static constexpr auto intrinsic_deriv_order = 1;
+  /// σ·p acts on one specific function, hence no swaps (the kernels are
+  /// generated for every ordering of the paired centers)
+  static constexpr auto pair_swap = PairSwap::none;
+  static constexpr bool braket_swap = false;
+};
+template <>
+struct operator_traits<Operator::opop_coulomb_opop>
+    : public operator_traits<Operator::coulomb> {
+  /// 16 components: tensor product of two independent spin-space quaternions
+  /// index = 4 * bra_spin + ket_spin, where spin in {S=0, X=1, Y=2, Z=3}
+  static constexpr auto nopers = 16;
+  static constexpr auto intrinsic_deriv_order = 4;
+  /// (ab|cd) = (cd|ab) = (ba|dc): the functions of bra and ket can only be
+  /// swapped together
+  static constexpr auto pair_swap = PairSwap::coupled;
+  /// swapping both pairs changes the sign of a component with exactly one
+  /// vector (spin ≠ S) factor
+  static constexpr int pair_swap_phase(unsigned int c) {
+    return ((c / 4 > 0) != (c % 4 > 0)) ? -1 : 1;
+  }
+  /// swapping bra and ket transposes the (bra_spin, ket_spin) index
+  static constexpr unsigned int braket_swap_remap(unsigned int c) {
+    return 4 * (c % 4) + c / 4;
+  }
+};
+template <>
+struct operator_traits<Operator::op_coulomb_op>
+    : public operator_traits<Operator::coulomb> {
+  /// 9 components: the SO(3) irreducible decomposition of the 3×3 derivative
+  /// dyadic T_ab (NOT a raw `3*a + b` Cartesian dyadic). Order matches
+  /// `σpCoulombσp_Descr::Component`: Scalar trace (0); antisymmetric
+  /// AntisymX,Y,Z (1-3); symmetric-traceless SymTLDiagA,SymTLDiagB (4,5) and
+  /// SymTLOffXY,SymTLOffXZ,SymTLOffYZ (6-8).
+  static constexpr auto nopers = 9;
+  static constexpr auto intrinsic_deriv_order = 2;
+  /// σ·p acts on one specific function of each pair, hence no swaps within
+  /// bra or ket
+  static constexpr auto pair_swap = PairSwap::none;
+  /// swapping bra and ket transposes T_ab: the antisymmetric components (1-3)
+  /// change sign, the scalar (0) and symmetric-traceless (4-8) do not
+  static constexpr int braket_swap_phase(unsigned int c) {
+    return (c >= 1 && c <= 3) ? -1 : 1;
+  }
+};
+
 namespace detail {
 template <int K>
 struct cgtg_operator_traits : public detail::default_operator_traits {
@@ -553,13 +732,39 @@ inline constexpr int rank(BraKet braket) {
 /// @return the default braket for @c oper
 /// @throw std::logic_error if invalid @c oper given
 inline constexpr BraKet default_braket(Operator oper) {
-  return (rank(oper) == 1)
-             ? BraKet::x_x
-             : ((rank(oper) == 2)
-                    ? BraKet::xx_xx
-                    : throw std::logic_error(
-                          "default_braket(Operator): invalid operator given"));
+  // coulomb_op (3-center single-σ·p) has no 4-center kernel; its only
+  // valid geometry is the 3-center xs_xx braket. Default to that rather than
+  // the rank-based xx_xx, which has no generated kernel and would silently
+  // dispatch to the plain-Coulomb `default` task (wrong integrals, no error in
+  // release).
+  return (oper == Operator::coulomb_op)
+             ? BraKet::xs_xx
+             : ((rank(oper) == 1)
+                    ? BraKet::x_x
+                    : ((rank(oper) == 2)
+                           ? BraKet::xx_xx
+                           : throw std::logic_error(
+                                 "default_braket(Operator): invalid operator "
+                                 "given")));
 }
+
+namespace detail {
+/// @return true if @c oper is one of the 2-body relativistic (restricted
+/// kinetic balance, RKB) operators
+inline constexpr bool is_rkb_2body(Operator oper) {
+  return oper == Operator::coulomb_opop || oper == Operator::coulomb_op ||
+         oper == Operator::opop_coulomb_opop || oper == Operator::op_coulomb_op;
+}
+
+/// whether the library was generated assuming that the fitting (unpaired)
+/// center of plain 3-center ERIs will be transformed to solid harmonics
+/// (LIBINT2_ERI3_PURE_SH)
+#ifdef LIBINT_ERI3_PURE_SH
+constexpr bool eri3_pure_sh = true;
+#else
+constexpr bool eri3_pure_sh = false;
+#endif
+}  // namespace detail
 
 constexpr size_t nopers_2body = static_cast<int>(Operator::last_2body_oper) -
                                 static_cast<int>(Operator::first_2body_oper) +
@@ -928,16 +1133,16 @@ class Engine {
       const Shell& ket2, const ShellPair* spbra, const ShellPair* spket);
 
   // clang-format off
-  /** this specifies target precision for computing the integrals, i.e.
-   *  the target absolute (i.e., not relative) error of the integrals.
-   *  It is used to screen out primitive integrals. For some screening
-   *  methods precision can be almost guaranteed (due to finite precision
-   *  of the precomputed interpolation tables used to evaluate the core integrals
-   *  it is not in general possible to guarantee precision rigorously).
-   *
-   *  @param[in] prec the target precision
-   *  @sa ScreeningMethod
-   */
+ /** this specifies target precision for computing the integrals, i.e.
+  *  the target absolute (i.e., not relative) error of the integrals.
+  *  It is used to screen out primitive integrals. For some screening
+  *  methods precision can be almost guaranteed (due to finite precision
+  *  of the precomputed interpolation tables used to evaluate the core integrals
+  *  it is not in general possible to guarantee precision rigorously).
+  *
+  *  @param[in] prec the target precision
+  *  @sa ScreeningMethod
+  */
   // clang-format on
   Engine& set_precision(scalar_type prec) {
     if (prec <= 0.) {
@@ -1048,6 +1253,19 @@ class Engine {
     size_t lmax_requested_;
   };
 
+  /// Exception class to be used when the library does not contain the kernels
+  /// for the operator/braket/derivative order this Engine is set up for (e.g.
+  /// the corresponding integral class was not enabled when configuring the
+  /// library)
+  class missing_kernel : virtual public std::logic_error {
+   public:
+    missing_kernel()
+        : std::logic_error(
+              "Engine::missing_kernel -- this library was not configured to "
+              "compute integrals of this operator/braket/derivative order") {}
+    ~missing_kernel() noexcept {}
+  };
+
   /// Exception class to be used when using default-initialized Engine
   class using_default_initialized : virtual public std::logic_error {
    public:
@@ -1066,13 +1284,14 @@ class Engine {
   size_t stack_size_;  // amount allocated by libint2_init_xxx in
                        // primdata_[0].stack
   int lmax_;
-  int hard_lmax_;  // max L supported by library for this operator type (i.e.
-                   // LIBINT2_MAX_AM_<task><deriv_order>) + 1
-  int hard_default_lmax_;  // max L supported by library for default operator
-                           // type (i.e. LIBINT2_MAX_AM_default<deriv_order>) +
-                           // 1 this is only set and used if
-                           // LIBINT2_CENTER_DEPENDENT_MAX_AM_<task><deriv_order>
-                           // == 1
+  // max L supported by library for this operator type (i.e.
+  // LIBINT2_MAX_AM_<task><deriv_order>) + 1; 0 until _initialize() finds
+  // the kernels
+  int hard_lmax_ = 0;
+  // max L supported by library for default operator type (i.e.
+  // LIBINT2_MAX_AM_default<deriv_order>) + 1; this is only set and used if
+  // LIBINT2_CENTER_DEPENDENT_MAX_AM_<task><deriv_order> == 1
+  int hard_default_lmax_ = 0;
   int deriv_order_;
   scalar_type precision_;
   scalar_type ln_precision_;
@@ -1111,7 +1330,8 @@ class Engine {
   // scratch2_ points to second such block. It could point into scratch_ or at
   // primdata_[0].stack
   typedef void (*buildfnptr_t)(const Libint_t*);
-  buildfnptr_t* buildfnptrs_;
+  /// null if the library has no kernels for this operator/braket/deriv order
+  buildfnptr_t* buildfnptrs_ = nullptr;
 
   /// reports the number of shell sets that each call to compute() produces.
   unsigned int compute_nshellsets() const {
@@ -1173,6 +1393,12 @@ class Engine {
   unsigned int nparams() const;
   unsigned int nopers() const;
   unsigned int intrinsic_deriv_order() const;
+  /// operator_traits<oper_>::pair_swap etc. (see \ref rkb_operators)
+  PairSwap pair_swap() const;
+  bool braket_swap() const;
+  int pair_swap_phase(unsigned int c) const;
+  int braket_swap_phase(unsigned int c) const;
+  unsigned int braket_swap_remap(unsigned int c) const;
   /// if Params == operator_traits<oper>::oper_params_type, will return
   /// \c any(params)
   /// else will set return \c any initialized with default value for

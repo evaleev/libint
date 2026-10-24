@@ -38,6 +38,12 @@
 using namespace std;
 using namespace libint2;
 
+// GenerateCode() (defined in buildtest.h) references the global progress
+// reporter, so this standalone compiler-test executable must define it too,
+// mirroring the definition in build_libint.cc. Without this the
+// check-libint2compiler test fails to link with an undefined `g_progress`.
+CodeGenProgress g_progress;
+
 long living_count = 0;
 const unsigned int use_integrals = std::numeric_limits<unsigned int>::max();
 const unsigned int use_quartets = 0;

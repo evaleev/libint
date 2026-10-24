@@ -73,9 +73,9 @@ void generate_rr_code(std::ostream& os,
     os << "generating code for " << context->label_to_name(rr->label())
        << " target=" << rr->rr_target()->label() << endl;
 
-    std::string decl_filename(prefix + context->label_to_name(rr->label()));
+    std::string decl_filename(prefix + context->label_to_filename(rr->label()));
     decl_filename += ".h";
-    std::string def_filename(prefix + context->label_to_name(rr->label()));
+    std::string def_filename(prefix + context->label_to_filename(rr->label()));
     def_filename += ".cc";
     std::basic_ofstream<char> declfile(decl_filename.c_str());
     std::basic_ofstream<char> deffile(def_filename.c_str());

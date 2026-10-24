@@ -127,8 +127,11 @@ void RecurrenceRelation::generate_code(
   // Assign symbols for the target and source integral sets
   std::shared_ptr<CodeSymbols> symbols(new CodeSymbols);
   assign_symbols_(symbols);
+  // Compute local dimensions before optimize_rr_out so that
+  // handle_trivial_nodes uses the correct dims (e.g., "lowdim" instead of "1")
+  std::shared_ptr<ImplicitDimensions> localdims = adapt_dims_(dims);
   // Traverse the graph
-  dg->optimize_rr_out(context);
+  dg->optimize_rr_out(context, localdims);
   dg->traverse();
 #if PRINT_DAG_GRAPHVIZ
   {
@@ -138,7 +141,6 @@ void RecurrenceRelation::generate_code(
 #endif
   // Generate code
   std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
-  std::shared_ptr<ImplicitDimensions> localdims = adapt_dims_(dims);
   dg->generate_code(context, memman, localdims, symbols, funcname, decl, def);
 
   // extract all external symbols -- these will be members of the evaluator

@@ -70,40 +70,45 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
 /// These MUST appear in the same order as in Operator.
 /// You must also update BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX when you add
 /// one-body ints
-#define BOOST_PP_NBODY_OPERATOR_LIST                \
-  (overlap,                    /* overlap */        \
-   (kinetic,                   /* kinetic */        \
-    (elecpot,                  /* nuclear */        \
-     (elecpot,                 /* erf_nuclear */    \
-      (elecpot,                /* erfc_nuclear */   \
-       (elecpot,               /* erfx_nuclear */   \
-        (elecpot,              /* q_gau */          \
-         (1emultipole,         /* emultipole1 */    \
-          (2emultipole,        /* emultipole2 */    \
-           (3emultipole,       /* emultipole3 */    \
-            (sphemultipole,    /* sphemultipole */  \
-             (opVop,           /* opVop */          \
-              (opVop,          /* op_q_gau_op */    \
-               (eri,           /* delta */          \
-                (eri,          /* coulomb */        \
-                 (eri,         /* cgtg */           \
-                  (eri,        /* cgtg_x_coulomb */ \
-                   (eri,       /* delcgtg2 */       \
-                    (eri,      /* r12 */            \
-                     (eri,     /* erf_coulomb */    \
-                      (eri,    /* erfc_coulomb */   \
-                       (eri,   /* erfx_coulomb */   \
-                        (eri,  /* stg */            \
-                         (eri, /* yukawa */         \
-                          BOOST_PP_NIL))))))))))))))))))))))))
+#define BOOST_PP_NBODY_OPERATOR_LIST                                     \
+  (overlap,                                      /* overlap */           \
+   (kinetic,                                     /* kinetic */           \
+    (elecpot,                                    /* nuclear */           \
+     (elecpot,                                   /* erf_nuclear */       \
+      (elecpot,                                  /* erfc_nuclear */      \
+       (elecpot,                                 /* erfx_nuclear */      \
+        (elecpot,                                /* q_gau */             \
+         (1emultipole,                           /* emultipole1 */       \
+          (2emultipole,                          /* emultipole2 */       \
+           (3emultipole,                         /* emultipole3 */       \
+            (sphemultipole,                      /* sphemultipole */     \
+             (opVop,                             /* opVop */             \
+              (opVop,                            /* op_q_gau_op */       \
+               (opemuop,                         /* opemuop */           \
+                (eri,                            /* delta */             \
+                 (eri,                           /* coulomb */           \
+                  (eri,                          /* cgtg */              \
+                   (eri,                         /* cgtg_x_coulomb */    \
+                    (eri,                        /* delcgtg2 */          \
+                     (eri,                       /* r12 */               \
+                      (eri,                      /* erf_coulomb */       \
+                       (eri,                     /* erfc_coulomb */      \
+                        (eri,                    /* erfx_coulomb */      \
+                         (eri,                   /* stg */               \
+                          (eri,                  /* yukawa */            \
+                           (coulomb_opop,        /* coulomb_opop */      \
+                            (coulomb_op,         /* coulomb_op */        \
+                             (opop_coulomb_opop, /* opop_coulomb_opop */ \
+                              (op_coulomb_op,    /* op_coulomb_op */     \
+                               BOOST_PP_NIL)))))))))))))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
 #define BOOST_PP_NBODY_OPERATOR_INDEX_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE)
 #define BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX \
-  12  // op_q_gau_op, the 13th member of BOOST_PP_NBODY_OPERATOR_LIST, is the
-      // last 1-body operator
+  13  // opemuop, the 14th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last
+      // 1-body operator
 
 // make list of braket indices for n-body ints
 #define BOOST_PP_NBODY_BRAKET_INDEX_TUPLE \
@@ -170,9 +175,22 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
     if (nargs == 2)
       return (this->*compute_ptr)(shells[0], Shell::unit(), shells[1],
                                   Shell::unit(), nullptr, nullptr);
-    if (nargs == 3)
+    if (nargs == 3) {
+      // The 3-arg user form depends on which 3-center BraKet was set:
+      //   xs_xx — bra = (fitting, unit), ket = (AO, AO).
+      //           User passes (fitting, AO, AO), kernel sees
+      //           (fitting, unit, AO, AO).
+      //   xx_xs — bra = (AO, AO),       ket = (fitting, unit).
+      //           User passes (AO, AO, fitting), kernel sees
+      //           (AO, AO, fitting, unit).
+      // The non-xx_xs branch is the default (covers xs_xx and any future
+      // 3-center variants that follow the xs_xx convention).
+      if (braket_ == BraKet::xx_xs)
+        return (this->*compute_ptr)(shells[0], shells[1], shells[2],
+                                    Shell::unit(), nullptr, nullptr);
       return (this->*compute_ptr)(shells[0], Shell::unit(), shells[1],
                                   shells[2], nullptr, nullptr);
+    }
     if (nargs == 4)
       return (this->*compute_ptr)(shells[0], shells[1], shells[2], shells[3],
                                   nullptr, nullptr);
@@ -188,6 +206,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
 /// \note resulting shell sets are stored in row-major order
 __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
     const libint2::Shell& s1, const libint2::Shell& s2) {
+  if (buildfnptrs_ == nullptr) throw missing_kernel();
+
   // can only handle 1 contraction at a time
   assert((s1.ncontr() == 1 && s2.ncontr() == 1) &&
          "generally-contracted shells not yet supported");
@@ -606,6 +626,21 @@ __libint2_engine_inline void Engine::_initialize() {
   if (static_cast<int>(oper_) == BOOST_PP_TUPLE_ELEM(3, 0, product) &&         \
       static_cast<int>(rank(braket_)) == BOOST_PP_TUPLE_ELEM(3, 1, product) && \
       deriv_order_ == BOOST_PP_TUPLE_ELEM(3, 2, product)) {                    \
+    buildfnptrs_ = to_ptr1(LIBINT2_PREFIXED_NAME(BOOST_PP_CAT(                 \
+        libint2_build_, BOOST_PP_NBODYENGINE_MCR3_TASK(product))));            \
+    /* missing tasks resolve to the placeholder `default` task, i.e. there */  \
+    /* are no kernels for this task; compute*() will throw missing_kernel  */  \
+    if (buildfnptrs_ ==                                                        \
+        to_ptr1(LIBINT2_PREFIXED_NAME(libint2_build_default))) {               \
+      if (stack_size_ > 0)                                                     \
+        LIBINT2_PREFIXED_NAME(libint2_cleanup_default)(&primdata_[0]);         \
+      stack_size_ = 0;                                                         \
+      buildfnptrs_ = nullptr;                                                  \
+      targets_.clear();                                                        \
+      scratch_.clear();                                                        \
+      scratch2_ = nullptr;                                                     \
+      return;                                                                  \
+    }                                                                          \
     hard_lmax_ = BOOST_PP_CAT(LIBINT2_MAX_AM_,                                 \
                               BOOST_PP_NBODYENGINE_MCR3_TASK(product)) +       \
                  1;                                                            \
@@ -622,6 +657,7 @@ __libint2_engine_inline void Engine::_initialize() {
                                    BOOST_PP_NBODYENGINE_MCR3_task(product))),  \
         std::max(hard_lmax_, hard_default_lmax_), hard_lmax_);                 \
     if (lmax_ >= lmax) {                                                       \
+      buildfnptrs_ = nullptr; /* leave no table for kernels we cannot use */   \
       throw Engine::lmax_exceeded(BOOST_PP_STRINGIZE(BOOST_PP_NBODYENGINE_MCR3_TASK(product)), lmax, lmax_);              \
     }                                                                          \
     if (stack_size_ > 0)                                                       \
@@ -636,8 +672,6 @@ __libint2_engine_inline void Engine::_initialize() {
                 LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)(               \
                     &primdata_[0], primdata_.size()),                          \
                 BOOST_PP_EMPTY());                                             \
-    buildfnptrs_ = to_ptr1(LIBINT2_PREFIXED_NAME(BOOST_PP_CAT(                 \
-        libint2_build_, BOOST_PP_NBODYENGINE_MCR3_TASK(product))));            \
     reset_scratch();                                                           \
     return;                                                                    \
   }
@@ -654,30 +688,22 @@ __libint2_engine_inline void Engine::_initialize() {
 
 __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
   assert(libint2::initialized() && "libint is not initialized");
+  if (detail::is_rkb_2body(oper_) && deriv_order_ > 0)
+    throw std::invalid_argument(
+        "Engine::initialize -- geometric derivatives of RKB integrals are not "
+        "yet supported");
+  // energies canonicalize xx_xs to xs_xx, but DerivMapGenerator has no
+  // derivative index map for xx_xs; fail here rather than inside compute2
+  if (braket_ == BraKet::xx_xs && deriv_order_ > 0)
+    throw std::invalid_argument(
+        "Engine::initialize -- geometric derivatives are not supported for "
+        "BraKet::xx_xs, use BraKet::xs_xx");
   assert(deriv_order_ <= LIBINT2_MAX_DERIV_ORDER &&
          "exceeded the max derivative order of the library");
 
-  // validate braket
-#ifndef LIBINT_INCLUDE_ONEBODY
-  assert(braket_ != BraKet::x_x &&
-         "this braket type not supported by the library; give --enable-1body "
-         "to configure");
-#endif
-#ifndef LIBINT_INCLUDE_ERI
-  assert(braket_ != BraKet::xx_xx &&
-         "this braket type not supported by the library; give --enable-eri to "
-         "configure");
-#endif
-#ifndef LIBINT_INCLUDE_ERI3
-  assert((braket_ != BraKet::xs_xx && braket_ != BraKet::xx_xs) &&
-         "this braket type not supported by the library; give --enable-eri3 to "
-         "configure");
-#endif
-#ifndef LIBINT_INCLUDE_ERI2
-  assert(braket_ != BraKet::xs_xs &&
-         "this braket type not supported by the library; give --enable-eri2 to "
-         "configure");
-#endif
+  // N.B. whether the library supports this operator/braket/deriv order
+  // is determined by _initialize(); if it does not, compute*() throw
+  // missing_kernel
 
   // make sure it's no default initialized
   if (lmax_ < 0) throw using_default_initialized();
@@ -698,6 +724,7 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
     // target indices.
     const auto permutable_targets =
         deriv_order_ > 0 &&
+
         (braket_ == BraKet::xx_xx || braket_ == BraKet::xs_xx ||
          braket_ == BraKet::xx_xs);
     if (permutable_targets)
@@ -819,6 +846,33 @@ __libint2_engine_inline unsigned int Engine::intrinsic_deriv_order() const {
   assert(false && "missing case in switch");  // unreachable
   abort();
 }
+
+// clang-format off
+// accessors to the permutational-symmetry traits of oper_ (see
+// operator_traits<Operator>): RET NAME ARGS const { return
+// operator_traits<oper_>::TRAIT_EXPR; }
+#define BOOST_PP_NBODYENGINE_MCR10(r, trait_expr, i, elem) \
+  case i:                                                  \
+    return operator_traits<static_cast<Operator>(i)>::trait_expr;
+#define LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(RET, NAME, ARGS, TRAIT_EXPR) \
+  __libint2_engine_inline RET Engine::NAME ARGS const {                     \
+    switch (static_cast<int>(oper_)) {                                      \
+      BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR10, TRAIT_EXPR,      \
+                               BOOST_PP_NBODY_OPERATOR_LIST)                \
+      default:                                                              \
+        break;                                                              \
+    }                                                                       \
+    assert(false && "missing case in switch"); /* unreachable */            \
+    abort();                                                                \
+  }
+LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(PairSwap, pair_swap, (), pair_swap)
+LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(bool, braket_swap, (), braket_swap)
+LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(int, pair_swap_phase, (unsigned int c), pair_swap_phase(c))
+LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(int, braket_swap_phase, (unsigned int c), braket_swap_phase(c))
+LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(unsigned int, braket_swap_remap, (unsigned int c), braket_swap_remap(c))
+#undef LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR
+#undef BOOST_PP_NBODYENGINE_MCR10
+// clang-format on
 
 template <>
 __libint2_engine_inline any Engine::enforce_params_type<any>(
@@ -1038,7 +1092,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   //  }
 
   if (oper_ == Operator::emultipole1 || oper_ == Operator::emultipole2 ||
-      oper_ == Operator::emultipole3) {
+      oper_ == Operator::emultipole3 || oper_ == Operator::opemuop) {
     const auto& O = any_cast<
         const operator_traits<Operator::emultipole1>::oper_params_type&>(
         params_);  // same as emultipoleX
@@ -1086,7 +1140,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   primdata._0_Overlap_0_z[0] = ovlp_ss_z;
 
   if (oper_ == Operator::kinetic || (deriv_order_ > 0) ||
-      oper_ == Operator::opVop || oper_ == Operator::op_q_gau_op) {
+      oper_ == Operator::opVop || oper_ == Operator::op_q_gau_op ||
+      oper_ == Operator::opemuop) {
 #if LIBINT2_DEFINED(eri, two_alpha0_bra)
     primdata.two_alpha0_bra[0] = 2.0 * alpha1;
 #endif
@@ -1230,6 +1285,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           (tspbra != nullptr && tspket != nullptr)) &&
          "Engine::compute2 -- expects zero or two ShellPair objects");
   assert(screening_method_ != ScreeningMethod::Invalid);
+  if (buildfnptrs_ == nullptr) throw missing_kernel();
 
   //
   // i.e. bra and ket refer to chemists bra and ket
@@ -1250,12 +1306,43 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
 #if LIBINT2_SHELLQUARTET_SET == \
     LIBINT2_SHELLQUARTET_SET_STANDARD  // standard angular momentum ordering
-  const auto swap_tbra = (tbra1.contr[0].l < tbra2.contr[0].l);
-  const auto swap_tket = (tket1.contr[0].l < tket2.contr[0].l);
-  const auto swap_braket =
-      ((braket_ == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l >
-                                      tket1.contr[0].l + tket2.contr[0].l)) ||
-      braket_ == BraKet::xx_xs;
+  // canonicalize the shell set according to the permutational symmetry of
+  // the operator (see operator_traits: pair_swap, braket_swap); the kernels
+  // are generated for the canonical shell sets only
+  bool swap_braket;
+  bool swap_tbra, swap_tket;
+  {
+    const auto pair_swap = this->pair_swap();
+    const auto bra_total = tbra1.contr[0].l + tbra2.contr[0].l;
+    const auto ket_total = tket1.contr[0].l + tket2.contr[0].l;
+    const auto bra_max = std::max(tbra1.contr[0].l, tbra2.contr[0].l);
+    const auto ket_max = std::max(tket1.contr[0].l, tket2.contr[0].l);
+    // xx_xs is the alias of xs_xx, hence always swapped; else swap if the bra
+    // is "heavier" than the ket; with coupled pair swaps the kernels are
+    // generated for max(la,lb) <= lc when the totals tie
+    swap_braket = braket_ == BraKet::xx_xs ||
+                  (braket_ == BraKet::xx_xx && this->braket_swap() &&
+                   (bra_total > ket_total ||
+                    (pair_swap == PairSwap::coupled && bra_total == ket_total &&
+                     bra_max > ket_max)));
+    switch (pair_swap) {
+      case PairSwap::independent:
+        swap_tbra = (tbra1.contr[0].l < tbra2.contr[0].l);
+        swap_tket = (tket1.contr[0].l < tket2.contr[0].l);
+        break;
+      case PairSwap::coupled: {
+        // sort the pair that ends up in the ket of the kernel, and swap the
+        // other pair along with it
+        const bool swap_pairs = swap_braket
+                                    ? (tbra1.contr[0].l < tbra2.contr[0].l)
+                                    : (tket1.contr[0].l < tket2.contr[0].l);
+        swap_tbra = swap_tket = swap_pairs;
+      } break;
+      case PairSwap::none:
+        swap_tbra = swap_tket = false;
+        break;
+    }
+  }
 #else  // orca angular momentum ordering
   const auto swap_tbra = (tbra1.contr[0].l > tbra2.contr[0].l);
   const auto swap_tket = (tket1.contr[0].l > tket2.contr[0].l);
@@ -1459,17 +1546,25 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             const scalar_type rho = gammap * gammaq * oogammapq;
             const scalar_type T = PQ2 * rho;
             auto* gm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
-            const auto mmax = l + deriv_order_;
+            const auto mmax = l + deriv_order_ + intrinsic_deriv_order();
 
             if (!skip_core_ints) {
+// Simple core-eval dispatch: just `core_eval_ptr->eval(gm_ptr, T, mmax)`.
+// Applies to Coulomb-family operators whose core integral is the bare Fm.
+#define LIBINT2_SIMPLE_CORE_EVAL_CASE(OP)                           \
+  case Operator::OP: {                                              \
+    const auto& core_eval_ptr =                                     \
+        any_cast<const detail::core_eval_pack_type<Operator::OP>&>( \
+            core_eval_pack_)                                        \
+            .first();                                               \
+    core_eval_ptr->eval(gm_ptr, T, mmax);                           \
+  } break
               switch (oper_) {
-                case Operator::coulomb: {
-                  const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<
-                          Operator::coulomb>&>(core_eval_pack_)
-                          .first();
-                  core_eval_ptr->eval(gm_ptr, T, mmax);
-                } break;
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb);
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb_opop);
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb_op);
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(opop_coulomb_opop);
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(op_coulomb_op);
                 case Operator::cgtg_x_coulomb: {
                   const auto& core_eval_ptr =
                       any_cast<const detail::core_eval_pack_type<
@@ -1588,6 +1683,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   assert(false && "missing case in a switch");  // unreachable
                   abort();
               }
+#undef LIBINT2_SIMPLE_CORE_EVAL_CASE
             }
 
             for (auto m = 0; m != mmax + 1; ++m) {
@@ -1689,7 +1785,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
               const auto Wz =
                   (gammap_o_gammapgammaq * P[2] + gammaq_o_gammapgammaq * Q[2]);
 
-              if (deriv_order_ > 0 || lmax_bra > 0) {
+              if (deriv_order_ + intrinsic_deriv_order() > 0 || lmax_bra > 0) {
 #if LIBINT2_DEFINED(eri, WP_x)
                 primdata.WP_x[0] = Wx - P[0];
 #endif
@@ -1700,7 +1796,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 primdata.WP_z[0] = Wz - P[2];
 #endif
               }
-              if (deriv_order_ > 0 || lmax_ket > 0) {
+              if (deriv_order_ + intrinsic_deriv_order() > 0 || lmax_ket > 0) {
 #if LIBINT2_DEFINED(eri, WQ_x)
                 primdata.WQ_x[0] = Wx - Q[0];
 #endif
@@ -1784,7 +1880,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
 
               // prefactors for derivative ERI relations
-              if (deriv_order_ > 0) {
+              if (deriv_order_ + intrinsic_deriv_order() > 0) {
 #if LIBINT2_DEFINED(eri, alpha1_rho_over_zeta2)
                 primdata.alpha1_rho_over_zeta2[0] =
                     alpha0 * (oogammap * gammaq_o_gammapgammaq);
@@ -1867,7 +1963,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   }
 
   // compute directly (ss|ss)
-  const auto compute_directly = lmax == 0 && deriv_order_ == 0;
+  const auto compute_directly =
+      lmax == 0 && deriv_order_ == 0 && intrinsic_deriv_order() == 0;
 
   if (compute_directly) {
 #ifdef LIBINT2_ENGINE_TIMERS
@@ -1913,46 +2010,47 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
         break;
 
       case BraKet::xx_xs:
-        assert(false && "this braket is not supported");
-        abort();
-        break;
+        // xx_xs is always canonicalized to xs_xx by swap_braket=true in the
+        // shell-aliasing logic above; the swapped shells (bra1, ket1, ket2)
+        // are already in xs_xx layout by this point. Fall through to the
+        // xs_xx case to compute buildfnidx from those swapped shells.
+        [[fallthrough]];
       case BraKet::xs_xx: {
-        /// lmax might be center dependent
-        int ket_lmax = hard_lmax_;
-        switch (deriv_order_) {
-          // N.B. notice extra PP_CAT to avoid using
-          // LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri as a subtoken which gets
-          // expanded too early ... i.e. PP_CAT is "not associative"
-#define BOOST_PP_NBODYENGINE_MCR8(r, data, i, elem)                            \
-  case i:                                                                      \
-    BOOST_PP_IF(BOOST_PP_IS_1(BOOST_PP_CAT(                                    \
-                    LIBINT2_CENTER_DEPENDENT_MAX_AM_,                          \
-                    BOOST_PP_CAT(3eri, BOOST_PP_IIF(BOOST_PP_GREATER(i, 0), i, \
-                                                    BOOST_PP_EMPTY())))),      \
-                ket_lmax = hard_default_lmax_, BOOST_PP_EMPTY());              \
-    break;
-
-          BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR8, _,
-                                   BOOST_PP_NBODY_DERIV_ORDER_LIST)
-
-          default:
-            assert(false && "missing case in switch");
-            abort();
-        }
+        // The ket (paired/AO) centers may have a different max AM than the
+        // bra (fitting) center for *center-dependent* 3-center tasks (e.g.
+        // 3eri, or 3coulomb_opop with LIBINT2_RKB_ERI3_MAX_AM !=
+        // LIBINT2_MAX_AM), giving a non-cubic build table. _initialize() sets
+        // hard_default_lmax_ to the paired max (+1) for center-dependent
+        // tasks, or to INT_MAX for tasks that are not, whose build table is
+        // [hard_lmax_]^3.
+        const int ket_lmax =
+            hard_default_lmax_ != std::numeric_limits<int>::max()
+                ? hard_default_lmax_
+                : hard_lmax_;
         assert(bra1.contr[0].l <= hard_lmax_ &&
                "the angular momentum limit is exceeded");
         assert(ket1.contr[0].l <= ket_lmax &&
                "the angular momentum limit is exceeded");
         assert(ket2.contr[0].l <= ket_lmax &&
                "the angular momentum limit is exceeded");
+
         buildfnidx = (bra1.contr[0].l * ket_lmax + ket1.contr[0].l) * ket_lmax +
                      ket2.contr[0].l;
-#ifdef LIBINT_ERI3_PURE_SH
-        if (bra1.contr[0].l > 1)
-          assert(bra1.contr[0].pure &&
-                 "library assumes a solid harmonics shell in bra of a 3-center "
-                 "2-body int, but a cartesian shell given");
-#endif
+
+        // the kernels may have been generated assuming that the fitting
+        // (bra) shell will be transformed to solid harmonics
+        // (LIBINT2_ERI3_PURE_SH); this never applies to the RKB 3-center
+        // kernels, nor to derivative kernels (the generator marks the fitting
+        // shell pure only for derivative order 0, see build_libint.cc). Such
+        // kernels produce garbage for a cartesian shell, hence check in all
+        // builds
+        if (detail::eri3_pure_sh && deriv_order_ == 0 &&
+            !detail::is_rkb_2body(oper_) && bra1.contr[0].l > 1 &&
+            !bra1.contr[0].pure)
+          throw std::invalid_argument(
+              "Engine::compute2 -- this library assumes that the fitting "
+              "(bra) shell of 3-center 2-body integrals is a solid harmonics "
+              "shell, but a cartesian shell was given");
       } break;
 
       case BraKet::xs_xs:
@@ -1962,14 +2060,16 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                "the angular momentum limit is exceeded");
         buildfnidx = bra1.contr[0].l * hard_lmax_ + ket1.contr[0].l;
 #ifdef LIBINT_ERI2_PURE_SH
-        if (bra1.contr[0].l > 1)
+        // as for 3-center: derivative kernels are generated for cartesian
+        // shells, only the energy kernels assume solid harmonics
+        if (deriv_order_ == 0 && bra1.contr[0].l > 1)
           assert(bra1.contr[0].pure &&
                  "library assumes solid harmonics shells in a 2-center "
                  "2-body int, but a cartesian shell given in bra");
-        if (ket1.contr[0].l > 1)
+        if (deriv_order_ == 0 && ket1.contr[0].l > 1)
           assert(ket1.contr[0].pure &&
                  "library assumes solid harmonics shells in a 2-center "
-                 "2-body int, but a cartesian shell given in bra");
+                 "2-body int, but a cartesian shell given in ket");
 #endif
         break;
 
@@ -2073,6 +2173,14 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           const auto* src_row_ptr = source;
           auto tgt_ptr = target;
 
+          // the phase of this component due to the swaps (see
+          // operator_traits); N.B. shell sets are ordered as
+          // deriv index * nopers + component
+          const auto component = s % this->nopers();
+          const value_type component_phase =
+              (swap_ket ? this->pair_swap_phase(component) : 1) *
+              (swap_braket ? this->braket_swap_phase(component) : 1);
+
           // if permuting derivatives ints must update their derivative index
           // Additional BraKet types would require adding support to
           // DerivMapGenerator::generate_deriv_index_map
@@ -2130,9 +2238,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                     Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
                         nr2_tgt * ncol_tgt, ncol_tgt));
                 if (swap_tbra)
-                  tgt_blk_mat = src_blk_mat.transpose();
+                  tgt_blk_mat = component_phase * src_blk_mat.transpose();
                 else
-                  tgt_blk_mat = src_blk_mat;
+                  tgt_blk_mat = component_phase * src_blk_mat;
               } else {
                 // source row {r1,r2} is mapped to target row {r1,r2} if
                 // !swap_tbra, else to {r2,r1}
@@ -2140,9 +2248,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                     !swap_tbra ? r1 * nr2 + r2 : r2 * nr1 + r1;
                 Map tgt_blk_mat(tgt_ptr + tgt_row_idx * ncol, nc1_tgt, nc2_tgt);
                 if (swap_tket)
-                  tgt_blk_mat = src_blk_mat.transpose();
+                  tgt_blk_mat = component_phase * src_blk_mat.transpose();
                 else
-                  tgt_blk_mat = src_blk_mat;
+                  tgt_blk_mat = component_phase * src_blk_mat;
               }
             }  // end of loop
           }    // over rows of source
@@ -2166,7 +2274,29 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                                                     // to primdata_[0].targets
           targets_[s_target] = source;
         }
-      }     // loop over shellsets
+      }  // loop over shellsets
+
+      // swapping bra and ket may permute the components (see
+      // operator_traits::braket_swap_remap)
+      if (permute && swap_braket) {
+        const auto nopers = this->nopers();
+        bool trivial = true;
+        for (auto c = 0u; c != nopers && trivial; ++c)
+          trivial = (this->braket_swap_remap(c) == c);
+        if (!trivial) {
+          // N.B. targets_ uses ext_stack_allocator (its elements live in
+          // primdata_[0].targets); do not copy the vector, a copy inherits
+          // the allocator and may be placed on the same arena
+          assert(ntargets <= static_cast<int>(max_ntargets));
+          std::array<const value_type*, max_ntargets> tmp;
+          std::copy(targets_.begin(), targets_.begin() + ntargets, tmp.begin());
+          for (auto s = 0; s != ntargets; ++s) {
+            const auto d = s / nopers;
+            const auto c = s % nopers;
+            targets_[d * nopers + this->braket_swap_remap(c)] = tmp[s];
+          }
+        }
+      }
     }       // if need_scratch => needed to transpose and/or tform
     else {  // did not use scratch? may still need to update targets_
       if (set_targets_) {

@@ -30,12 +30,81 @@
 #include <libint2/config.h>
 #include <strategy.h>
 
+#include <chrono>
+#include <cstdio>
 #include <deque>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <sstream>
 #include <string>
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
+
+/// Progress tracker for code generation. On a terminal shows a single
+/// updating line; otherwise (e.g. in CI logs) prints one line per kernel so
+/// that a failure can be attributed to the kernel being generated.
+struct CodeGenProgress {
+  unsigned int done = 0;
+  std::string current_task;
+  std::chrono::steady_clock::time_point start_time;
+  bool started = false;
+  bool interactive = false;
+  std::string last_printed_task;
+
+  void start() {
+    start_time = std::chrono::steady_clock::now();
+    started = true;
+    interactive = libint2_stderr_is_a_terminal();
+  }
+
+  std::string elapsed() const {
+    const auto secs = std::chrono::duration_cast<std::chrono::seconds>(
+                          std::chrono::steady_clock::now() - start_time)
+                          .count();
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(2) << secs / 60 << ":" << std::setw(2)
+        << secs % 60;
+    return oss.str();
+  }
+
+  void print() {
+    if (!started) return;
+    if (interactive) {
+      static const char spinner[] = "|/-\\";
+      std::cerr << "\r  " << spinner[done % 4] << "  " << elapsed() << "  ["
+                << done << " functions generated]  " << current_task
+                << "                    " << std::flush;
+    } else if (current_task != last_printed_task) {
+      std::cerr << "  " << elapsed() << "  [" << done << "] " << current_task
+                << std::endl;
+      last_printed_task = current_task;
+    }
+  }
+
+  void finish() {
+    if (!started) return;
+    std::cerr << (interactive ? "\r" : "") << "  done  " << elapsed() << "  ["
+              << done << " functions generated]"
+              << (interactive ? "                                        " : "")
+              << std::endl;
+    started = false;
+  }
+
+ private:
+  static bool libint2_stderr_is_a_terminal() {
+#ifdef _WIN32
+    return _isatty(_fileno(stderr)) != 0;
+#else
+    return isatty(fileno(stderr)) != 0;
+#endif
+  }
+};
+extern CodeGenProgress g_progress;
 
 namespace libint2 {
 
@@ -263,7 +332,6 @@ void GenerateCode(const std::shared_ptr<DirectedGraph>& dg,
   // if there are missing prerequisites -- make a list of them
   PrerequisitesExtractor pe;
   if (dg->missing_prerequisites()) {
-    // std::cout << "missing some prerequisites!" << std::endl;
     dg->foreach (pe);
   }
   std::deque<std::shared_ptr<DGVertex> > prereq_list = pe.vertices;
@@ -278,9 +346,9 @@ void GenerateCode(const std::shared_ptr<DirectedGraph>& dg,
   }
 #endif
 
-  std::string decl_filename(prefix + context->label_to_name(label));
+  std::string decl_filename(prefix + context->label_to_filename(label));
   decl_filename += ".h";
-  std::string def_filename(prefix + context->label_to_name(label));
+  std::string def_filename(prefix + context->label_to_filename(label));
   def_filename += ".cc";
   std::basic_ofstream<char> declfile(decl_filename.c_str());
   std::basic_ofstream<char> deffile(def_filename.c_str());
@@ -295,6 +363,11 @@ void GenerateCode(const std::shared_ptr<DirectedGraph>& dg,
 
   // extract all external symbols
   extract_symbols(dg);
+
+  // Update progress
+  ++g_progress.done;
+  g_progress.current_task = label;
+  g_progress.print();
 
 #if PRINT_DAG_GRAPHVIZ
   {
