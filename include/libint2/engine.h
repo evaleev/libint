@@ -225,6 +225,10 @@ enum class Operator {
   stg_x_coulomb,
   /// alias for Operator::stg_x_coulomb
   yukawa = stg_x_coulomb,
+  /// (Delta . contracted Gaussian geminal a) . (Delta . contracted Gaussian
+  /// geminal b), i.e. the two-geminal generalization of delcgtg2; params are
+  /// std::array<ContractedGaussianGeminal,2>{a, b}
+  delcgtga_delcgtgb,
   // do not modify this
   invalid = -1,
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!keep this
@@ -232,7 +236,7 @@ enum class Operator {
   first_1body_oper = overlap,
   last_1body_oper = op_q_gau_op,
   first_2body_oper = delta,
-  last_2body_oper = stg_x_coulomb,
+  last_2body_oper = delcgtga_delcgtgb,
   first_oper = first_1body_oper,
   last_oper = last_2body_oper
 };
@@ -451,6 +455,13 @@ struct operator_traits<Operator::cgtg_x_coulomb>
 template <>
 struct operator_traits<Operator::delcgtg2>
     : public detail::cgtg_operator_traits<2> {};
+template <>
+struct operator_traits<Operator::delcgtga_delcgtgb>
+    : public detail::cgtg_operator_traits<2> {
+  /// the two geminals a and b
+  typedef std::array<ContractedGaussianGeminal, 2> oper_params_type;
+  static oper_params_type default_params() { return oper_params_type{}; }
+};
 
 template <>
 struct operator_traits<Operator::delta>

@@ -95,7 +95,8 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
                        (eri,   /* erfx_coulomb */   \
                         (eri,  /* stg */            \
                          (eri, /* yukawa */         \
-                          BOOST_PP_NIL))))))))))))))))))))))))
+                          (eri, /* delcgtga_delcgtgb */ \
+                           BOOST_PP_NIL)))))))))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
@@ -942,6 +943,25 @@ __libint2_engine_inline void Engine::init_core_ints_params(const any& params) {
           std::to_string(std::get<1>(q_gau_params).size()) + ")");
     }
     core_ints_params_ = params;
+  } else if (oper_ == Operator::delcgtga_delcgtgb) {
+    // (\Del g_a) \cdot (\Del g_b) with g_a = \sum_i c_i exp(-a_i r_12^2),
+    // g_b = \sum_j d_j exp(-b_j r_12^2):
+    // = \sum_ij 4 a_i b_j c_i d_j r_{12}^2 exp(-(a_i+b_j) r_{12}^2)
+    // i.e. product of the two geminals, each coefficient scaled by 4 a_i b_j
+    const auto& oparams = any_cast<const operator_traits<
+        Operator::delcgtga_delcgtgb>::oper_params_type&>(params);
+    const auto& ga = oparams[0];
+    const auto& gb = oparams[1];
+    operator_traits<Operator::cgtg>::oper_params_type core_ints_params;
+    core_ints_params.reserve(ga.size() * gb.size());
+    for (const auto& pa : ga)
+      for (const auto& pb : gb) {
+        const auto gexp = pa.first + pb.first;
+        const auto gcoeff_rescaled =
+            4 * pa.first * pb.first * pa.second * pb.second;
+        core_ints_params.push_back(std::make_pair(gexp, gcoeff_rescaled));
+      }
+    core_ints_params_ = core_ints_params;
   } else {
     core_ints_params_ = params;
   }
@@ -1502,6 +1522,19 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   const auto& core_eval_ptr =
                       any_cast<const detail::core_eval_pack_type<
                           Operator::delcgtg2>&>(core_eval_pack_)
+                          .first();
+                  const auto& core_ints_params =
+                      any_cast<const typename operator_traits<
+                          Operator::cgtg>::oper_params_type&>(
+                          core_ints_params_);
+                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
+                } break;
+                case Operator::delcgtga_delcgtgb: {
+                  // core_ints_params_ holds the product geminal, see
+                  // init_core_ints_params
+                  const auto& core_eval_ptr =
+                      any_cast<const detail::core_eval_pack_type<
+                          Operator::delcgtga_delcgtgb>&>(core_eval_pack_)
                           .first();
                   const auto& core_ints_params =
                       any_cast<const typename operator_traits<
