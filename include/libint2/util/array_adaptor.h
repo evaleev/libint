@@ -69,13 +69,21 @@ class ext_stack_allocator {
   explicit ext_stack_allocator(U (&array)[N]) noexcept
       : stack_(const_cast<T*>(&array[0])), free_(stack_) {}
 
+  /// a container copy-constructed from one using this allocator gets a
+  /// heap-only allocator: the arena belongs to the original container, and a
+  /// copy of the allocator state would hand out the same (or overlapping)
+  /// storage
+  ext_stack_allocator select_on_container_copy_construction() const noexcept {
+    return ext_stack_allocator();
+  }
+
   template <class _Up>
   struct rebind {
     using other = ext_stack_allocator<_Up, N>;
   };
 
   T* allocate(std::size_t n) {
-    assert(stack_ != nullptr && "array_view_allocator not initialized");
+    if (stack_ == nullptr) return new T[n];  // heap-only allocator
     if (stack_ + N - free_ >=
         static_cast<std::ptrdiff_t>(n)) {  // have free space on stack
       const auto result = free_;
@@ -86,7 +94,7 @@ class ext_stack_allocator {
     }
   }
   void deallocate(T* p, std::size_t n) noexcept {
-    if (pointer_on_stack(p)) {
+    if (stack_ != nullptr && pointer_on_stack(p)) {
       assert(p + n == free_ && "stack deallocation out of order");
       free_ -= n;
     } else {

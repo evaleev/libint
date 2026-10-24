@@ -2284,7 +2284,12 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
         for (auto c = 0u; c != nopers && trivial; ++c)
           trivial = (this->braket_swap_remap(c) == c);
         if (!trivial) {
-          const auto tmp = targets_;
+          // N.B. targets_ uses ext_stack_allocator (its elements live in
+          // primdata_[0].targets); do not copy the vector, a copy inherits
+          // the allocator and may be placed on the same arena
+          assert(ntargets <= static_cast<int>(max_ntargets));
+          std::array<const value_type*, max_ntargets> tmp;
+          std::copy(targets_.begin(), targets_.begin() + ntargets, tmp.begin());
           for (auto s = 0; s != ntargets; ++s) {
             const auto d = s / nopers;
             const auto c = s % nopers;
