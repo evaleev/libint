@@ -37,6 +37,7 @@
 #include <cstdio>
 #include <fstream>
 #include <functional>
+#include <set>
 #include <utility>
 
 using namespace std;
@@ -1034,6 +1035,13 @@ std::string declare_function(const std::shared_ptr<CodeContext>& context,
 }  // namespace libint2
 
 namespace {
+std::string precomputed_symbol(const std::shared_ptr<CodeContext>& context,
+                               const std::string& label) {
+  const std::string name = context->label_to_name(label);
+  if (context->cparams()->max_vector_length() == 1) return "hv_" + name;
+  return "inteval->" + name + "[vi]";
+}
+
 template <class Container>
 std::shared_ptr<MemBlockSet> to_memoryblks(Container& vertices) {
   std::shared_ptr<MemBlockSet> result(new MemBlockSet);
@@ -1203,6 +1211,21 @@ void DirectedGraph::generate_code(
     def << context->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
     def << "inteval->timers->start(0);" << std::endl;
     def << context->macro_endif();
+  }
+
+  if (context->cparams()->max_vector_length() == 1) {
+    std::set<std::string> declared;
+    for (const auto& v : stack_) {
+      const ver_ptr& vptr = vertex_ptr(v);
+      if (!vptr->precomputed() || !vptr->symbol_set() ||
+          vptr->symbol() != precomputed_symbol(context, vptr->label()) ||
+          !declared.insert(vptr->symbol()).second)
+        continue;
+      def << context->decldef(
+          context->const_modifier() + context->type_name<double>(),
+          vptr->symbol(),
+          "inteval->" + context->label_to_name(vptr->label()) + "[0]");
+    }
   }
 
   // now print out the code for this graph
@@ -1528,10 +1551,7 @@ void DirectedGraph::assign_symbols(
     // test if the vertex is precomputed runtime quantity, like a geometric
     // parameter
     if ((vptr)->precomputed()) {
-      std::string symbol("inteval->");
-      symbol += context->label_to_name((vptr)->label());
-      symbol += "[vi]";
-      (vptr)->set_symbol(symbol);
+      (vptr)->set_symbol(precomputed_symbol(context, (vptr)->label()));
       continue;
     }
 
