@@ -122,6 +122,91 @@ TEST_CASE("Slater/Yukawa integrals", "[engine][2-body]") {
   }
 }
 
+TEST_CASE("delcgtga_delcgtgb integrals", "[engine][2-body]") {
+  std::vector<Shell> obs{
+      // pseudorandom s
+      Shell{{1.5, 0.4}, {{0, true, {1.0, 0.5}}}, {{0.0, 0.0, 0.0}}},
+      // pseudorandom p
+      Shell{{1.0, 3.0}, {{1, true, {1.0, 0.3}}}, {{0.5, -0.3, 0.2}}},
+      // pseudorandom d
+      Shell{{2.0, 5.0}, {{2, true, {1.0, 0.2}}}, {{1.0, 1.0, 1.0}}},
+  };
+  const auto max_nprim = libint2::max_nprim(obs);
+  const auto max_l = libint2::max_l(obs);
+
+  // two unrelated pseudorandom geminals
+  using geminal_t = std::vector<std::pair<double, double>>;
+  const geminal_t ga = {{0.3, 0.4}, {1.2, 0.25}, {4.5, -0.1}};
+  const geminal_t gb = {{0.7, 0.6}, {2.5, -0.2}};
+  geminal_t ga_plus_gb = ga;
+  ga_plus_gb.insert(ga_plus_gb.end(), gb.begin(), gb.end());
+
+  if (LIBINT2_MAX_AM_eri >= max_l) {
+    auto engine = Engine(Operator::delcgtga_delcgtgb, max_nprim, max_l);
+    // N.B. delcgtg2 has no default params, must construct with params
+    auto engine_ref = Engine(Operator::delcgtg2, max_nprim, max_l, 0,
+                             std::numeric_limits<double>::epsilon(), ga);
+
+    // computes all shell quartets of obs with engine e
+    auto compute_all = [&](Engine& e) {
+      std::vector<double> ints;
+      const auto nshell = obs.size();
+      for (int s1 = 0; s1 != nshell; ++s1) {
+        for (int s2 = 0; s2 != nshell; ++s2) {
+          for (int s3 = 0; s3 != nshell; ++s3) {
+            for (int s4 = 0; s4 != nshell; ++s4) {
+              e.compute(obs[s1], obs[s2], obs[s3], obs[s4]);
+              const auto setsize = obs[s1].size() * obs[s2].size() *
+                                   obs[s3].size() * obs[s4].size();
+              if (e.results()[0] == nullptr)
+                ints.insert(ints.end(), setsize, 0.0);
+              else
+                ints.insert(ints.end(), e.results()[0],
+                            e.results()[0] + setsize);
+            }
+          }
+        }
+      }
+      return ints;
+    };
+
+    SECTION("a = b reproduces delcgtg2") {
+      engine.set_params(std::array<geminal_t, 2>{ga, ga});
+      engine_ref.set_params(ga);
+      const auto ints = compute_all(engine);
+      const auto ints_ref = compute_all(engine_ref);
+      REQUIRE(ints.size() == ints_ref.size());
+      for (std::size_t i = 0; i != ints.size(); ++i)
+        REQUIRE(ints[i] == Approx(ints_ref[i]).margin(1e-12));
+    }
+
+    SECTION("a != b: symmetric and satisfies polarization identity") {
+      // (Del g_a).(Del g_b) = ((Del (g_a + g_b))^2 - (Del g_a)^2 -
+      // (Del g_b)^2) / 2
+      engine.set_params(std::array<geminal_t, 2>{ga, gb});
+      const auto ints_ab = compute_all(engine);
+      engine.set_params(std::array<geminal_t, 2>{gb, ga});
+      const auto ints_ba = compute_all(engine);
+      engine_ref.set_params(ga_plus_gb);
+      const auto ints_apb = compute_all(engine_ref);
+      engine_ref.set_params(ga);
+      const auto ints_a = compute_all(engine_ref);
+      engine_ref.set_params(gb);
+      const auto ints_b = compute_all(engine_ref);
+
+      bool nontrivial = false;
+      for (std::size_t i = 0; i != ints_ab.size(); ++i) {
+        REQUIRE(ints_ab[i] == Approx(ints_ba[i]).margin(1e-12));
+        REQUIRE(ints_ab[i] ==
+                Approx((ints_apb[i] - ints_a[i] - ints_b[i]) / 2)
+                    .margin(1e-10));
+        if (std::abs(ints_ab[i]) > 1e-3) nontrivial = true;
+      }
+      REQUIRE(nontrivial);
+    }
+  }
+}
+
 // see https://github.com/evaleev/libint/issues/216
 TEST_CASE_METHOD(libint2::unit::DefaultFixture, "bra-ket permutation",
                  "[engine][2-body]") {
