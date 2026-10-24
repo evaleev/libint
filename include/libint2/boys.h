@@ -976,8 +976,11 @@ struct TennoGmEval {
     }
     return gaussian_fits_aptr_accessor().load()->at(zeta);
   }
-  mutable std::unique_ptr<GaussianGmEval<Real, -1>> yukawa_gaussian_fit_eval_;
-  mutable std::unique_ptr<GaussianGmEval<Real, 0>> slater_gaussian_fit_eval_;
+  // evaluators of the Gaussian-fit fallback; constructed eagerly, and the
+  // k=-1 evaluator is given per-call scratch, so that the fallback can be
+  // used concurrently (the TennoGmEval instance is shared by all threads)
+  std::unique_ptr<GaussianGmEval<Real, -1>> yukawa_gaussian_fit_eval_;
+  std::unique_ptr<GaussianGmEval<Real, 0>> slater_gaussian_fit_eval_;
 
  public:
   /// \param m_max maximum value of the Gm function index
@@ -1018,6 +1021,11 @@ struct TennoGmEval {
           "TennoGmEval::init() : requested mmax exceeds the "
           "hard-coded mmax");
     init_table();
+    fm_eval_ = FmEval_Chebyshev7<Real>::instance(mmax_);
+    yukawa_gaussian_fit_eval_ = std::unique_ptr<GaussianGmEval<Real, -1>>(
+        new GaussianGmEval<Real, -1>(mmax_, precision_));
+    slater_gaussian_fit_eval_ = std::unique_ptr<GaussianGmEval<Real, 0>>(
+        new GaussianGmEval<Real, 0>(mmax_, precision_));
   }
 
   ~TennoGmEval() {
@@ -1065,7 +1073,13 @@ struct TennoGmEval {
     const auto U = 0.25 * zeta * zeta * one_over_rho;
     assert(U >= 0);
     bool success = false;  // did interpolation or recursion work?
-    if (T > Tmax || U < Umin) {
+    if (U < Umin && (T <= Tmax || U == 0)) {
+      // U is below the interpolation range: the upward recursion is unstable
+      // for small T (#444), expand in U about the Boys function instead; for
+      // U = 0 the expansion is exact for any T
+      eval_small_U<false>(Gm, T, U, /* zeta_over_two_rho = */ 0, mmax);
+      success = true;
+    } else if (T > Tmax) {
       success = eval_urr<false>(Gm, T, U, /* zeta_over_two_rho = */ 0, mmax);
     } else {
       success =
@@ -1073,11 +1087,9 @@ struct TennoGmEval {
     }
     if (!success) {  // fallback is to use the Gaussian fit
       auto& gaussian_fit = get_gaussian_fit(zeta);
-      if (!yukawa_gaussian_fit_eval_)
-        yukawa_gaussian_fit_eval_ = std::unique_ptr<GaussianGmEval<Real, -1>>(
-            new GaussianGmEval<Real, -1>(mmax_, precision_));
+      detail::CoreEvalScratch<GaussianGmEval<Real, -1>> scratch(mmax_);
       yukawa_gaussian_fit_eval_->eval(Gm, 1.0 / one_over_rho, T, mmax,
-                                      gaussian_fit);
+                                      gaussian_fit, &scratch);
     }
   }
   /// @param[in] Gm pointer to array of @c mmax+1 @c Real elements, on
@@ -1100,16 +1112,18 @@ struct TennoGmEval {
     assert(U > 0);  // integral factorizes into 2 overlaps for U = 0
     const auto zeta_over_two_rho = 0.5 * zeta * one_over_rho;
     bool success = false;  // did interpolation or recursion work?
-    if (T > Tmax) {
+    if (U < Umin && T <= Tmax) {
+      // U is below the interpolation range: expand in U about the Boys
+      // function (more precise and much cheaper than the Gaussian fit)
+      eval_small_U<true>(Gm, T, U, zeta_over_two_rho, mmax);
+      success = true;
+    } else if (T > Tmax) {
       success = eval_urr<true>(Gm, T, U, zeta_over_two_rho, mmax);
     } else {
       success = interpolate_Gm<true>(Gm, T, U, zeta_over_two_rho, mmax);
     }
     if (!success) {  // fallback is to use the Gaussian fit
       auto& gaussian_fit = get_gaussian_fit(zeta);
-      if (!slater_gaussian_fit_eval_)
-        slater_gaussian_fit_eval_ = std::unique_ptr<GaussianGmEval<Real, 0>>(
-            new GaussianGmEval<Real, 0>(mmax_, precision_));
       slater_gaussian_fit_eval_->eval(Gm, 1.0 / one_over_rho, T, mmax,
                                       gaussian_fit);
     }
@@ -1221,10 +1235,11 @@ struct TennoGmEval {
       // TODO when lambda * lambda - T exceeds 709 exp overflows, so need to
       // handle this more carefully
       if (lambda * lambda - T > 709) {
-        libint2::verbose_stream()
-            << "TennoGmEval::eval_G0_and_maybe_Gm1(): for large T and/or U "
-            << "current implementation overflows, will represent "
-            << "Slater function as a linear combination of Gaussians\n";
+        if (libint2::verbose())
+          libint2::verbose_stream()
+              << "TennoGmEval::eval_G0_and_maybe_Gm1(): for large T and/or U "
+              << "current implementation overflows, will represent "
+              << "Slater function as a linear combination of Gaussians\n";
         return libint2::nullopt;
       }
       const Real erfc_l = exp(lambda * lambda - T) * erfc(lambda);
@@ -1273,8 +1288,9 @@ struct TennoGmEval {
   }
 
   /// Computes core integrals by upward recursion from \f$ G_{-1} (T,U) \f$ and
-  /// \f$ G_0 (T,U) \f$ this is unstable for small T, so use when interpolation
-  /// does not apply.
+  /// \f$ G_0 (T,U) \f$ this is unstable for small T, so use only for
+  /// \f$ T > \f$ \c Tmax (for \f$ U < \f$ \c Umin at smaller T use
+  /// eval_small_U() instead).
   /// @tparam[in] Exp if true, will compute core integrals of the exponential
   /// operator, otherwise will compute Yukawa
   /// @param[out] Gm_vec pointer to an array with at least @c mmax+1 elements,
@@ -1295,23 +1311,17 @@ struct TennoGmEval {
 
     if (T == 0) return false;
 
-    const Real sqrt_U = sqrt(U);
-    const Real sqrt_T = sqrt(T);
-    const Real oo_sqrt_T = 1 / sqrt_T;
-    const Real oo_sqrt_U = 1 / sqrt_U;
-    const Real kappa = sqrt_U - sqrt_T;
-    const Real lambda = sqrt_U + sqrt_T;
-    const Real sqrtPi_over_4(
-        0.44311346272637900682454187083528629569938736403060);
-    const Real pfac = sqrtPi_over_4;
-    const Real erfc_k = exp(kappa * kappa - T) * erfc(kappa);
-    const Real erfc_l = exp(lambda * lambda - T) * erfc(lambda);
+    // G_{-1} and G_0 seed the recursion; their closed forms overflow for
+    // U + 2 sqrt(U T) > 709, in which case report failure (the values are
+    // below exp(U - 2 sqrt(U T)), hence negligible for T > Tmax) rather
+    // than proceed with inf/NaN
+    const auto G0_Gm1 = eval_G0_and_maybe_Gm1<true>(T, U);
+    if (!G0_Gm1.has_value()) return false;
 
-    Real Gmm1;                                    // will contain G[m-1]
-    Real Gm;                                      // will contain G[m]
-    Real Gmp1;                                    // will contain G[m+1]
-    Gmm1 = pfac * (erfc_k + erfc_l) * oo_sqrt_U;  // G_{-1}
-    Gm = pfac * (erfc_k - erfc_l) * oo_sqrt_T;    // G_{0}
+    Real Gmm1;  // will contain G[m-1]
+    Real Gm;    // will contain G[m]
+    Real Gmp1;  // will contain G[m+1]
+    std::tie(Gm, Gmm1) = G0_Gm1.value();
     if
 #if __cplusplus >= 201703L
         constexpr
@@ -1348,6 +1358,110 @@ struct TennoGmEval {
     return true;
   }
 
+  /// Computes core integrals for small \f$ U \f$ by expanding in powers of
+  /// \f$ U \f$ about the Boys function:
+  /// \f[
+  ///   G_m(T,U) = e^U \left[ \sum_{k=0}^{K} \frac{(-U)^k}{k!} F_{m-k}(T) +
+  ///   \frac{U^{m+1/2}}{2} \sum_{j=0}^{J} \Gamma(-m-j-\tfrac{1}{2})
+  ///   \frac{(-TU)^j}{j!} \right],
+  /// \f]
+  /// where for \f$ n<0 \f$ \f$ F_n(T) \f$ is the Hadamard finite part of the
+  /// (divergent) Boys integral, obtained from \f$ F_0(T) \f$ by the downward
+  /// recursion \f$ F_n = (2T F_{n+1} + e^{-T})/(2n+1) \f$. The first sum is
+  /// the Taylor series of \f$ e^{-U/t^2} \f$ integrated term by term, the
+  /// second collects the terms nonanalytic in \f$ U \f$ produced by the
+  /// \f$ t \to 0 \f$ region; the latter are only significant for
+  /// \f$ m \leq 2 \f$. For \f$ U \leq 10^{-7} \f$ and \f$ T \leq 1024 \f$ the
+  /// truncation error is below \f$ 10^{-20} \f$ (verified against 50-digit
+  /// quadrature). Unlike eval_urr() this is stable for small (even zero) T,
+  /// and unlike interpolate_Gm() it is exact for U = 0. See issue #444.
+  /// @tparam[in] Exp if true, will compute core integrals of the exponential
+  /// operator, otherwise will compute Yukawa
+  /// @param[out] Gm_vec pointer to an array with at least @c mmax+1 elements,
+  /// on output contains:
+  ///    - if `Exp==false`, `Gm_vec[m]` contains \f$ G_m(T,U), m=0..mmax\f$ ;
+  ///    - if `Exp==true`, `Gm_vec[m]` contains \f$ \frac{\zeta}{2 \rho} \left(
+  ///    G_{m-1}(T,U) - G_m(T,U) \right), m=0..mmax \f$;
+  /// @param[in] T the value of \f$ T \f$, must not exceed \c Tmax unless
+  /// \f$ U = 0 \f$
+  /// @param[in] U the value of \f$ U \f$, must be smaller than \c Umin
+  /// (and nonzero if @c Exp==true)
+  /// @param[in] zeta_over_two_rho the value of \f$ \frac{\zeta}{2 \rho} \f$,
+  /// only used if @c Exp==true
+  /// @param[in] mmax the maximum value of \f$ m \f$
+  template <bool Exp>
+  void eval_small_U(Real* Gm_vec, Real T, Real U, Real zeta_over_two_rho,
+                    size_t mmax) const {
+    assert(T >= 0 && (T <= Tmax || U == 0));
+    assert(U >= 0 && U < Umin);
+    assert(!Exp || U > 0);
+    assert(mmax <= mmax_);
+    // the truncation orders below assume U < 1e-7 and T <= 1024
+    static_assert(cheb_table_uminlog10 <= -7 && cheb_table_tmaxlog2 <= 10,
+                  "TennoGmEval::eval_small_U(): truncation orders assume "
+                  "Umin <= 1e-7 and Tmax <= 1024");
+    constexpr int K = 4;      // order of the Taylor series in U
+    constexpr int J = 4;      // order of the series in TU of the nonanalytic
+                              // part
+    constexpr int mmin = -1;  // need G_{-1} if Exp
+    constexpr int mmax_nonanalytic = 2;  // U^{m+1/2} is negligible for m > 2
+    constexpr int nmin = mmin - K;       // lowest-order F_n needed
+    const Real sqrtPi(1.7724538509055160272981674833411451827975494561224);
+
+    // F0[n] = F_n(T), n = nmin .. mmax
+    Real F[static_cast<int>(cheb_table_mmax) + 1 - nmin];
+    Real* const F0 = F - nmin;
+    fm_eval_->eval(F0, T, static_cast<int>(mmax));
+    const Real exp_mT = exp(-T);
+    const Real two_T = 2 * T;
+    for (int n = -1; n >= nmin; --n)
+      F0[n] = (two_T * F0[n + 1] + exp_mT) / (2 * n + 1);
+
+    // (-U)^k / k!
+    Real Uk_over_kfac[K + 1];
+    Uk_over_kfac[0] = 1;
+    for (int k = 1; k <= K; ++k)
+      Uk_over_kfac[k] = Uk_over_kfac[k - 1] * (-U) / k;
+
+    // gamma_mnmh[n - mmin] = Gamma(-n-1/2), n = mmin .. mmax_nonanalytic + J
+    constexpr int ngamma = mmax_nonanalytic + J - mmin + 1;
+    Real gamma_mnmh[ngamma];
+    gamma_mnmh[0] = sqrtPi;  // Gamma(1/2)
+    for (int n = mmin + 1; n <= mmax_nonanalytic + J; ++n)
+      gamma_mnmh[n - mmin] = gamma_mnmh[n - mmin - 1] * (-2) / (2 * n + 1);
+
+    const Real exp_U = exp(U);
+    const Real minus_TU = -T * U;
+    Real U_pow_m_half = Exp ? 1 / sqrt(U) : sqrt(U);  // U^{m+1/2}
+
+    Real Gmm1 = 0;  // will contain G[m-1]
+    for (int m = Exp ? mmin : 0; m <= static_cast<int>(mmax); ++m) {
+      Real Gm = 0;
+      for (int k = 0; k <= K; ++k) Gm += Uk_over_kfac[k] * F0[m - k];
+      if (m <= mmax_nonanalytic) {
+        Real sum = 0;
+        Real TUj_over_jfac = 1;  // (-TU)^j / j!
+        for (int j = 0; j <= J; ++j) {
+          sum += gamma_mnmh[m + j - mmin] * TUj_over_jfac;
+          TUj_over_jfac *= minus_TU / (j + 1);
+        }
+        Gm += 0.5 * U_pow_m_half * sum;
+        U_pow_m_half *= U;
+      }
+      Gm *= exp_U;
+      if
+#if __cplusplus >= 201703L
+          constexpr
+#endif
+          (!Exp) {
+        Gm_vec[m] = Gm;
+      } else {
+        if (m != mmin) Gm_vec[m] = (Gmm1 - Gm) * zeta_over_two_rho;
+        Gmm1 = Gm;
+      }
+    }
+  }
+
   /// compute core integrals by Chebyshev interpolation
   /// @tparam[in] Exp if true, will compute core integrals of the exponential
   /// operator, otherwise will compute Yukawa
@@ -1368,12 +1482,13 @@ struct TennoGmEval {
                       long mmax) const {
     assert(T >= 0);
     if (U > Umax) {
-      libint2::verbose_stream()
-          << "TennoGmEval::eval_{yukawa,slater}() : arguments out of range, "
-          << "zeta*zeta*one_over_rho/4=" << std::to_string(U)
-          << " cannot exceed " << std::to_string(Umax)
-          << " will represent Slater function as a linear combination of"
-          << " Gaussian functions " << std::endl;
+      if (libint2::verbose())
+        libint2::verbose_stream()
+            << "TennoGmEval::eval_{yukawa,slater}() : arguments out of range, "
+            << "zeta*zeta*one_over_rho/4=" << std::to_string(U)
+            << " cannot exceed " << std::to_string(Umax)
+            << " will represent Slater function as a linear combination of"
+            << " Gaussian functions " << std::endl;
       return false;
     }
     if (U < Umin || U > Umax) {
@@ -1670,6 +1785,8 @@ struct TennoGmEval {
   Real precision_;
   ExpensiveNumbers<Real> numbers_;
   Real* c_ = nullptr;
+  std::shared_ptr<const FmEval_Chebyshev7<Real>>
+      fm_eval_;  // Boys function evaluator used by eval_small_U()
 
   void init_table() {
     // get memory
