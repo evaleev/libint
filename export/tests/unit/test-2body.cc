@@ -1310,6 +1310,11 @@ Shell rkb_shell(const Shell &sh, bool pure) {
 }  // namespace
 
 TEST_CASE("RKB integrals with solid harmonics shells", "[engine][2-body]") {
+  // this TU includes test_eri/eri.h, which declares libint2::parity; make sure
+  // the solid harmonics coefficients computed from this TU's instantiation
+  // (which wins at link time on some toolchains) do not pick it up
+  REQUIRE(libint2::solidharmonics::SolidHarmonicsCoefficients<double>::coeff(
+              2, 0, 2, 0, 0) == Approx(-0.5));
   // cartesian s, p, contracted p, d; the solid harmonics variants of the same
   const std::vector<Shell> cart_shells{
       Shell{{1.0}, {{0, false, {1.0}}}, {{0.0, 0.0, 0.0}}},
