@@ -4,6 +4,10 @@
 Following is a brief summary of changes made in each release of Libint.
 
 - unreleased:
+  - PR #446: a value of 0 for LIBINT2_OPT_AM (or for the per-class LIBINT2_<class>_MAX_AM /
+             LIBINT2_<class>_OPT_AM) is now honored; previously config.h dropped the macro
+             (#cmakedefine treats 0 as false), which broke the compiler build for LIBINT2_OPT_AM
+             and silently fell back to the default for the per-class values (#445)
   - PR #440: incremental builds re-export the library when include/libint2, export/tests, etc. change,
              without recompiling unchanged library sources (#438)
   - PR #436: GenericGmEval no longer copies the core evaluator on every call; fixes poor thread

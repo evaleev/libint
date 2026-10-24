@@ -45,13 +45,19 @@
 #cmakedefine LIBINT_HARD_MAX_AM @LIBINT_HARD_MAX_AM@
 
 /* Max AM (same for all derivatives; if not defined see LIBINT_MAX_AM_LIST) */
-#cmakedefine LIBINT_MAX_AM @LIBINT_MAX_AM@
+#define LIBINT_MAX_AM @LIBINT_MAX_AM@
+#if @LIBINT_MAX_AM@ == -1
+#undef LIBINT_MAX_AM
+#endif
 
 /* Max AM for integrals and their derivatives */
 #cmakedefine LIBINT_MAX_AM_LIST "@LIBINT_MAX_AM_LIST@"
 
 /* Max optimized AM (same for all derivatives; if not defined see LIBINT_OPT_AM_LIST) */
-#cmakedefine LIBINT_OPT_AM @LIBINT_OPT_AM@
+#define LIBINT_OPT_AM @LIBINT_OPT_AM@
+#if @LIBINT_OPT_AM@ == -1
+#undef LIBINT_OPT_AM
+#endif
 
 /* Max optimized AM for integrals and their derivatives */
 #cmakedefine LIBINT_OPT_AM_LIST "@LIBINT_OPT_AM_LIST@"
@@ -96,13 +102,19 @@
 #endif
 
 /* Max AM for one-body ints (same for all derivatives; if not defined see LIBINT_ONEBODY_MAX_AM_LIST) */
-#cmakedefine LIBINT_ONEBODY_MAX_AM @LIBINT_ONEBODY_MAX_AM@
+#define LIBINT_ONEBODY_MAX_AM @LIBINT_ONEBODY_MAX_AM@
+#if @LIBINT_ONEBODY_MAX_AM@ == -1
+#undef LIBINT_ONEBODY_MAX_AM
+#endif
 
 /* Max AM for one-body and its derivatives */
 #cmakedefine LIBINT_ONEBODY_MAX_AM_LIST "@LIBINT_ONEBODY_MAX_AM_LIST@"
 
 /* Max optimized AM for one-body ints (same for all derivatives; if not defined see LIBINT_ONEBODY_OPT_AM_LIST) */
-#cmakedefine LIBINT_ONEBODY_OPT_AM @LIBINT_ONEBODY_OPT_AM@
+#define LIBINT_ONEBODY_OPT_AM @LIBINT_ONEBODY_OPT_AM@
+#if @LIBINT_ONEBODY_OPT_AM@ == -1
+#undef LIBINT_ONEBODY_OPT_AM
+#endif
 
 /* Max optimized AM for one-body and its derivatives */
 #cmakedefine LIBINT_ONEBODY_OPT_AM_LIST "@LIBINT_ONEBODY_OPT_AM_LIST@"
@@ -111,25 +123,37 @@
 #cmakedefine LIBINT_MULTIPOLE_MAX_ORDER @LIBINT_MULTIPOLE_MAX_ORDER@
 
 /* Max AM for ERI (same for all derivatives; if not defined see LIBINT_ERI_MAX_AM_LIST) */
-#cmakedefine LIBINT_ERI_MAX_AM @LIBINT_ERI_MAX_AM@
+#define LIBINT_ERI_MAX_AM @LIBINT_ERI_MAX_AM@
+#if @LIBINT_ERI_MAX_AM@ == -1
+#undef LIBINT_ERI_MAX_AM
+#endif
 
 /* Max AM for ERI and its derivatives */
 #cmakedefine LIBINT_ERI_MAX_AM_LIST "@LIBINT_ERI_MAX_AM_LIST@"
 
 /* Max optimized AM for ERI (same for all derivatives; if not defined see LIBINT_ERI_OPT_AM_LIST) */
-#cmakedefine LIBINT_ERI_OPT_AM @LIBINT_ERI_OPT_AM@
+#define LIBINT_ERI_OPT_AM @LIBINT_ERI_OPT_AM@
+#if @LIBINT_ERI_OPT_AM@ == -1
+#undef LIBINT_ERI_OPT_AM
+#endif
 
 /* Max optimized AM for ERI and its derivatives */
 #cmakedefine LIBINT_ERI_OPT_AM_LIST "@LIBINT_ERI_OPT_AM_LIST@"
 
 /* Max AM for 3-center ERI (same for all derivatives; if not defined see LIBINT_ERI3_MAX_AM_LIST) */
-#cmakedefine LIBINT_ERI3_MAX_AM @LIBINT_ERI3_MAX_AM@
+#define LIBINT_ERI3_MAX_AM @LIBINT_ERI3_MAX_AM@
+#if @LIBINT_ERI3_MAX_AM@ == -1
+#undef LIBINT_ERI3_MAX_AM
+#endif
 
 /* Max AM for 3-center ERI and its derivatives */
 #cmakedefine LIBINT_ERI3_MAX_AM_LIST "@LIBINT_ERI3_MAX_AM_LIST@"
 
 /* Max optimized AM for 3-center ERI (same for all derivatives; if not defined see LIBINT_ERI3_OPT_AM_LIST) */
-#cmakedefine LIBINT_ERI3_OPT_AM @LIBINT_ERI3_OPT_AM@
+#define LIBINT_ERI3_OPT_AM @LIBINT_ERI3_OPT_AM@
+#if @LIBINT_ERI3_OPT_AM@ == -1
+#undef LIBINT_ERI3_OPT_AM
+#endif
 
 /* Max optimized AM for 3-center ERI and its derivatives */
 #cmakedefine LIBINT_ERI3_OPT_AM_LIST "@LIBINT_ERI3_OPT_AM_LIST@"
@@ -138,13 +162,19 @@
 #cmakedefine LIBINT_ERI3_PURE_SH @LIBINT_ERI3_PURE_SH@
 
 /* Max AM for 2-center ERI (same for all derivatives; if not defined see LIBINT_ERI2_MAX_AM_LIST) */
-#cmakedefine LIBINT_ERI2_MAX_AM @LIBINT_ERI2_MAX_AM@
+#define LIBINT_ERI2_MAX_AM @LIBINT_ERI2_MAX_AM@
+#if @LIBINT_ERI2_MAX_AM@ == -1
+#undef LIBINT_ERI2_MAX_AM
+#endif
 
 /* Max AM for 2-center ERI and its derivatives */
 #cmakedefine LIBINT_ERI2_MAX_AM_LIST "@LIBINT_ERI2_MAX_AM_LIST@"
 
 /* Max optimized AM for 2-center ERI (same for all derivatives; if not defined see LIBINT_ERI2_OPT_AM_LIST) */
-#cmakedefine LIBINT_ERI2_OPT_AM @LIBINT_ERI2_OPT_AM@
+#define LIBINT_ERI2_OPT_AM @LIBINT_ERI2_OPT_AM@
+#if @LIBINT_ERI2_OPT_AM@ == -1
+#undef LIBINT_ERI2_OPT_AM
+#endif
 
 /* Max optimized AM for 2-center ERI and its derivatives */
 #cmakedefine LIBINT_ERI2_OPT_AM_LIST "@LIBINT_ERI2_OPT_AM_LIST@"
@@ -153,10 +183,16 @@
 #cmakedefine LIBINT_ERI2_PURE_SH @LIBINT_ERI2_PURE_SH@
 
 /* Max AM for G12 method integrals */
-#cmakedefine LIBINT_G12_MAX_AM @LIBINT_G12_MAX_AM@
+#define LIBINT_G12_MAX_AM @LIBINT_G12_MAX_AM@
+#if @LIBINT_G12_MAX_AM@ == -1
+#undef LIBINT_G12_MAX_AM
+#endif
 
 /* Max optimized AM for G12 method integrals */
-#cmakedefine LIBINT_G12_OPT_AM @LIBINT_G12_OPT_AM@
+#define LIBINT_G12_OPT_AM @LIBINT_G12_OPT_AM@
+#if @LIBINT_G12_OPT_AM@ == -1
+#undef LIBINT_G12_OPT_AM
+#endif
 
 /* Support [Ti,G12] ? */
 #cmakedefine01 LIBINT_SUPPORT_T1G12
@@ -165,10 +201,16 @@
 #endif
 
 /* Max AM for G12DKH method integrals */
-#cmakedefine LIBINT_G12DKH_MAX_AM @LIBINT_G12DKH_MAX_AM@
+#define LIBINT_G12DKH_MAX_AM @LIBINT_G12DKH_MAX_AM@
+#if @LIBINT_G12DKH_MAX_AM@ == -1
+#undef LIBINT_G12DKH_MAX_AM
+#endif
 
 /* Max optimized AM for G12DKH method integrals */
-#cmakedefine LIBINT_G12DKH_OPT_AM @LIBINT_G12DKH_OPT_AM@
+#define LIBINT_G12DKH_OPT_AM @LIBINT_G12DKH_OPT_AM@
+#if @LIBINT_G12DKH_OPT_AM@ == -1
+#undef LIBINT_G12DKH_OPT_AM
+#endif
 
 /* Whether integral sets can be unrolled */
 #cmakedefine LIBINT_ENABLE_UNROLLING @LIBINT_ENABLE_UNROLLING@
