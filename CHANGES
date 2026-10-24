@@ -4,13 +4,18 @@
 Following is a brief summary of changes made in each release of Libint.
 
 - unreleased:
-  - PR #447: TennoGmEval (Operator::yukawa and Operator::stg): core integrals with U = zeta^2/(4 rho) below the
-             interpolation range (U < 1e-7) and T <= 1024 are now computed by expanding in U about the
-             Boys function. Previously the Yukawa integrals in this regime used the upward recursion,
-             which is unstable for small T and returned garbage for m >= 4 (#444); the Slater integrals
-             used the Gaussian fit of the kernel, which was accurate but much slower and used scratch
-             shared between threads. TennoGmEval::eval_yukawa() now also handles U = 0 (zeta = 0),
-             in which case the result is the Boys function.
+  - PR #447: TennoGmEval (Operator::yukawa and Operator::stg): core integrals with U = zeta^2/(4
+             rho) below the interpolation range (U < 1e-7) and T <= 1024 are now computed by
+             expanding in U about the Boys function. Previously the Yukawa integrals in this regime
+             used the upward recursion, which is unstable for small T and returned garbage for m >=
+             4 (#444); the Slater integrals used the Gaussian fit of the kernel, which was accurate
+             but much slower and used scratch shared between threads. TennoGmEval::eval_yukawa() now
+             also handles U = 0 (zeta = 0), in which case the result is the Boys function.
+  - PR #447: TennoGmEval: for T > 1024 and U + 2 sqrt(U T) > 709 the upward recursion overflowed and returned
+             NaN; now the Gaussian fit is used, as elsewhere. The Gaussian-fit fallback (used for
+             U > 1e3 and the overflow cases) is now safe to use concurrently (its evaluators are
+             constructed eagerly and use per-call scratch), and its diagnostics are only printed if
+             libint2::verbose() is true.
   - PR #446: a value of 0 for LIBINT2_OPT_AM (or for the per-class LIBINT2_<class>_MAX_AM /
              LIBINT2_<class>_OPT_AM) is now honored; previously config.h dropped the macro
              (#cmakedefine treats 0 as false), which broke the compiler build for LIBINT2_OPT_AM

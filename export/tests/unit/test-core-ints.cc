@@ -754,6 +754,25 @@ TEST_CASE("Slater/Yukawa core integral values", "[core-ints]") {
     }
     delete[] boys;
   }
+  // eval at T > Tmax with U + 2 sqrt(U T) > 709 => the closed-form G_{-1}
+  // and G_0 that seed the upward recursion overflow, use the Gaussian fit
+  // (used to return NaN); the exact values are below exp(U - 2 sqrt(U T))
+  // i.e. negligible
+  {
+    for (const auto& TU :
+         {std::make_pair(1100., 1000.), std::make_pair(1280., 125.)}) {
+      const auto T = TU.first;
+      const auto U = TU.second;
+      tenno_eval->eval_yukawa(yukawa, 4 * U, T, mmax, 1.);
+      tenno_eval->eval_slater(stg, 4 * U, T, mmax, 1.);
+      for (int m = 0; m <= mmax; ++m) {
+        CHECK(std::isfinite(yukawa[m]));
+        CHECK(std::abs(yukawa[m]) <= 1.4e-14);
+        CHECK(std::isfinite(stg[m]));
+        CHECK(std::abs(stg[m]) <= 1.4e-14);
+      }
+    }
+  }
 
   // compare to ints of STG approximated by Gaussians
   {
@@ -786,6 +805,44 @@ TEST_CASE("Slater/Yukawa core integral values", "[core-ints]") {
       REQUIRE(std::abs(stg[m] - cgtg[m]) <= 2e-4);
     }
   }
+}
+
+// the TennoGmEval singleton is shared by all threads; this exercises every
+// evaluation path, including the Gaussian-fit fallback (large U), which must
+// not use state shared between threads
+TEST_CASE("TennoGmEval shared across threads", "[core-ints][threads]") {
+  using scalar_type = libint2::scalar_type;
+  const int mmax = 20;
+  const auto tenno_eval = libint2::TennoGmEval<scalar_type>::instance(mmax);
+
+  // evaluates Yukawa and Slater Gm on a grid of (T, U) values
+  auto compute = [&]() {
+    std::vector<scalar_type> result;
+    std::vector<scalar_type> Gm(mmax + 1);
+    auto append = [&]() { result.insert(result.end(), Gm.begin(), Gm.end()); };
+    for (scalar_type U : {1e-8, 1e-3, 1., 800., 1e4}) {
+      for (scalar_type T : {0., 0.3, 10., 1023.5, 1100.}) {
+        const scalar_type zeta = 1., one_over_rho = 4 * U;
+        tenno_eval->eval_yukawa(Gm.data(), one_over_rho, T, mmax, zeta);
+        append();
+        tenno_eval->eval_slater(Gm.data(), one_over_rho, T, mmax, zeta);
+        append();
+      }
+    }
+    return result;
+  };
+
+  const auto reference = compute();
+  for (const auto v : reference) REQUIRE(std::isfinite(v));
+  const int nthreads = 4;
+  std::vector<std::vector<scalar_type>> results(nthreads);
+  std::vector<std::thread> threads;
+  for (int t = 0; t != nthreads; ++t)
+    threads.emplace_back([&, t]() {
+      for (int rep = 0; rep != 10; ++rep) results[t] = compute();
+    });
+  for (auto& thread : threads) thread.join();
+  for (int t = 0; t != nthreads; ++t) REQUIRE(results[t] == reference);
 }
 
 // core evaluators wrapped by GenericGmEval are shared by all threads (see

@@ -976,8 +976,11 @@ struct TennoGmEval {
     }
     return gaussian_fits_aptr_accessor().load()->at(zeta);
   }
-  mutable std::unique_ptr<GaussianGmEval<Real, -1>> yukawa_gaussian_fit_eval_;
-  mutable std::unique_ptr<GaussianGmEval<Real, 0>> slater_gaussian_fit_eval_;
+  // evaluators of the Gaussian-fit fallback; constructed eagerly, and the
+  // k=-1 evaluator is given per-call scratch, so that the fallback can be
+  // used concurrently (the TennoGmEval instance is shared by all threads)
+  std::unique_ptr<GaussianGmEval<Real, -1>> yukawa_gaussian_fit_eval_;
+  std::unique_ptr<GaussianGmEval<Real, 0>> slater_gaussian_fit_eval_;
 
  public:
   /// \param m_max maximum value of the Gm function index
@@ -1019,6 +1022,10 @@ struct TennoGmEval {
           "hard-coded mmax");
     init_table();
     fm_eval_ = FmEval_Chebyshev7<Real>::instance(mmax_);
+    yukawa_gaussian_fit_eval_ = std::unique_ptr<GaussianGmEval<Real, -1>>(
+        new GaussianGmEval<Real, -1>(mmax_, precision_));
+    slater_gaussian_fit_eval_ = std::unique_ptr<GaussianGmEval<Real, 0>>(
+        new GaussianGmEval<Real, 0>(mmax_, precision_));
   }
 
   ~TennoGmEval() {
@@ -1080,11 +1087,9 @@ struct TennoGmEval {
     }
     if (!success) {  // fallback is to use the Gaussian fit
       auto& gaussian_fit = get_gaussian_fit(zeta);
-      if (!yukawa_gaussian_fit_eval_)
-        yukawa_gaussian_fit_eval_ = std::unique_ptr<GaussianGmEval<Real, -1>>(
-            new GaussianGmEval<Real, -1>(mmax_, precision_));
+      detail::CoreEvalScratch<GaussianGmEval<Real, -1>> scratch(mmax_);
       yukawa_gaussian_fit_eval_->eval(Gm, 1.0 / one_over_rho, T, mmax,
-                                      gaussian_fit);
+                                      gaussian_fit, &scratch);
     }
   }
   /// @param[in] Gm pointer to array of @c mmax+1 @c Real elements, on
@@ -1119,9 +1124,6 @@ struct TennoGmEval {
     }
     if (!success) {  // fallback is to use the Gaussian fit
       auto& gaussian_fit = get_gaussian_fit(zeta);
-      if (!slater_gaussian_fit_eval_)
-        slater_gaussian_fit_eval_ = std::unique_ptr<GaussianGmEval<Real, 0>>(
-            new GaussianGmEval<Real, 0>(mmax_, precision_));
       slater_gaussian_fit_eval_->eval(Gm, 1.0 / one_over_rho, T, mmax,
                                       gaussian_fit);
     }
@@ -1233,10 +1235,11 @@ struct TennoGmEval {
       // TODO when lambda * lambda - T exceeds 709 exp overflows, so need to
       // handle this more carefully
       if (lambda * lambda - T > 709) {
-        libint2::verbose_stream()
-            << "TennoGmEval::eval_G0_and_maybe_Gm1(): for large T and/or U "
-            << "current implementation overflows, will represent "
-            << "Slater function as a linear combination of Gaussians\n";
+        if (libint2::verbose())
+          libint2::verbose_stream()
+              << "TennoGmEval::eval_G0_and_maybe_Gm1(): for large T and/or U "
+              << "current implementation overflows, will represent "
+              << "Slater function as a linear combination of Gaussians\n";
         return libint2::nullopt;
       }
       const Real erfc_l = exp(lambda * lambda - T) * erfc(lambda);
@@ -1308,23 +1311,17 @@ struct TennoGmEval {
 
     if (T == 0) return false;
 
-    const Real sqrt_U = sqrt(U);
-    const Real sqrt_T = sqrt(T);
-    const Real oo_sqrt_T = 1 / sqrt_T;
-    const Real oo_sqrt_U = 1 / sqrt_U;
-    const Real kappa = sqrt_U - sqrt_T;
-    const Real lambda = sqrt_U + sqrt_T;
-    const Real sqrtPi_over_4(
-        0.44311346272637900682454187083528629569938736403060);
-    const Real pfac = sqrtPi_over_4;
-    const Real erfc_k = exp(kappa * kappa - T) * erfc(kappa);
-    const Real erfc_l = exp(lambda * lambda - T) * erfc(lambda);
+    // G_{-1} and G_0 seed the recursion; their closed forms overflow for
+    // U + 2 sqrt(U T) > 709, in which case report failure (the values are
+    // below exp(U - 2 sqrt(U T)), hence negligible for T > Tmax) rather
+    // than proceed with inf/NaN
+    const auto G0_Gm1 = eval_G0_and_maybe_Gm1<true>(T, U);
+    if (!G0_Gm1.has_value()) return false;
 
-    Real Gmm1;                                    // will contain G[m-1]
-    Real Gm;                                      // will contain G[m]
-    Real Gmp1;                                    // will contain G[m+1]
-    Gmm1 = pfac * (erfc_k + erfc_l) * oo_sqrt_U;  // G_{-1}
-    Gm = pfac * (erfc_k - erfc_l) * oo_sqrt_T;    // G_{0}
+    Real Gmm1;  // will contain G[m-1]
+    Real Gm;    // will contain G[m]
+    Real Gmp1;  // will contain G[m+1]
+    std::tie(Gm, Gmm1) = G0_Gm1.value();
     if
 #if __cplusplus >= 201703L
         constexpr
@@ -1485,12 +1482,13 @@ struct TennoGmEval {
                       long mmax) const {
     assert(T >= 0);
     if (U > Umax) {
-      libint2::verbose_stream()
-          << "TennoGmEval::eval_{yukawa,slater}() : arguments out of range, "
-          << "zeta*zeta*one_over_rho/4=" << std::to_string(U)
-          << " cannot exceed " << std::to_string(Umax)
-          << " will represent Slater function as a linear combination of"
-          << " Gaussian functions " << std::endl;
+      if (libint2::verbose())
+        libint2::verbose_stream()
+            << "TennoGmEval::eval_{yukawa,slater}() : arguments out of range, "
+            << "zeta*zeta*one_over_rho/4=" << std::to_string(U)
+            << " cannot exceed " << std::to_string(Umax)
+            << " will represent Slater function as a linear combination of"
+            << " Gaussian functions " << std::endl;
       return false;
     }
     if (U < Umin || U > Umax) {
