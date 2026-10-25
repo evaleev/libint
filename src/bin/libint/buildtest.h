@@ -104,7 +104,8 @@ struct CodeGenProgress {
 #endif
   }
 };
-extern CodeGenProgress g_progress;
+// the global progress reporter of the code generator, used by GenerateCode()
+inline CodeGenProgress g_progress;
 
 namespace libint2 {
 

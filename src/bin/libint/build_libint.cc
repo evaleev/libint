@@ -68,8 +68,6 @@
 using namespace std;
 using namespace libint2;
 
-CodeGenProgress g_progress;
-
 enum ShellSetType {
   ShellSetType_Standard = LIBINT_SHELL_SET_STANDARD,
   ShellSetType_ORCA = LIBINT_SHELL_SET_ORCA
