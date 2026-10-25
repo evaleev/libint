@@ -1127,16 +1127,18 @@ struct TennoGmEval {
 
  private:
   /// @param[in] x the argument of erfc
-  /// @param[in] x2_minus_T the value of \f$ x^2 - T \f$
   /// @param[in] T the value of \f$ T \f$
   /// @return \f$ \exp(x^2 - T) \mathrm{erfc}(x) \f$ , evaluated without
   /// overflow for large \f$ x \f$ (where \f$ \exp(x^2) \f$ overflows and
   /// \f$ \mathrm{erfc}(x) \f$ underflows) as \f$ \exp(-T)
   /// \mathrm{erfcx}(x) \f$
-  static inline Real exp_x2_mT_erfc(Real x, Real x2_minus_T, Real T) {
+  static inline Real exp_x2_mT_erfc(Real x, Real T) {
     // for x <= 25 exp(x^2 - T) is finite (x^2 - T <= 0 for x < 0 since then
-    // T > U in all uses) and erfc(x) > 1e-273 is a normal number
-    if (x <= 25) return exp(x2_minus_T) * erfc(x);
+    // T > U in all uses) and erfc(x) > 1e-273 is a normal number.
+    // N.B. x^2 must be computed from x (not as U -/+ 2 sqrt(U T)) so that the
+    // rounding errors of exp(x^2 - T) erfc(x) for x = sqrt(U) -/+ sqrt(T) are
+    // correlated: G_0 is their difference divided by sqrt(T)
+    if (x <= 25) return exp(x * x - T) * erfc(x);
     // asymptotic expansion: erfcx(x) = 1/(x sqrt(pi)) sum_n (-1)^n
     // (2n-1)!!/(2x^2)^n ; for x > 25 the terms decrease by at least (2n-1)/1250
     // per order, 10 terms give full double precision
@@ -1182,12 +1184,11 @@ struct TennoGmEval {
       const Real oo_sqrt_U = compute_Gm1 ? (1 / sqrt_U) : 0;
       const Real kappa = sqrt_U - sqrt_T;
       const Real lambda = sqrt_U + sqrt_T;
-      const Real two_sqrt_UT = 2 * sqrt_U * sqrt_T;
       const Real sqrtPi_over_4 = sqrtPi * 0.25;
       const Real pfac = sqrtPi_over_4;
       // exp(kappa^2 - T) erfc(kappa) and exp(lambda^2 - T) erfc(lambda)
-      const Real erfc_k = exp_x2_mT_erfc(kappa, U - two_sqrt_UT, T);
-      const Real erfc_l = exp_x2_mT_erfc(lambda, U + two_sqrt_UT, T);
+      const Real erfc_k = exp_x2_mT_erfc(kappa, T);
+      const Real erfc_l = exp_x2_mT_erfc(lambda, T);
 
       G_m1 = compute_Gm1 ? pfac * (erfc_k + erfc_l) * oo_sqrt_U : 0.0;
       G_0 = pfac * (erfc_k - erfc_l) * oo_sqrt_T;
