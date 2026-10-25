@@ -17,6 +17,13 @@ namespace detail {
 namespace truncated_coulomb {
 namespace {
 constexpr double unit = std::numeric_limits<double>::epsilon() / 2;
+// Target precision and resource limits of a request; exhausting a limit
+// throws std::runtime_error.
+struct Options {
+  double precision;
+  unsigned max_extra_orders = 4096;
+  unsigned max_taylor_terms = 4096;
+};
 constexpr double infinity = std::numeric_limits<double>::infinity();
 // Fused multiply-add is used only where the compiler emits it as an
 // instruction. Elsewhere std::fma is a library call, emulated in software on
@@ -95,7 +102,7 @@ void validate(double R, double T, int mmax, const Options& options) {
   if (!(R >= 0) || !(T >= 0) || !std::isfinite(T) || mmax < 0 ||
       !(options.precision >= std::numeric_limits<double>::epsilon()) ||
       !std::isfinite(options.precision))
-    throw std::invalid_argument("invalid binary64 truncated-Coulomb request");
+    throw std::invalid_argument("invalid truncated Coulomb request");
 }
 double root_difference(double R, double T, double s) {
   if (R >= .5 * s && R <= 2 * s) return difference_of_square(T, R) / (s + R);
@@ -122,7 +129,7 @@ int zero_seed(double T, int n, double tolerance, unsigned limit) {
     const double error = outward(product * magnitude, infinity);
     if (error <= tolerance) return M;
   }
-  throw std::runtime_error("binary64 TC zero-seed depth exhausted");
+  throw std::runtime_error("truncated Coulomb: zero-seed depth exhausted");
 }
 }  // namespace
 
@@ -139,7 +146,7 @@ struct QTolerances {
 
 // All mutable storage belongs to the caller and is reused between requests.
 struct Workspace {
-  std::vector<double> g, q, origin, hermite, weights, tails;
+  std::vector<double> q, origin, hermite, weights, tails;
   std::vector<double> inverse_integer, inverse_half;
   QTolerances tolerance;
   std::vector<double> rhs, correction;
@@ -180,8 +187,7 @@ struct Workspace {
   }
   explicit Workspace(int n) {
     const std::size_t capacity = static_cast<std::size_t>(n) + 65;
-    for (auto* v :
-         {&g, &q, &origin, &hermite, &rhs, &correction, &weights, &tails})
+    for (auto* v : {&q, &origin, &hermite, &rhs, &correction, &weights, &tails})
       v->reserve(capacity);
     ensure_reciprocals(capacity);
     matrix.reserve(capacity);
@@ -955,7 +961,7 @@ void evaluate_q(double R, double T, unsigned last, double tolerance,
     if (plan.degree >= 0 && taylor_q(R, last, plan, w)) return;
   }
   throw std::runtime_error(
-      "binary64 TC has no finite bounded Q representation");
+      "truncated Coulomb: no finite bounded Q representation");
 }
 
 void propagate_work(double T, int n, Workspace& w, double* g) {
@@ -978,11 +984,7 @@ void propagate_work(double T, int n, Workspace& w, double* g) {
 }
 
 void evaluate_work(double R, double T, int n, const Options& options,
-                   Workspace& w, double* g = nullptr) {
-  if (!g) {
-    w.g.resize(static_cast<std::size_t>(n) + 1);
-    g = w.g.data();
-  }
+                   Workspace& w, double* g) {
   if (R == 0) {
     evaluate_limit(T, n, CutoffLimit::zero, w, g);
     return;
@@ -1030,25 +1032,13 @@ void evaluate_work(double R, double T, int n, const Options& options,
 }
 }  // namespace
 
-const double* evaluate_into(double R, double T, int n, Scratch& scratch,
-                            const Options& options) {
-  validate(R, T, n, options);
-  if (!scratch.workspace_)
-    scratch.workspace_.reset(new Workspace(std::max(n, 0)));
-  evaluate_work(R, T, n, options, *scratch.workspace_);
-  return scratch.workspace_->g.data();
-}
-void evaluate_to(double* output, double R, double T, int n, Scratch& scratch,
-                 const Options& options) {
-  if (!output) throw std::invalid_argument("null binary64 TC output");
-  validate(R, T, n, options);
-  evaluate_to_unchecked(output, R, T, n, scratch, options);
-}
-void evaluate_to_unchecked(double* output, double R, double T, int n,
-                           Scratch& scratch, const Options& options) {
-  if (!scratch.workspace_)
-    scratch.workspace_.reset(new Workspace(std::max(n, 0)));
-  evaluate_work(R, T, n, options, *scratch.workspace_, output);
+void evaluate(double* Gm, double R, double T, int mmax, double precision,
+              Scratch& scratch) {
+  const Options options{precision};
+  validate(R, T, mmax, options);
+  if (!scratch.workspace_)  // moved-from
+    scratch.workspace_.reset(new Workspace(mmax));
+  evaluate_work(R, T, mmax, options, *scratch.workspace_, Gm);
 }
 }  // namespace truncated_coulomb
 }  // namespace detail

@@ -2097,15 +2097,6 @@ struct GenericGmEval : private GmEvalFunction {
                                               std::forward<ExtraArgs>(args)...);
   }
 
-  // Available when the underlying evaluator provides a trusted Engine entry.
-  template <typename Real, typename... ExtraArgs>
-  void eval_unchecked(Real* Gm, Real rho, Real T, int mmax,
-                      ExtraArgs... args) const {
-    assert(mmax <= mmax_);
-    static_cast<const GmEvalFunction&>(*this).eval_unchecked(
-        Gm, rho, T, mmax, std::forward<ExtraArgs>(args)...);
-  }
-
   /// @return the maximum value of m for which the \f$ G_m(\rho, T) \f$ can be
   /// computed with this object
   int max_m() const { return mmax_; }
@@ -2119,19 +2110,12 @@ struct GenericGmEval : private GmEvalFunction {
 };
 
 namespace detail {
-/// Interpolation-free truncated Coulomb keeps mutable work with the caller.
+/// the truncated Coulomb evaluator keeps its mutable work in Engine's scratch
 template <typename Real>
-struct CoreEvalScratch<os_core_ints::truncated_coulomb_gm_eval<Real>>
+struct CoreEvalScratch<const os_core_ints::truncated_coulomb_gm_eval<Real>>
     : os_core_ints::truncated_coulomb_gm_eval<Real>::scratch_type {
   explicit CoreEvalScratch(int mmax)
       : os_core_ints::truncated_coulomb_gm_eval<Real>::scratch_type(mmax) {}
-};
-template <typename Real>
-struct CoreEvalScratch<
-    const GenericGmEval<os_core_ints::truncated_coulomb_gm_eval<Real>>>
-    : CoreEvalScratch<os_core_ints::truncated_coulomb_gm_eval<Real>> {
-  explicit CoreEvalScratch(int mmax)
-      : CoreEvalScratch<os_core_ints::truncated_coulomb_gm_eval<Real>>(mmax) {}
 };
 /// Boys function scratch for core evaluators that need Boys function values
 /// in a separate buffer; lives on the caller's stack, so that evaluators

@@ -741,8 +741,7 @@ struct operator_traits<Operator::truncated_coulomb>
   /// positive infinity gives ordinary Coulomb integrals.
   typedef scalar_type oper_params_type;
   static oper_params_type default_params() { return oper_params_type{0}; }
-  typedef const libint2::GenericGmEval<
-      libint2::os_core_ints::truncated_coulomb_gm_eval<scalar_type>>
+  typedef const libint2::os_core_ints::truncated_coulomb_gm_eval<scalar_type>
       core_eval_type;
 };
 

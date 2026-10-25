@@ -1696,8 +1696,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   const auto cutoff = any_cast<typename operator_traits<
                       Operator::truncated_coulomb>::oper_params_type>(
                       core_ints_params_);
-                  pack.first()->eval_unchecked(gm_ptr, rho, T, mmax, cutoff,
-                                               &pack.second());
+                  pack.first()->eval(gm_ptr, rho, T, mmax, cutoff,
+                                     pack.second());
                 } break;
                 case Operator::erf_coulomb: {
                   const auto& core_eval_ptr =

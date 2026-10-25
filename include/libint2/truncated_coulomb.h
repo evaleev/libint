@@ -6,23 +6,24 @@
 #ifndef LIBINT2_TRUNCATED_COULOMB_H
 #define LIBINT2_TRUNCATED_COULOMB_H
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <vector>
 
 namespace libint2 {
 namespace detail {
 namespace truncated_coulomb {
 
-struct Options {
-  double precision = std::numeric_limits<double>::epsilon();
-  unsigned max_extra_orders = 4096;
-  unsigned max_taylor_terms = 4096;
-};
+struct Workspace;  // defined in truncated_coulomb.cc
 
-struct Workspace;
-struct Scratch {
+/// Mutable work storage of os_core_ints::truncated_coulomb_gm_eval: series
+/// coefficients and recurrence buffers reused between calls. Not thread-safe;
+/// Engine keeps one per Engine object.
+class Scratch {
+ public:
   explicit Scratch(int mmax);
   ~Scratch();
   Scratch(const Scratch&);
@@ -32,109 +33,88 @@ struct Scratch {
 
  private:
   std::unique_ptr<Workspace> workspace_;
-  friend const double* evaluate_into(double, double, int, Scratch&,
-                                     const Options&);
-  friend void evaluate_to(double*, double, double, int, Scratch&,
-                          const Options&);
-  friend void evaluate_to_unchecked(double*, double, double, int, Scratch&,
-                                    const Options&);
+  friend void evaluate(double*, double, double, int, double, Scratch&);
 };
 
-// Production entry point. Storage grows only when the caller's workspace
-// capacity is exceeded; the returned array lives until its next evaluation.
-const double* evaluate_into(double R, double T, int mmax, Scratch& scratch,
-                            const Options& options = Options());
-// Write directly to caller-owned storage of at least mmax+1 doubles.
-void evaluate_to(double* output, double R, double T, int mmax, Scratch& scratch,
-                 const Options& options = Options());
-// Engine-only entry: setup and shell data establish the checked API's
-// preconditions; output has at least mmax+1 elements and scratch is nonnull.
-void evaluate_to_unchecked(double* output, double R, double T, int mmax,
-                           Scratch& scratch, const Options& options);
+/// Computes \f$ G_m(R,T) \f$, m = 0..mmax, for the kernel
+/// \f$ \theta(R - r)/r \f$ in units of \f$ \rho^{-1/2} \f$:
+/// R = 0 gives zeros, R = infinity the Boys function \f$ F_m(T) \f$.
+/// @param[out] Gm array of at least mmax+1 values
+/// @param[in] precision target absolute error, >= double epsilon
+/// @throw std::invalid_argument for R < 0, NaN, or T < 0 or not finite
+void evaluate(double* Gm, double R, double T, int mmax, double precision,
+              Scratch& scratch);
 }  // namespace truncated_coulomb
 }  // namespace detail
 
 namespace os_core_ints {
-/// Interpolation-free radial G_m for theta(Rc-r12)/r12.
-/// All runtime numerical arithmetic uses double. Geometry and normalization
-/// remain with the caller; the evaluator itself has no mutable work arrays.
+/// Interpolation-free core integral evaluator for the truncated Coulomb
+/// kernel \f$ \theta(R_c - r_{12})/r_{12} \f$. All arithmetic is binary64.
+/// The evaluator is immutable and can be shared between threads; mutable
+/// storage is in a scratch_type object, one per thread.
 template <typename Real>
-struct truncated_coulomb_gm_eval {
-  using value_type = Real;
-  using scratch_type = detail::truncated_coulomb::Scratch;
+class truncated_coulomb_gm_eval {
+ public:
+  typedef Real value_type;
+  typedef detail::truncated_coulomb::Scratch scratch_type;
 
-  truncated_coulomb_gm_eval(int mmax, Real precision) : mmax_(mmax) {
-    options_.precision = static_cast<double>(precision);
-    if (mmax < 0 ||
-        !(options_.precision >= std::numeric_limits<double>::epsilon()) ||
-        !std::isfinite(options_.precision))
+  /// @param precision target absolute precision; values below double
+  ///        epsilon are raised to it
+  truncated_coulomb_gm_eval(int mmax, Real precision)
+      : mmax_(mmax),
+        precision_(std::max(static_cast<double>(precision),
+                            std::numeric_limits<double>::epsilon())) {
+    if (mmax < 0 || !std::isfinite(precision_))
       throw std::invalid_argument("invalid truncated Coulomb evaluator setup");
   }
-  void operator()(Real* output, Real rho, Real T, int mmax, Real cutoff,
-                  scratch_type* scratch = nullptr) const {
-    if (!output || mmax < 0 || mmax > mmax_ || !(rho > 0) ||
-        !std::isfinite(rho) || !(T >= 0) || !std::isfinite(T) || !(cutoff >= 0))
+
+  static std::shared_ptr<const truncated_coulomb_gm_eval> instance(
+      int mmax, Real precision = std::numeric_limits<Real>::epsilon()) {
+    return std::make_shared<const truncated_coulomb_gm_eval>(mmax, precision);
+  }
+
+  /// @return the maximum m for which \f$ G_m \f$ can be computed
+  int max_m() const { return mmax_; }
+  /// @return the target absolute precision
+  Real precision() const { return static_cast<Real>(precision_); }
+
+  /// @param[out] Gm array of at least mmax+1 values
+  /// @param[in] rho \f$ \rho = \zeta \eta / (\zeta + \eta) \f$
+  /// @param[in] T \f$ \rho |PQ|^2 \f$
+  /// @param[in] cutoff \f$ R_c \geq 0 \f$, in length units; infinity gives
+  ///            Coulomb
+  void eval(Real* Gm, Real rho, Real T, int mmax, Real cutoff,
+            scratch_type& scratch) const {
+    if (mmax < 0 || mmax > mmax_ || !(rho > 0) || !std::isfinite(rho) ||
+        !(cutoff >= 0))
       throw std::invalid_argument(
           "invalid truncated Coulomb evaluator request");
     const double R =
         static_cast<double>(cutoff) * std::sqrt(static_cast<double>(rho));
-    if (!scratch) {
-      scratch_type local(mmax);
-      evaluate_output(output, R, static_cast<double>(T), mmax, local, options_);
-      return;
-    }
-    evaluate_output(output, R, static_cast<double>(T), mmax, *scratch,
-                    options_);
+    evaluate(Gm, R, static_cast<double>(T), mmax, scratch);
   }
-  // Internal Engine path. Constructor and Engine parameter validation have
-  // established the request contract, so no per-primitive scans are needed.
-  void eval_unchecked(Real* output, Real rho, Real T, int mmax, Real cutoff,
-                      scratch_type* scratch) const {
-    evaluate_unchecked(
-        output,
-        static_cast<double>(cutoff) * std::sqrt(static_cast<double>(rho)),
-        static_cast<double>(T), mmax, *scratch, options_);
+  /// same as above, with temporary scratch (allocates on every call)
+  void eval(Real* Gm, Real rho, Real T, int mmax, Real cutoff) const {
+    scratch_type scratch(mmax);
+    eval(Gm, rho, T, mmax, cutoff, scratch);
   }
 
  private:
-  static void evaluate_unchecked(
-      double* output, double R, double T, int mmax, scratch_type& scratch,
-      const detail::truncated_coulomb::Options& options) {
-    detail::truncated_coulomb::evaluate_to_unchecked(output, R, T, mmax,
-                                                     scratch, options);
-  }
-  template <typename Output>
-  static void evaluate_unchecked(
-      Output* output, double R, double T, int mmax, scratch_type& scratch,
-      const detail::truncated_coulomb::Options& options) {
-    const double* values =
-        detail::truncated_coulomb::evaluate_into(R, T, mmax, scratch, options);
-    for (int m = 0; m <= mmax; ++m) output[m] = static_cast<Output>(values[m]);
-  }
-  static void evaluate_output(
-      double* output, double R, double T, int mmax, scratch_type& scratch,
-      const detail::truncated_coulomb::Options& options) {
-    detail::truncated_coulomb::evaluate_to(output, R, T, mmax, scratch,
-                                           options);
-    for (int m = 0; m <= mmax; ++m)
-      if (!std::isfinite(output[m]))
-        throw std::runtime_error("nonfinite truncated Coulomb result");
-  }
-  template <typename Output>
-  static void evaluate_output(
-      Output* output, double R, double T, int mmax, scratch_type& scratch,
-      const detail::truncated_coulomb::Options& options) {
-    const double* values =
-        detail::truncated_coulomb::evaluate_into(R, T, mmax, scratch, options);
-    for (int m = 0; m <= mmax; ++m) {
-      if (!std::isfinite(values[m]))
-        throw std::runtime_error("nonfinite truncated Coulomb result");
-      output[m] = static_cast<Output>(values[m]);
-    }
-  }
-
   int mmax_;
-  detail::truncated_coulomb::Options options_;
+  double precision_;
+
+  void evaluate(double* Gm, double R, double T, int mmax,
+                scratch_type& scratch) const {
+    detail::truncated_coulomb::evaluate(Gm, R, T, mmax, precision_, scratch);
+  }
+  template <typename Output>
+  void evaluate(Output* Gm, double R, double T, int mmax,
+                scratch_type& scratch) const {
+    std::vector<double> values(mmax + 1);
+    detail::truncated_coulomb::evaluate(values.data(), R, T, mmax, precision_,
+                                        scratch);
+    std::copy(values.begin(), values.end(), Gm);
+  }
 };
 }  // namespace os_core_ints
 }  // namespace libint2

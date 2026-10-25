@@ -22,60 +22,63 @@ void check_truncated_coulomb_radial(Evaluator& eval) {
     // Check that the result is independent of the requested prefix, including
     // the high-order region where direct upward recurrence loses accuracy.
     for (int mmax : {0, 1, 2, 8, 9, 21, 40, 64}) {
-      eval(values.data(), 1., ref.t, mmax, ref.r);
+      eval.eval(values.data(), 1., ref.t, mmax, ref.r);
       for (int m = 0; m <= mmax; ++m) {
         INFO("R=" << ref.r << " T=" << ref.t << " mmax=" << mmax << " m=" << m);
         CHECK(std::isfinite(values[m]));
         CHECK(std::abs(values[m] - ref.g[m]) <= eps);
       }
       // Equal dimensionless R and T at a different physical scale.
-      eval(values.data(), 4., ref.t, mmax, ref.r / 2);
+      eval.eval(values.data(), 4., ref.t, mmax, ref.r / 2);
       for (int m = 0; m <= mmax; ++m)
         CHECK(std::abs(values[m] - ref.g[m]) <= eps);
     }
   }
   for (double t : {0., 0.1, 10., 100., 1e5}) {
-    eval(values.data(), 1., t, 64, 0.);
+    eval.eval(values.data(), 1., t, 64, 0.);
     for (auto value : values) CHECK(value == 0.);
-    eval(values.data(), 1., t, 64, std::numeric_limits<double>::infinity());
+    eval.eval(values.data(), 1., t, 64,
+              std::numeric_limits<double>::infinity());
     std::array<long double, 65> ref;
     libint2::FmEval_Reference2<long double>::eval(ref.data(), t, 64);
     for (int m = 0; m <= 64; ++m) CHECK(std::abs(values[m] - ref[m]) <= eps);
   }
-  CHECK_THROWS_AS(eval(values.data(), 1., 0., 1, -1.), std::invalid_argument);
-  CHECK_THROWS_AS(
-      eval(values.data(), 1., 0., 1, std::numeric_limits<double>::quiet_NaN()),
-      std::invalid_argument);
-  CHECK_THROWS_AS(eval(values.data(), 0., 0., 1, 1.), std::invalid_argument);
+  CHECK_THROWS_AS(eval.eval(values.data(), 1., 0., 1, -1.),
+                  std::invalid_argument);
+  CHECK_THROWS_AS(eval.eval(values.data(), 1., 0., 1,
+                            std::numeric_limits<double>::quiet_NaN()),
+                  std::invalid_argument);
+  CHECK_THROWS_AS(eval.eval(values.data(), 0., 0., 1, 1.),
+                  std::invalid_argument);
 }
 }  // namespace
 
 TEST_CASE("Truncated Coulomb auxiliary integrals",
           "[core-ints][truncated-coulomb]") {
   const double eps = std::numeric_limits<double>::epsilon();
-  libint2::os_core_ints::truncated_coulomb_gm_eval<double> eval(192, eps);
-  check_truncated_coulomb_radial(eval);
+  libint2::os_core_ints::truncated_coulomb_gm_eval<double> tc(192, eps);
+  check_truncated_coulomb_radial(tc);
 
   // Independent defining-erf references, generated at 100 decimal digits and
   // checked at 140 digits. These inputs exposed cancellation at m=40 and a
   // parasitic high-order solution at m=192; the criterion is absolute error.
   std::array<double, 193> values;
-  decltype(eval)::scratch_type scratch(192);
-  eval(values.data(), 1., 15., 40, 1., &scratch);
+  decltype(tc)::scratch_type scratch(192);
+  tc.eval(values.data(), 1., 15., 40, 1., scratch);
   CHECK(std::abs(values[40] - 9.1989225488094219e-09) <= eps);
-  eval(values.data(), 1., 59., 192, .1, &scratch);
+  tc.eval(values.data(), 1., 59., 192, .1, scratch);
   CHECK(std::abs(values[192] - 1.4877535827085252e-28) <= eps);
   // Reusing a larger workspace must not retain the preceding hierarchy.
-  eval(values.data(), 1., 15., 40, 1., &scratch);
+  tc.eval(values.data(), 1., 15., 40, 1., scratch);
   CHECK(std::abs(values[40] - 9.1989225488094219e-09) <= eps);
   // A reserve beyond the native Boys table must still use its supported
   // orders for later, lower-order requests, even if the singleton has grown.
   std::array<double, 9> coulomb;
   libint2::FmEval_Chebyshev7<double>::instance(8)->eval(coulomb.data(), .24, 8);
-  eval(values.data(), 1., .24, 8, std::numeric_limits<double>::infinity(),
-       &scratch);
+  tc.eval(values.data(), 1., .24, 8, std::numeric_limits<double>::infinity(),
+          scratch);
   for (int m = 0; m <= 8; ++m) CHECK(values[m] == coulomb[m]);
-  eval(values.data(), 1., .24, 8, 20., &scratch);
+  tc.eval(values.data(), 1., .24, 8, 20., scratch);
   for (int m = 0; m <= 8; ++m) CHECK(std::abs(values[m] - coulomb[m]) <= eps);
 }
 
@@ -110,12 +113,12 @@ TEST_CASE("Truncated Coulomb integrals across the cutoff transition",
   constexpr int mmax = 16;
   constexpr std::size_t N = mmax + 1;
   const double eps = std::numeric_limits<double>::epsilon();
-  libint2::os_core_ints::truncated_coulomb_gm_eval<double> eval(mmax, eps);
-  decltype(eval)::scratch_type scratch(mmax);
+  libint2::os_core_ints::truncated_coulomb_gm_eval<double> tc(mmax, eps);
+  decltype(tc)::scratch_type scratch(mmax);
   const auto boys = libint2::FmEval_Chebyshev7<double>::instance(mmax);
   for (const auto& ref : truncated_coulomb_vrr_reference) {
     double g[N], f[N];
-    eval(g, 1., ref.t, mmax, ref.r, &scratch);
+    tc.eval(g, 1., ref.t, mmax, ref.r, scratch);
     boys->eval(f, ref.t, mmax);
     const auto computed = vrr_l000<N>(g, ref.zeta, ref.rho, ref.wp);
     const auto exact = vrr_l000<N>(ref.g, ref.zeta, ref.rho, ref.wp);
