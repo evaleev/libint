@@ -40,7 +40,9 @@ class Scratch {
 /// \f$ \theta(R - r)/r \f$ in units of \f$ \rho^{-1/2} \f$:
 /// R = 0 gives zeros, R = infinity the Boys function \f$ F_m(T) \f$.
 /// @param[out] Gm array of at least mmax+1 values
-/// @param[in] precision target absolute error, >= double epsilon
+/// @param[in] precision target absolute error, >= double epsilon; the
+///            F_m and zero limits are used only when exact to precision
+///            relative to F_m
 /// @throw std::invalid_argument for R < 0, NaN, or T < 0 or not finite
 void evaluate(double* Gm, double R, double T, int mmax, double precision,
               Scratch& scratch);

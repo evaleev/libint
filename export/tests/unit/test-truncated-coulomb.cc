@@ -82,6 +82,67 @@ TEST_CASE("Truncated Coulomb auxiliary integrals",
   for (int m = 0; m <= 8; ++m) CHECK(std::abs(values[m] - coulomb[m]) <= eps);
 }
 
+// Just beyond the distance |R - sqrt(T)| at which an absolute criterion
+// would switch to F_m or zero; the high orders are far below eps here, and
+// G_16 even exceeds F_16 by 1e8 at T = 1e5. Defining-erf references at 50
+// digits; the criterion is relative to the larger of |G_m| and F_m.
+TEST_CASE("Truncated Coulomb auxiliary integrals near the Boys and zero limits",
+          "[core-ints][truncated-coulomb]") {
+  constexpr int mmax = 16;
+  struct Reference {
+    double r, t, g[mmax + 1];
+  };
+  const Reference refs[] = {
+      {108.6,
+       1e4,
+       {0.0088622692545275801, 4.4311346272637901e-7, 6.6467019408956851e-11,
+        1.6616754852239213e-14, 5.8158641982837245e-18, 2.617138889227676e-21,
+        1.4394263890752218e-24, 9.3562715289889424e-28, 7.0172036467416507e-31,
+        5.9646230997349737e-34, 5.66639194437939e-37, 5.9497115711008598e-40,
+        6.8421659681667526e-43, 8.5528911216056172e-46, 1.1532116269244219e-48,
+        1.7822050813808079e-51, -5.6290925324490396e-54}},
+      {91.4,
+       1e4,
+       {2.1884352861136341e-36, 1.8957055345478377e-37, 1.6322092908399323e-38,
+        1.3966766794916191e-39, 1.1876156724097307e-40, 1.0033637183153641e-41,
+        8.4213758114545613e-43, 7.0208024419088905e-44, 5.8130393957925464e-45,
+        4.7792858020065692e-46, 3.9011509332364499e-47, 3.1609337260052282e-48,
+        2.5418476958424058e-49, 2.0281923028827299e-50, 1.6054734130845148e-51,
+        1.2604767988555799e-52, 9.8129961037524071e-54}},
+      {324.8277660168379,
+       1e5,
+       {0.0028024956081989643, 1.4012478040994822e-8, 2.1018717061492233e-13,
+        5.2546792653730582e-18, 1.8391377428805704e-22, 8.2761198429625666e-27,
+        4.551865913629409e-31, 2.9587128438598042e-35, 2.2190346327157234e-39,
+        1.8861794840531705e-43, 1.7918586678269412e-47, 1.8844588437658945e-51,
+        1.4099508446526933e-55, 1.9074151329311718e-57, -4.648509778688959e-59,
+        1.138728452152227e-60, -2.7627424580754614e-62}},
+      {307.62776601683794,
+       1e5,
+       {6.9204400160012852e-37, 1.8949573389055659e-38, 5.1553492922574712e-40,
+        1.3933279360641161e-41, 3.7404711744624385e-43, 9.9727609630811688e-45,
+        2.6403173634543515e-46, 6.9403414288238827e-48, 1.8110001939567021e-49,
+        4.6902331769513531e-51, 1.2053967397591896e-52, 3.0735642877976119e-54,
+        7.7739850384888677e-56, 1.9500309936894007e-57, 4.8499523714967992e-59,
+        1.1957136764392447e-60, 2.9214574907968413e-62}},
+  };
+  libint2::os_core_ints::truncated_coulomb_gm_eval<double> tc(
+      mmax, std::numeric_limits<double>::epsilon());
+  decltype(tc)::scratch_type scratch(mmax);
+  for (const auto& ref : refs) {
+    double g[mmax + 1];
+    long double f[mmax + 1];
+    tc.eval(g, 1., ref.t, mmax, ref.r, scratch);
+    libint2::FmEval_Reference2<long double>::eval(f, ref.t, mmax);
+    for (int m = 0; m <= mmax; ++m) {
+      INFO("R=" << ref.r << " T=" << ref.t << " m=" << m);
+      const double scale =
+          std::max(std::abs(ref.g[m]), static_cast<double>(f[m]));
+      CHECK(std::abs(g[m] - ref.g[m]) <= 1e-12 * scale);
+    }
+  }
+}
+
 // (L0|00)^(0), L = 0..mmax, by the Obara-Saika VRR with P = A, from G_m.
 template <std::size_t N>
 std::array<double, N> vrr_l000(const double* g, double zeta, double rho,
@@ -243,6 +304,30 @@ TEST_CASE("Truncated Coulomb Engine limits and derivatives",
         (12 * h * h);
     CHECK(hxx == Approx(fd2).margin(2e-9));
 #endif
+  }
+}
+
+// (aa|bb) of normalized s primitives at distance D equals
+// [erf(sqrt(mu)(Rc-D)) - erf(sqrt(mu)(Rc+D)) + 2 erf(sqrt(mu) D)] / (2D),
+// mu = 4ab/(2a+2b): the radial average of theta(Rc-r)/r over the Gaussian
+// distribution of r12. This checks the cutoff units and its sqrt(rho)
+// scaling independently of the radial evaluator. mpmath values, 50 digits.
+TEST_CASE("Truncated Coulomb Engine against closed-form (ss|ss)",
+          "[engine][2-body][truncated-coulomb]") {
+  using namespace libint2;
+  Shell a{{0.8}, {{0, false, {1.0}}}, {{0, 0, 0}}};
+  Shell b{{1.3}, {{0, false, {1.0}}}, {{0, 0, 1.5}}};
+  const std::pair<double, double> refs[] = {{0.5, 0.031552595422039718},
+                                            {1.2, 0.2011613560258891},
+                                            {1.5, 0.31017100129777589},
+                                            {2.5, 0.59039957931514569},
+                                            {4.0, 0.64335169847410041}};
+  Engine e(Operator::truncated_coulomb, 1, 0);
+  for (const auto& ref : refs) {
+    INFO("Rc=" << ref.first);
+    e.set_params(ref.first);
+    e.compute(a, a, b, b);
+    CHECK(e.results()[0][0] == Approx(ref.second).epsilon(1e-14));
   }
 }
 

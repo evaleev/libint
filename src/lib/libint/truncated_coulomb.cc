@@ -238,6 +238,24 @@ Scratch& Scratch::operator=(Scratch&&) noexcept = default;
 namespace {
 enum class CutoffLimit { none, zero, boys };
 
+// Upper bound on -log F_n(T), hence on -log F_m(T) for all m <= n. For
+// T >= n+1/2 the regularized gamma P(n+1/2,T) >= 1/2 (a gamma median is
+// below its mean), so F_n >= Gamma(n+1/2)/(4 T^(n+1/2)); otherwise
+// F_n >= exp(-T)/(2n+1). The added 1 absorbs rounding of log and lgamma.
+double boys_log_scale(double T, int n) {
+  const double scale =
+      T >= n + .5 ? (n + .5) * std::log(T) - std::lgamma(n + .5) + std::log(4.)
+                  : T + std::log(2. * n + 1);
+  return std::max(0., scale) + 1;
+}
+
+// The gap for an error bound exp(-gap^2) relative to F_n(T).
+double relative_gap(double gap, double T, int n) {
+  const double square =
+      outward_mul_add(gap, gap, boys_log_scale(T, n), infinity);
+  return outward(std::sqrt(square), infinity);
+}
+
 CutoffLimit finite_cutoff_limit(double R, double T, int n,
                                 const Options& options, Workspace& w) {
   // Adjacent binary64 bounds on log(2); no runtime transcendental bound is
@@ -260,10 +278,18 @@ CutoffLimit finite_cutoff_limit(double R, double T, int n,
   // gives |F_m-G_m| <= exp(2n-(R-a)^2) when R>=a, simultaneously for
   // m<=n. For n=0 the same inequality follows from the real Gaussian
   // integral. Bound the distance downward and the required gap upward.
+  // Both limits are accepted only below precision * F_n(T), not precision
+  // alone: at large T the higher orders are far below precision, and an
+  // absolute test would replace them by values without a correct digit.
   if (R >= w.limit_gap) {
     const double center = outward(T + n, infinity);
     const double a = outward(std::sqrt(center), infinity);
-    if (R >= a && outward(R - a, 0.) >= w.limit_gap) return CutoffLimit::boys;
+    if (R >= a) {
+      const double distance = outward(R - a, 0.);
+      if (distance >= w.limit_gap &&
+          distance >= relative_gap(w.limit_gap, T, n))
+        return CutoffLimit::boys;
+    }
   }
   // In the other direction |G_m| <= R^2 exp(2n-(a-R)^2), R<=a.
   // R^2 <= 1 for R<=1; otherwise frexp gives R^2 < 2^(2*exponent).
@@ -283,7 +309,8 @@ CutoffLimit finite_cutoff_limit(double R, double T, int n,
                               2. * n, infinity);
           gap = outward(std::sqrt(square), infinity);
         }
-        if (distance >= gap) return CutoffLimit::zero;
+        if (distance >= gap && distance >= relative_gap(gap, T, n))
+          return CutoffLimit::zero;
       }
     }
   }
@@ -557,6 +584,16 @@ Candidate evaluate_g0(double R, double T, const Options& options,
     const double a = factor * std::erfc(-z), b = factor * std::erfc(R + s);
     value = f - a + b;
     magnitude = f + a + b;
+    // Near R = s this form cancels by up to 3. With F0 = 2 factor erf(s)
+    // the difference form below is the same function, and it is well
+    // conditioned once erfc(s) is small.
+    if (magnitude > 2 * std::abs(value)) {
+      const double c = std::erfc(z), d = std::erfc(s + R), e = 2 * std::erfc(s);
+      if (factor * (c + d + e) < magnitude) {
+        value = factor * (c + d - e);
+        magnitude = factor * (c + d + e);
+      }
+    }
   } else {
     const double a = std::erfc(z), b = std::erfc(s + R), c = 2 * std::erfc(s);
     value = factor * (a + b - c);
