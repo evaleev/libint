@@ -42,7 +42,8 @@ namespace libint2 {
 template <unsigned int CartesianAxis, int La, int Lb, int Lc, int Ld,
           bool vectorize>
 struct VRR_GTG_1d_xx_xx {
-  static void compute(const Libint_t* inteval, VectorSIMD<double, npts>* target,
+  static void compute(const Libint_t* inteval,
+                      VectorSIMD<double, npts>* LIBINT2_RESTRICT target,
                       VectorSIMD<double, npts>* src0) {
     enum XYZ { x = 0, y = 1, z = 2 };
     assert(CartesianAxis == x || CartesianAxis == y || CartesianAxis == z);

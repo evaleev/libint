@@ -27,6 +27,8 @@ Following is a brief summary of changes made in each release of Libint.
       braket type; missing kernels are reported by Engine::missing_kernel from compute().
     - the validation of LIBINT2_<class>_MAX_AM in cmake/modules/int_am.cmake now actually runs
       (it referred to undefined variables); a value of 0 is accepted, negative values are rejected.
+  - PR #449: generated and generic RR functions declare their target LIBINT2_RESTRICT (new config.h
+             macro), up to ~1.2x faster high-am and derivative ERIs
   - PR #446: a value of 0 for LIBINT2_OPT_AM (or for the per-class LIBINT2_<class>_MAX_AM /
              LIBINT2_<class>_OPT_AM) is now honored; previously config.h dropped the macro
              (#cmakedefine treats 0 as false), which broke the compiler build for LIBINT2_OPT_AM

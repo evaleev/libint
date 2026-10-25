@@ -414,6 +414,17 @@
 #define LIBINT_PRAGMA_GCC(x)
 #endif
 
+/* ----------- restrict ---------------*/
+/* C99 restrict for C++. Do not use __restrict with GCC-compatible compilers:
+   macOS <sys/cdefs.h> defines it to nothing in C++ */
+#if defined(__GNUC__) || defined(__clang__)
+#define LIBINT2_RESTRICT __restrict__
+#elif defined(_MSC_VER)
+#define LIBINT2_RESTRICT __restrict
+#else
+#define LIBINT2_RESTRICT
+#endif
+
 #ifdef __has_cpp_attribute
 #if __has_cpp_attribute(deprecated)
 #define LIBINT_DEPRECATED(msg) [[deprecated(msg)]]

@@ -1012,8 +1012,12 @@ std::string declare_function(const std::shared_ptr<CodeContext>& context,
       << "* inteval";
   const unsigned int nargs = args->n();
   if (nargs > 0) {
-    // first argument is always the target, which is never a const
-    oss << ", " << context->type_name<double*>() << " " << args->symbol(0);
+    // first argument is always the target (the stack, for prerequisite
+    // functions), which is never a const and is not accessed through any
+    // other pointer: RR targets never overlap their children (checked in
+    // DirectedGraph::print_def)
+    oss << ", " << context->type_name<double*>() << " "
+        << context->restrict_modifier() << args->symbol(0);
     for (unsigned int a = 1; a < nargs; a++) {
       oss << ", " << context->type_name<const double*>() << " "
           << args->symbol(a);
@@ -2093,6 +2097,23 @@ void DirectedGraph::print_def(const std::shared_ptr<CodeContext>& context,
                 *(current_vertex->first_exit_arc()));
         if (arc_ptr) {
           std::shared_ptr<RecurrenceRelation> rr = arc_ptr->rr();
+          // RR functions declare their target restrict, hence it must not
+          // overlap any of the children
+          if (current_vertex->address_set()) {
+            const auto t_begin = current_vertex->address();
+            const auto t_end = t_begin + current_vertex->size();
+            for (auto a = current_vertex->first_exit_arc();
+                 a != current_vertex->plast_exit_arc(); ++a) {
+              const std::shared_ptr<DGVertex>& child = (*a)->dest();
+              if (!child->address_set()) continue;
+              const auto c_begin = child->address();
+              const auto c_end = c_begin + child->size();
+              if (c_begin < t_end && t_begin < c_end)
+                throw ProgrammingError(
+                    "DirectedGraph::print_def() -- target of " + rr->label() +
+                    " overlaps its child " + child->label());
+            }
+          }
           os << rr->spfunction_call(context, dims);
           nflops_total += rr->nflops();
 
