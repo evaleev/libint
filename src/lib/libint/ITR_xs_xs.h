@@ -31,7 +31,8 @@ namespace libint2 {
 
 template <int part, int La, int Lc, bool InBra, bool vectorize>
 struct ITR_xs_xs {
-  static void compute(const Libint_t* inteval, LIBINT2_REALTYPE* target,
+  static void compute(const Libint_t* inteval,
+                      LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
                       const LIBINT2_REALTYPE* src0,
                       const LIBINT2_REALTYPE* src1,
                       const LIBINT2_REALTYPE* src2,
@@ -46,7 +47,8 @@ struct ITR_xs_xs {
  **/
 template <int La, int Lc, bool InBra, bool vectorize>
 struct ITR_xs_xs<0, La, Lc, InBra, vectorize> {
-  static void compute(const Libint_t* inteval, LIBINT2_REALTYPE* target,
+  static void compute(const Libint_t* inteval,
+                      LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
                       const LIBINT2_REALTYPE* src0,
                       const LIBINT2_REALTYPE* src1,
                       const LIBINT2_REALTYPE* src2,
@@ -238,7 +240,7 @@ struct ITR_xs_xs<0, La, Lc, InBra, vectorize> {
   template <int La, int Lc, bool InBra, bool vectorize> struct ITR_xs_xs<1,La,Lc,InBra,vectorize> {
 
     static void compute(const Libint_t* inteval,
-        LIBINT2_REALTYPE* target,
+        LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
         const LIBINT2_REALTYPE* src0,
         const LIBINT2_REALTYPE* src1,
         const LIBINT2_REALTYPE* src2,

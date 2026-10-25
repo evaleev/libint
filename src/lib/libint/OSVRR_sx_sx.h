@@ -35,7 +35,8 @@ namespace libint2 {
 
 template <int part, int Lb, int Ld, bool unit_a, bool vectorize>
 struct OSVRR_sx_sx {
-  static void compute(const Libint_t* inteval, LIBINT2_REALTYPE* target,
+  static void compute(const Libint_t* inteval,
+                      LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
                       const LIBINT2_REALTYPE* src1,
                       const LIBINT2_REALTYPE* src0,
                       const LIBINT2_REALTYPE* src2,
@@ -52,7 +53,8 @@ struct OSVRR_sx_sx {
  **/
 template <int Lb, int Ld, bool unit_a, bool vectorize>
 struct OSVRR_sx_sx<0, Lb, Ld, unit_a, vectorize> {
-  static void compute(const Libint_t* inteval, LIBINT2_REALTYPE* target,
+  static void compute(const Libint_t* inteval,
+                      LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
                       const LIBINT2_REALTYPE* src0,
                       const LIBINT2_REALTYPE* src1,
                       const LIBINT2_REALTYPE* src2,
@@ -196,7 +198,7 @@ struct OSVRR_sx_sx<0, Lb, Ld, unit_a, vectorize> {
   template <int Lb, int Ld, bool vectorize> struct OSVRR_sx_sx<1,Lb,Ld,vectorize> {
 
     static void compute(const Libint_t* inteval,
-        LIBINT2_REALTYPE* target,
+        LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
         const LIBINT2_REALTYPE* src0,
         const LIBINT2_REALTYPE* src1,
         const LIBINT2_REALTYPE* src2,
@@ -343,7 +345,8 @@ struct OSVRR_sx_sx<0, Lb, Ld, unit_a, vectorize> {
 
 template <int part, int Lb, int Ld, bool vectorize>
 struct OSAVRR_sx_sx {
-  static void compute(const Libint_t* inteval, LIBINT2_REALTYPE* target,
+  static void compute(const Libint_t* inteval,
+                      LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
                       const LIBINT2_REALTYPE* src1,
                       const LIBINT2_REALTYPE* src4);
 };
@@ -354,7 +357,8 @@ struct OSAVRR_sx_sx {
  **/
 template <int Lb, int Ld, bool vectorize>
 struct OSAVRR_sx_sx<0, Lb, Ld, vectorize> {
-  static void compute(const Libint_t* inteval, LIBINT2_REALTYPE* target,
+  static void compute(const Libint_t* inteval,
+                      LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
                       const LIBINT2_REALTYPE* src1,
                       const LIBINT2_REALTYPE* src4) {
     // works for (sd|sp) and higher
