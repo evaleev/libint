@@ -245,7 +245,9 @@ enum class Operator {
   /// (2-body) \f$ r_{12}^{-1} (σ.p_{k2}) \f$ where k2 is the center of ket2;
   /// the 3-center single-σ·p integral (P | μ, σ·p ν). σ·p acts on
   /// the 2nd ket AO function only. Produces 3 Cartesian components (x=0, y=1,
-  /// z=2) — the SO(3) vector irrep; no σ·σ folding (cf. coulomb_opop). The
+  /// z=2), the derivatives of ν with respect to its center, i.e. the SO(3)
+  /// vector irrep without σ·σ folding (cf. coulomb_opop); the user multiplies
+  /// them by +i (see \ref rkb_operators). The
   /// fitting function sits on the bra (BraKet::xs_xx); 3-center only. With
   /// BraKet::xx_xs (the alias of xs_xx) σ·p acts on bra2, the 2nd AO
   /// function, and the fitting function is ket1.
@@ -262,7 +264,8 @@ enum class Operator {
   /// `σpCoulombσp_Descr::Component`: Scalar trace (0); antisymmetric
   /// (curl-curl) AntisymX,Y,Z (1-3); symmetric-traceless SymTLDiagA,SymTLDiagB
   /// (4,5) and SymTLOffXY,SymTLOffXZ,SymTLOffYZ (6-8). Unlike coulomb_opop,
-  /// these components are not σ·σ-folded.
+  /// these components are not σ·σ-folded; the user multiplies them by -1
+  /// (see \ref rkb_operators).
   op_coulomb_op,
   // do not modify this
   invalid = -1,
@@ -276,27 +279,38 @@ enum class Operator {
   last_oper = last_2body_oper
 };
 
-/// @param[in] oper an Operator object
-/// @return the particle rank of \c oper
-/// @throw std::logic_error if an invalid @c oper given
 // clang-format off
 /**
  \page rkb_operators Conventions for the relativistic (RKB) 2-body operators
 
  The four operators built from σ·p and 1/r₁₂ expose their components in
- different ways; this table is the single reference for their layouts.
- "Folded" means that the Pauli matrices were contracted using
- σ_a σ_b = δ_ab + i ε_abc σ_c, so the user must not apply them again;
- "not folded" means the result is the spatial tensor and the user contracts it
- with the Pauli matrices. In chemists' notation (ab|cd) the operator acts on
- the second function of a pair, i.e. on b and/or d.
+ different ways; this table is the single reference for their layouts and
+ prefactors.
 
- | Engine (C++ API)    | Compiler          | task label          | #comp | component index                                                                                                                                       | spin       |
- |---------------------|-------------------|---------------------|-------|-------------------------------------------------------------------------------------------------------------------------------------------------------|------------|
- | `coulomb_opop`      | `Coulombσpσp`     | `coulomb_opop`      |   4   | 0: ∇_c·∇_d, 1-3: (∇_c×∇_d)_{x,y,z}                                                                                                                   | folded     |
- | `coulomb_op`        | `Coulombσp`       | `coulomb_op`        |   3   | ∂_{d,x}, ∂_{d,y}, ∂_{d,z} (3-center only)                                                                                                            | n/a        |
- | `opop_coulomb_opop` | `σpσpCoulombσpσp` | `opop_coulomb_opop` |  16   | 4·bra + ket, with bra, ket ∈ {0: ∇·∇, 1-3: (∇×∇)_{x,y,z}} of (a,b) and (c,d); the sign of i² is folded into the 1-3 ⊗ 1-3 block                      | folded     |
- | `op_coulomb_op`     | `σpCoulombσp`     | `op_coulomb_op`     |   9   | SO(3) irreps of T_ab = ∂_{b,a} ∂_{d,b}: 0: trace, 1-3: T_yz−T_zy, T_zx−T_xz, T_xy−T_yx, 4: T_xx−T_yy, 5: 2T_zz−T_xx−T_yy, 6-8: T_xy+T_yx, T_xz+T_zx, T_yz+T_zy | not folded |
+ All kernels evaluate integrals over derivatives of the basis functions with
+ respect to their *centers* (libint's derivative convention): for a function
+ φ_X centered at X, ∂_{X,k} φ_X ≡ ∂φ_X/∂X_k = −∂φ_X/∂r_k. Hence
+ p_k φ_X = −i ∂φ_X/∂r_k = +i ∂_{X,k} φ_X, and (p_k φ_X)* = −i ∂_{X,k} φ_X for
+ a real φ_X. In chemists' notation (ab|cd) the first function of each pair
+ (a, c) is complex conjugated; a σ·p that acts on a or c therefore contributes
+ −i, one that acts on b or d contributes +i. The "prefactor" column is what
+ the user multiplies the kernel's center-derivative integrals with to obtain
+ the σ·p integrals, with σ₁ the Pauli matrices in the spin space of electron 1
+ (the pair ab) and σ₂ those of electron 2 (the pair cd).
+
+ "Folded" means that the two σ of the same electron were contracted using
+ σ_i σ_j = δ_ij + i ε_ijk σ_k into a scalar (component 0) and a vector
+ (components 1-3) part; the user assembles the 2×2 spin block of that electron
+ as q₀·1 + i (q₁ σ_x + q₂ σ_y + q₃ σ_z) and must not apply the Pauli matrices
+ again. "Not folded" means the result is the spatial tensor and the user
+ contracts it with the Pauli matrices.
+
+ | Engine (C++ API)    | Compiler          | task label          | #comp | σ·p acts on | component index                                                                                                                                              | prefactor                                                                                                                                                                                                   |
+ |---------------------|-------------------|---------------------|-------|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+ | `coulomb_opop`      | `Coulombσpσp`     | `coulomb_opop`      |   4   | c and d     | 0: ∇_c·∇_d, 1-3: (∇_c×∇_d)_{x,y,z} (folded)                                                                                                                 | 1: (σ₂·p c)† (σ₂·p d) = Σ_ij (−i ∂_{C,i} c)(+i ∂_{D,j} d) σ_i σ_j = Σ_ij ∂_{C,i} c ∂_{D,j} d σ_i σ_j, i.e. the spin block is q₀ + i σ₂·q                                                                 |
+ | `coulomb_op`        | `Coulombσp`       | `coulomb_op`        |   3   | d           | ∂_{D,x}, ∂_{D,y}, ∂_{D,z} of d (3-center only; not folded)                                                                                                 | +i: (σ₂·p d) = +i Σ_k σ_{2,k} ∂_{D,k} d                                                                                                                                                                      |
+ | `opop_coulomb_opop` | `σpσpCoulombσpσp` | `opop_coulomb_opop` |  16   | a, b, c, d  | 4·q₁ + q₂, with q₁ the folded component of (σ₁·p a)† (σ₁·p b) and q₂ that of (σ₂·p c)† (σ₂·p d), each ∈ {0: ∇·∇, 1-3: (∇×∇)_{x,y,z}}; the sign of i² is folded into the q₁,q₂ ≥ 1 block | 1 for q₁ = q₂ = 0, i σ_{2,q₂} for q₁ = 0, i σ_{1,q₁} for q₂ = 0, σ_{1,q₁} σ_{2,q₂} for q₁,q₂ ≥ 1 (the −1 of i² is in the kernel); the center derivatives contribute no prefactor, as for `coulomb_opop` |
+ | `op_coulomb_op`     | `σpCoulombσp`     | `op_coulomb_op`     |   9   | b and d     | SO(3) irreps of T_ij = (a ∂_{B,i} b \| c ∂_{D,j} d): 0: trace, 1-3: T_yz−T_zy, T_zx−T_xz, T_xy−T_yx, 4: T_xx−T_yy, 5: 2T_zz−T_xx−T_yy, 6-8: T_xy+T_yx, T_xz+T_zx, T_yz+T_zy (not folded) | −1: (a σ₁·p b \| c σ₂·p d) = Σ_ij σ_{1,i} σ_{2,j} (+i ∂_{B,i} b)(+i ∂_{D,j} d) = −Σ_ij σ_{1,i} σ_{2,j} T_ij                                                                                                 |
 
  For the 3-center operators (`coulomb_opop` and `coulomb_op`) the kernels
  are generated for BraKet::xs_xx, with the fitting function as bra1 and the
@@ -304,9 +318,11 @@ enum class Operator {
  changes the order of the arguments of compute() and the layout of the
  result (fitting function last), hence with xx_xs σ·p acts on the bra.
 
- The 1-body analog of `opVop` with the dipole operator in the middle is
- `opemuop` (compiler: `σpeμσp`), with 12 = 3 (dipole direction, slow) × 4
- (folded Pauli component, fast) components.
+ The 1-body operators `opVop`, `op_q_gau_op` and `opemuop` (compiler:
+ `σpVσp`, `σpeμσp`) follow the convention of `coulomb_opop`: (σ·p a)† O (σ·p b)
+ is folded into q₀ + i σ·q with no further prefactor. `opemuop` has
+ 12 = 3 (dipole direction, slow) × 4 (folded Pauli component, fast)
+ components.
 
  The behavior of the components under the permutations Engine uses to
  canonicalize shell sets is encoded in operator_traits<Operator>:
@@ -317,6 +333,9 @@ enum class Operator {
  */
 // clang-format on
 
+/// @param[in] oper an Operator object
+/// @return the particle rank of \c oper
+/// @throw std::logic_error if an invalid @c oper given
 inline constexpr int rank(Operator oper) {
   return (oper >= Operator::first_1body_oper &&
           oper <= Operator::last_1body_oper)
@@ -875,6 +894,7 @@ class Engine {
         lmax_(other.lmax_),
         hard_lmax_(other.hard_lmax_),
         hard_default_lmax_(other.hard_default_lmax_),
+        task_name_(other.task_name_),
         deriv_order_(other.deriv_order_),
         precision_(other.precision_),
         ln_precision_(other.ln_precision_),
@@ -929,6 +949,7 @@ class Engine {
     lmax_ = other.lmax_;
     hard_lmax_ = other.hard_lmax_;
     hard_default_lmax_ = other.hard_default_lmax_;
+    task_name_ = other.task_name_;
     deriv_order_ = other.deriv_order_;
     precision_ = other.precision_;
     ln_precision_ = other.ln_precision_;
@@ -1012,6 +1033,8 @@ class Engine {
     if (braket_ != new_braket) {
       braket_ = new_braket;
       initialize();
+      // the order of the core evaluator depends on the rank of the braket
+      core_eval_pack_ = make_core_eval_pack(oper_);
     }
     return *this;
   }
@@ -1057,6 +1080,8 @@ class Engine {
     if (L >= static_cast<std::size_t>(lmax_)) {
       lmax_ = L;
       initialize();
+      // the order of the core evaluator depends on lmax_
+      core_eval_pack_ = make_core_eval_pack(oper_);
     }
     return *this;
   }
@@ -1292,6 +1317,9 @@ class Engine {
   // LIBINT2_MAX_AM_default<deriv_order>) + 1; this is only set and used if
   // LIBINT2_CENTER_DEPENDENT_MAX_AM_<task><deriv_order> == 1
   int hard_default_lmax_ = 0;
+  // the label of the task whose kernels this Engine dispatches (a string
+  // literal, for error messages); set by _initialize()
+  const char* task_name_ = "";
   int deriv_order_;
   scalar_type precision_;
   scalar_type ln_precision_;

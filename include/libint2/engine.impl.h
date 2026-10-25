@@ -641,6 +641,7 @@ __libint2_engine_inline void Engine::_initialize() {
       scratch2_ = nullptr;                                                     \
       return;                                                                  \
     }                                                                          \
+    task_name_ = BOOST_PP_STRINGIZE(BOOST_PP_NBODYENGINE_MCR3_TASK(product));  \
     hard_lmax_ = BOOST_PP_CAT(LIBINT2_MAX_AM_,                                 \
                               BOOST_PP_NBODYENGINE_MCR3_TASK(product)) +       \
                  1;                                                            \
@@ -1998,17 +1999,24 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     timers.start(1);
 #endif
 
+    // the per-center angular momentum limits are checked in all builds: lmax_
+    // (checked by initialize()) is the limit of the most permissive center, so
+    // for a task whose limit differs between the centers (e.g. 3eri, or
+    // 3coulomb_opop with LIBINT2_RKB_ERI3_MAX_AM != LIBINT2_MAX_AM) a shell can
+    // be within lmax_ and still beyond the limit of its center, and the index
+    // into the kernel table computed below would be out of range
+    auto check_lmax = [this](const Shell& sh, int lmax_plus_1) {
+      if (sh.contr[0].l >= lmax_plus_1)
+        throw lmax_exceeded(task_name_, lmax_plus_1 - 1, sh.contr[0].l);
+    };
+
     size_t buildfnidx;
     switch (braket_) {
       case BraKet::xx_xx:
-        assert(bra1.contr[0].l <= hard_lmax_ &&
-               "the angular momentum limit is exceeded");
-        assert(bra2.contr[0].l <= hard_lmax_ &&
-               "the angular momentum limit is exceeded");
-        assert(ket1.contr[0].l <= hard_lmax_ &&
-               "the angular momentum limit is exceeded");
-        assert(ket2.contr[0].l <= hard_lmax_ &&
-               "the angular momentum limit is exceeded");
+        check_lmax(bra1, hard_lmax_);
+        check_lmax(bra2, hard_lmax_);
+        check_lmax(ket1, hard_lmax_);
+        check_lmax(ket2, hard_lmax_);
         buildfnidx =
             ((bra1.contr[0].l * hard_lmax_ + bra2.contr[0].l) * hard_lmax_ +
              ket1.contr[0].l) *
@@ -2034,12 +2042,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             hard_default_lmax_ != std::numeric_limits<int>::max()
                 ? hard_default_lmax_
                 : hard_lmax_;
-        assert(bra1.contr[0].l <= hard_lmax_ &&
-               "the angular momentum limit is exceeded");
-        assert(ket1.contr[0].l <= ket_lmax &&
-               "the angular momentum limit is exceeded");
-        assert(ket2.contr[0].l <= ket_lmax &&
-               "the angular momentum limit is exceeded");
+        check_lmax(bra1, hard_lmax_);
+        check_lmax(ket1, ket_lmax);
+        check_lmax(ket2, ket_lmax);
 
         buildfnidx = (bra1.contr[0].l * ket_lmax + ket1.contr[0].l) * ket_lmax +
                      ket2.contr[0].l;
@@ -2061,10 +2066,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
       } break;
 
       case BraKet::xs_xs:
-        assert(bra1.contr[0].l <= hard_lmax_ &&
-               "the angular momentum limit is exceeded");
-        assert(ket1.contr[0].l <= hard_lmax_ &&
-               "the angular momentum limit is exceeded");
+        check_lmax(bra1, hard_lmax_);
+        check_lmax(ket1, hard_lmax_);
         buildfnidx = bra1.contr[0].l * hard_lmax_ + ket1.contr[0].l;
 #ifdef LIBINT_ERI2_PURE_SH
         // as for 3-center: derivative kernels are generated for cartesian

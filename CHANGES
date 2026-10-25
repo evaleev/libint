@@ -27,6 +27,14 @@ Following is a brief summary of changes made in each release of Libint.
       braket type; missing kernels are reported by Engine::missing_kernel from compute().
     - the validation of LIBINT2_<class>_MAX_AM in cmake/modules/int_am.cmake now actually runs
       (it referred to undefined variables); a value of 0 is accepted, negative values are rejected.
+    - Engine::compute() throws Engine::lmax_exceeded in all builds if a shell exceeds the angular
+      momentum limit of its center (e.g. an AO shell beyond LIBINT2_MAX_AM given to a 3-center Engine
+      whose max_l is within LIBINT2_ERI3_MAX_AM); previously a Debug-only assert, and Release builds
+      dispatched the kernel of another shell set.
+    - Engine::set(BraKet) and Engine::set_max_l() rebuild the core integral evaluator, whose order
+      depends on the rank of the braket and on the maximum angular momentum.
+    - the Fortran ERI test and example and the hartree-fock++ test honor a lower angular momentum
+      limit of the derivative kernels (e.g. LIBINT2_MAX_AM="2;2;1").
   - PR #449: generated and generic RR functions declare their target LIBINT2_RESTRICT (new config.h
              macro), up to ~1.2x faster high-am and derivative ERIs
   - PR #446: a value of 0 for LIBINT2_OPT_AM (or for the per-class LIBINT2_<class>_MAX_AM /
