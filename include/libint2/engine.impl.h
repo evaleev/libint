@@ -2273,6 +2273,18 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 template any Engine::enforce_params_type<Engine::empty_pod>(
     Operator oper, const Engine::empty_pod& params, bool throw_if_wrong_type);
 
+// operators without default params (e.g. delcgtg2) can only be constructed
+// with params, hence instantiate for their params types
+template any Engine::enforce_params_type<ContractedGaussianGeminal>(
+    Operator oper, const ContractedGaussianGeminal& params,
+    bool throw_if_wrong_type);
+template any Engine::enforce_params_type<
+    operator_traits<Operator::delcgtga_delcgtgb>::oper_params_type>(
+    Operator oper,
+    const operator_traits<Operator::delcgtga_delcgtgb>::oper_params_type&
+        params,
+    bool throw_if_wrong_type);
+
 template const Engine::target_ptr_vec& Engine::compute<Shell>(
     const Shell& first_shell, const Shell&);
 
