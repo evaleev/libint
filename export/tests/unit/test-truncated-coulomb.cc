@@ -11,6 +11,7 @@
 
 #include "catch.hpp"
 #include "truncated-coulomb-reference.h"
+#include "truncated-coulomb-vrr-reference.h"
 
 namespace {
 template <typename Evaluator>
@@ -76,6 +77,57 @@ TEST_CASE("Truncated Coulomb auxiliary integrals",
   for (int m = 0; m <= 8; ++m) CHECK(values[m] == coulomb[m]);
   eval(values.data(), 1., .24, 8, 20., &scratch);
   for (int m = 0; m <= 8; ++m) CHECK(std::abs(values[m] - coulomb[m]) <= eps);
+}
+
+// (L0|00)^(0), L = 0..mmax, by the Obara-Saika VRR with P = A, from G_m.
+template <std::size_t N>
+std::array<double, N> vrr_l000(const double* g, double zeta, double rho,
+                               double wp) {
+  std::array<std::array<double, N>, N> a{};
+  for (std::size_t m = 0; m < N; ++m) a[0][m] = g[m];
+  for (std::size_t l = 0; l + 1 < N; ++l)
+    for (std::size_t m = 0; m + l + 1 < N; ++m)
+      a[l + 1][m] =
+          wp * a[l][m + 1] +
+          (l ? l / (2 * zeta) * (a[l - 1][m] - rho / zeta * a[l - 1][m + 1])
+             : 0.);
+  std::array<double, N> result;
+  for (std::size_t l = 0; l < N; ++l) result[l] = a[l][0];
+  return result;
+}
+
+// What must hold is the accuracy of the integrals, which neither a bound
+// relative to each F_m nor an absolute one is the right measure of: far
+// outside the cutoff band the high-order G_m enter integrals multiplied by
+// small powers of the geometry, while near it an error of eps F_0 in G_4 can
+// already exceed eps (L0|00) by 1e8 for tight primitives (the third
+// reference geometry). Compare (L0|00) from evaluated and reference G_m,
+// relative to the larger of the truncated and the Coulomb integral, against
+// the double-precision VRR floor (~2^(L/2) eps; the tolerance leaves a factor
+// of 8).
+TEST_CASE("Truncated Coulomb integrals across the cutoff transition",
+          "[core-ints][truncated-coulomb]") {
+  constexpr int mmax = 16;
+  constexpr std::size_t N = mmax + 1;
+  const double eps = std::numeric_limits<double>::epsilon();
+  libint2::os_core_ints::truncated_coulomb_gm_eval<double> eval(mmax, eps);
+  decltype(eval)::scratch_type scratch(mmax);
+  const auto boys = libint2::FmEval_Chebyshev7<double>::instance(mmax);
+  for (const auto& ref : truncated_coulomb_vrr_reference) {
+    double g[N], f[N];
+    eval(g, 1., ref.t, mmax, ref.r, &scratch);
+    boys->eval(f, ref.t, mmax);
+    const auto computed = vrr_l000<N>(g, ref.zeta, ref.rho, ref.wp);
+    const auto exact = vrr_l000<N>(ref.g, ref.zeta, ref.rho, ref.wp);
+    const auto coulomb = vrr_l000<N>(f, ref.zeta, ref.rho, ref.wp);
+    for (int l = 0; l <= mmax; ++l) {
+      INFO("zeta=" << ref.zeta << " rho=" << ref.rho << " R=" << ref.r
+                   << " T=" << ref.t << " L=" << l);
+      const double scale = std::max(std::abs(exact[l]), std::abs(coulomb[l]));
+      CHECK(std::abs(computed[l] - exact[l]) <=
+            8 * eps * std::ldexp(1., l / 2) * scale);
+    }
+  }
 }
 
 #ifdef LIBINT_INCLUDE_ERI
