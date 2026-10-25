@@ -574,6 +574,18 @@ TEST_CASE("lmax_exceeded leaves no kernels", "[engine][2-body]") {
 #endif
 }
 
+// likewise, if set() changes the operator to one that initialize() rejects,
+// the next compute() must not use the kernel table of the previous operator
+TEST_CASE("rejected set() leaves no kernels", "[engine][2-body]") {
+#if defined(LIBINT2_SUPPORT_ERI) && LIBINT2_DERIV_ERI_ORDER > 0
+  const Shell s{{1.0}, {{0, false, {1.0}}}, {{0.0, 0.0, 0.0}}};
+  Engine engine(Operator::coulomb, 1, 0, 1);
+  REQUIRE(engine.compute(s, s, s, s)[0] != nullptr);
+  REQUIRE_THROWS_AS(engine.set(Operator::coulomb_opop), std::invalid_argument);
+  CHECK_THROWS_AS(engine.compute(s, s, s, s), Engine::missing_kernel);
+#endif
+}
+
 TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
   const std::vector<Shell> all_shells{
       // pseudorandom s
@@ -1069,14 +1081,17 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
     const auto obs = shells_upto(LIBINT2_MAX_AM_3coulomb_opop);
     const auto max_nprim = libint2::max_nprim(obs);
     const auto max_l = libint2::max_l(obs);
-    Engine eng_xs(Operator::coulomb_opop,
-                  std::max(max_nprim, libint2::max_nprim(dfs)),
-                  std::max(max_l, libint2::max_l(dfs)), 0);
-    eng_xs.set(BraKet::xs_xx);
-    Engine eng_xxs(Operator::coulomb_opop,
-                   std::max(max_nprim, libint2::max_nprim(dfs)),
-                   std::max(max_l, libint2::max_l(dfs)), 0);
-    eng_xxs.set(BraKet::xx_xs);
+    // pass the braket to the constructor: the default (4-center) braket may
+    // not support max_l if LIBINT2_RKB_ERI_MAX_AM < LIBINT2_RKB_ERI3_MAX_AM
+    const auto eps = std::numeric_limits<double>::epsilon();
+    Engine eng_xs(
+        Operator::coulomb_opop, std::max(max_nprim, libint2::max_nprim(dfs)),
+        std::max(max_l, libint2::max_l(dfs)), 0, eps,
+        libint2::default_params(Operator::coulomb_opop), BraKet::xs_xx);
+    Engine eng_xxs(
+        Operator::coulomb_opop, std::max(max_nprim, libint2::max_nprim(dfs)),
+        std::max(max_l, libint2::max_l(dfs)), 0, eps,
+        libint2::default_params(Operator::coulomb_opop), BraKet::xx_xs);
 
     for (size_t sa = 0; sa != obs.size(); ++sa) {
       for (size_t sb = 0; sb != obs.size(); ++sb) {

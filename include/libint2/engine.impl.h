@@ -688,16 +688,23 @@ __libint2_engine_inline void Engine::_initialize() {
 
 __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
   assert(libint2::initialized() && "libint is not initialized");
-  if (detail::is_rkb_2body(oper_) && deriv_order_ > 0)
+  // if the arguments are rejected leave no table for the previous
+  // operator/braket (set() has already changed them), so that compute()
+  // throws missing_kernel instead of dispatching it
+  if (detail::is_rkb_2body(oper_) && deriv_order_ > 0) {
+    buildfnptrs_ = nullptr;
     throw std::invalid_argument(
         "Engine::initialize -- geometric derivatives of RKB integrals are not "
         "yet supported");
+  }
   // energies canonicalize xx_xs to xs_xx, but DerivMapGenerator has no
   // derivative index map for xx_xs; fail here rather than inside compute2
-  if (braket_ == BraKet::xx_xs && deriv_order_ > 0)
+  if (braket_ == BraKet::xx_xs && deriv_order_ > 0) {
+    buildfnptrs_ = nullptr;
     throw std::invalid_argument(
         "Engine::initialize -- geometric derivatives are not supported for "
         "BraKet::xx_xs, use BraKet::xs_xx");
+  }
   assert(deriv_order_ <= LIBINT2_MAX_DERIV_ORDER &&
          "exceeded the max derivative order of the library");
 
