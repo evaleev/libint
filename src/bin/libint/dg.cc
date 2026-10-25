@@ -37,6 +37,7 @@
 #include <cstdio>
 #include <fstream>
 #include <functional>
+#include <set>
 #include <utility>
 
 using namespace std;
@@ -427,6 +428,7 @@ void DirectedGraph::reset() {
   targets_.clear();
   first_to_compute_.reset();
   func_names_.clear();
+  hoisted_precomputed_.clear();
 }
 
 /// Apply a strategy to all vertices not yet computed (i.e. which do not have
@@ -1010,8 +1012,12 @@ std::string declare_function(const std::shared_ptr<CodeContext>& context,
       << "* inteval";
   const unsigned int nargs = args->n();
   if (nargs > 0) {
-    // first argument is always the target, which is never a const
-    oss << ", " << context->type_name<double*>() << " " << args->symbol(0);
+    // first argument is always the target (the stack, for prerequisite
+    // functions), which is never a const and is not accessed through any
+    // other pointer: RR targets never overlap their children (checked in
+    // DirectedGraph::print_def)
+    oss << ", " << context->type_name<double*>() << " "
+        << context->restrict_modifier() << args->symbol(0);
     for (unsigned int a = 1; a < nargs; a++) {
       oss << ", " << context->type_name<const double*>() << " "
           << args->symbol(a);
@@ -1204,6 +1210,12 @@ void DirectedGraph::generate_code(
     def << "inteval->timers->start(0);" << std::endl;
     def << context->macro_endif();
   }
+
+  // load the precomputed quantities that assign_symbols() hoisted
+  for (const auto& h : hoisted_precomputed_)
+    def << context->decldef(
+        context->const_modifier() + context->type_name<double>(), h.first,
+        h.second);
 
   // now print out the code for this graph
   print_def(context, def, dims, args);
@@ -1502,6 +1514,8 @@ void DirectedGraph::assign_symbols(
   }
 
   // then process all other symbols, EXCEPT operators
+  hoisted_precomputed_.clear();
+  std::set<std::string> hoisted_names;
   for (iter v = stack_.begin(); v != stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
 #if DEBUG
@@ -1528,10 +1542,22 @@ void DirectedGraph::assign_symbols(
     // test if the vertex is precomputed runtime quantity, like a geometric
     // parameter
     if ((vptr)->precomputed()) {
-      std::string symbol("inteval->");
-      symbol += context->label_to_name((vptr)->label());
-      symbol += "[vi]";
-      (vptr)->set_symbol(symbol);
+      const std::string field =
+          "inteval->" + context->label_to_name((vptr)->label());
+      // in scalar code load each such quantity from inteval once, into a
+      // local declared by generate_code(): stores to the stack may alias
+      // inteval's fields, so the compiler cannot hoist these loads itself.
+      // a vertex that refers to another takes its symbol from the referred
+      // vertex, so do not hoist it
+      if (context->cparams()->max_vector_length() == 1 &&
+          !(vptr)->refers_to_another()) {
+        const std::string local =
+            "hv_" + context->label_to_name((vptr)->label());
+        (vptr)->set_symbol(local);
+        if (hoisted_names.insert(local).second)
+          hoisted_precomputed_.emplace_back(local, field + "[0]");
+      } else
+        (vptr)->set_symbol(field + "[vi]");
       continue;
     }
 
@@ -2071,6 +2097,23 @@ void DirectedGraph::print_def(const std::shared_ptr<CodeContext>& context,
                 *(current_vertex->first_exit_arc()));
         if (arc_ptr) {
           std::shared_ptr<RecurrenceRelation> rr = arc_ptr->rr();
+          // RR functions declare their target restrict, hence it must not
+          // overlap any of the children
+          if (current_vertex->address_set()) {
+            const auto t_begin = current_vertex->address();
+            const auto t_end = t_begin + current_vertex->size();
+            for (auto a = current_vertex->first_exit_arc();
+                 a != current_vertex->plast_exit_arc(); ++a) {
+              const std::shared_ptr<DGVertex>& child = (*a)->dest();
+              if (!child->address_set()) continue;
+              const auto c_begin = child->address();
+              const auto c_end = c_begin + child->size();
+              if (c_begin < t_end && t_begin < c_end)
+                throw ProgrammingError(
+                    "DirectedGraph::print_def() -- target of " + rr->label() +
+                    " overlaps its child " + child->label());
+            }
+          }
           os << rr->spfunction_call(context, dims);
           nflops_total += rr->nflops();
 

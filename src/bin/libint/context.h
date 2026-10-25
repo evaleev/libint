@@ -170,6 +170,8 @@ class CodeContext {
   virtual std::string const_modifier() const = 0;
   /// returns the modifier for mutable variables
   virtual std::string mutable_modifier() const = 0;
+  /// returns the modifier for pointers that do not alias any other pointer
+  virtual std::string restrict_modifier() const = 0;
 
  protected:
   /// Lone constructor takes CompilationParams
@@ -321,6 +323,7 @@ class CppCodeContext : public CodeContext,
   std::string ptr_fp_type() const override;
   std::string const_modifier() const override;
   std::string mutable_modifier() const override;
+  std::string restrict_modifier() const override;
 
   std::string start_expr() const;
   std::string end_expr() const;

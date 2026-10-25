@@ -39,7 +39,7 @@ template <int L,  //!< the angular momentum of this shell (i.e. the shell being
           bool vectorize>
 struct GenericGaussDeriv {
   static void compute(
-      const Libint_t* inteval, LIBINT2_REALTYPE* target,
+      const Libint_t* inteval, LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
       const LIBINT2_REALTYPE* src0, const LIBINT2_REALTYPE* src1,
       unsigned int
           highdim,  //!< number of functions more significant than this shell

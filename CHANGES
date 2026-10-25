@@ -4,19 +4,11 @@
 Following is a brief summary of changes made in each release of Libint.
 
 - unreleased:
-  - PR #447: TennoGmEval (Operator::yukawa and Operator::stg): core integrals with U = zeta^2/(4
-             rho) below the interpolation range (U < 1e-7) and T <= 1024 are now computed by
-             expanding in U about the Boys function. Previously the Yukawa integrals in this regime
-             used the upward recursion, which is unstable for small T and returned garbage for m >=
-             4 (#444); the Slater integrals used the Gaussian fit of the kernel, which was accurate
-             but much slower and used scratch shared between threads. TennoGmEval::eval_yukawa() now
-             also handles U = 0 (zeta = 0), in which case the result is the Boys function.
-  - PR #447: TennoGmEval no longer falls back to the Gaussian fit of the kernel (which was ~6x
-             slower than interpolation and not safe to use concurrently): the closed forms of G_0
-             and G_{-1} are now overflow-free (via exp(-T) erfcx), and U > 1e3 is computed by an
-             asymptotic expansion in 1/(U-T) (to full double precision, ~0.5 us per call vs ~40 us).
-             For T > 1024 and U + 2 sqrt(U T) > 709 the upward recursion used to overflow and
-             return NaN. TennoGmEval::fit_slater() is kept as a utility but no longer used.
+  - PR #447: TennoGmEval (Yukawa/Slater core integrals) fixed for U < 1e-7 at small T (#444) and no
+             longer returns NaN for large U and T; the slow, thread-unsafe Gaussian-fit fallback
+             is replaced by series expansions
+  - PR #449: generated and generic RR functions declare their target LIBINT2_RESTRICT (new config.h
+             macro), up to ~1.2x faster high-am and derivative ERIs
   - PR #446: a value of 0 for LIBINT2_OPT_AM (or for the per-class LIBINT2_<class>_MAX_AM /
              LIBINT2_<class>_OPT_AM) is now honored; previously config.h dropped the macro
              (#cmakedefine treats 0 as false), which broke the compiler build for LIBINT2_OPT_AM

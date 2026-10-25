@@ -34,7 +34,7 @@ template <int part, int Lb, int Ld, int Da_x, int Da_y, int Da_z, int Db_x,
           int Dd_z, bool unit_a, bool vectorize>
 struct OSVRR_sx_sx_deriv {
   static void compute(
-      const Libint_t* inteval, LIBINT2_REALTYPE* target,
+      const Libint_t* inteval, LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
       const LIBINT2_REALTYPE* src0, const LIBINT2_REALTYPE* src1,
       const LIBINT2_REALTYPE* src2, const LIBINT2_REALTYPE* src3,
       const LIBINT2_REALTYPE* src4, const LIBINT2_REALTYPE* src5,
@@ -84,7 +84,7 @@ template <int Lb, int Ld, int Da_x, int Da_y, int Da_z, int Db_x, int Db_y,
 struct OSVRR_sx_sx_deriv<0, Lb, Ld, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
                          Dc_y, Dc_z, Dd_x, Dd_y, Dd_z, unit_a, vectorize> {
   static void compute(
-      const Libint_t* inteval, LIBINT2_REALTYPE* target,
+      const Libint_t* inteval, LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
       const LIBINT2_REALTYPE* src0, const LIBINT2_REALTYPE* src1,
       const LIBINT2_REALTYPE* src2, const LIBINT2_REALTYPE* src3,
       const LIBINT2_REALTYPE* src4, const LIBINT2_REALTYPE* src5,
@@ -389,7 +389,7 @@ template <int part, int Lb, int Ld, int Da_x, int Da_y, int Da_z, int Db_x,
           int Dd_z, bool vectorize>
 struct OSAVRR_sx_sx_deriv {
   static void compute(
-      const Libint_t* inteval, LIBINT2_REALTYPE* target,
+      const Libint_t* inteval, LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
       const LIBINT2_REALTYPE* src1, const LIBINT2_REALTYPE* src4,
       const LIBINT2_REALTYPE* src5, const LIBINT2_REALTYPE* src6,
       const LIBINT2_REALTYPE* src7, const LIBINT2_REALTYPE* src8,
@@ -434,7 +434,7 @@ template <int Lb, int Ld, int Da_x, int Da_y, int Da_z, int Db_x, int Db_y,
 struct OSAVRR_sx_sx_deriv<0, Lb, Ld, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
                           Dc_y, Dc_z, Dd_x, Dd_y, Dd_z, vectorize> {
   static void compute(
-      const Libint_t* inteval, LIBINT2_REALTYPE* target,
+      const Libint_t* inteval, LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
       const LIBINT2_REALTYPE* src1, const LIBINT2_REALTYPE* src4,
       const LIBINT2_REALTYPE* src5, const LIBINT2_REALTYPE* src6,
       const LIBINT2_REALTYPE* src7, const LIBINT2_REALTYPE* src8,
