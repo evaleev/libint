@@ -578,6 +578,9 @@ std::string CppCodeContext::const_modifier() const { return "const "; }
 std::string CppCodeContext::mutable_modifier() const {
   return "#ifdef __cplusplus\nmutable \n#endif\n";
 }
+std::string CppCodeContext::restrict_modifier() const {
+  return "LIBINT2_RESTRICT ";
+}
 
 std::string CppCodeContext::inteval_type_name(const std::string& tlabel) const {
   if (cparams()->single_evaltype())
