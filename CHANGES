@@ -4,6 +4,9 @@
 Following is a brief summary of changes made in each release of Libint.
 
 - unreleased:
+  - PR #447: TennoGmEval (Yukawa/Slater core integrals) fixed for U < 1e-7 at small T (#444) and no
+             longer returns NaN for large U and T; the slow, thread-unsafe Gaussian-fit fallback
+             is replaced by series expansions
   - PR #449: generated and generic RR functions declare their target LIBINT2_RESTRICT (new config.h
              macro), up to ~1.2x faster high-am and derivative ERIs
   - PR #446: a value of 0 for LIBINT2_OPT_AM (or for the per-class LIBINT2_<class>_MAX_AM /
