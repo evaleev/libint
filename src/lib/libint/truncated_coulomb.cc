@@ -4,6 +4,15 @@
 #include <libint2/boys.h>
 #include <libint2/truncated_coulomb.h>
 
+// The error bounds below rely on IEEE semantics: infinities as sentinels,
+// compensated sums, exact products and directed outward rounding. The build
+// compiles this file with value-safe options (see CMakeLists.txt.export);
+// fail here rather than return wrong integrals if they were overridden.
+#if defined(__FAST_MATH__) || \
+    (defined(__FINITE_MATH_ONLY__) && __FINITE_MATH_ONLY__)
+#error "truncated_coulomb.cc must be compiled without -ffast-math"
+#endif
+
 #include <algorithm>
 #include <array>
 #include <climits>
