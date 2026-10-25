@@ -18,19 +18,29 @@ namespace truncated_coulomb {
 namespace {
 constexpr double unit = std::numeric_limits<double>::epsilon() / 2;
 constexpr double infinity = std::numeric_limits<double>::infinity();
+// Fused multiply-add is used only where the compiler emits it as an
+// instruction. Elsewhere std::fma is a library call, emulated in software on
+// CPUs without FMA (~150 ns on Ivy Bridge), so each use falls back to plain
+// arithmetic with the extra rounding accounted for. Define
+// LIBINT2_TRUNCATED_COULOMB_FAST_FMA=0 to test the fallback on FMA hardware.
+#ifndef LIBINT2_TRUNCATED_COULOMB_FAST_FMA
 #ifdef FP_FAST_FMA
-constexpr unsigned taylor_roundings = 1;
+#define LIBINT2_TRUNCATED_COULOMB_FAST_FMA 1
 #else
-constexpr unsigned taylor_roundings = 2;
+#define LIBINT2_TRUNCATED_COULOMB_FAST_FMA 0
 #endif
+#endif
+constexpr bool fast_fma = LIBINT2_TRUNCATED_COULOMB_FAST_FMA;
+constexpr unsigned taylor_roundings = fast_fma ? 1 : 2;
+// a*b+c, rounded once with fast FMA and twice otherwise; for arithmetic whose
+// error budget does not depend on the number of roundings.
+inline double mul_add(double a, double b, double c) {
+  return fast_fma ? std::fma(a, b, c) : a * b + c;
+}
+// Preserve independent vector lanes on portable targets as well. A scalar
+// libm fma call would serialize them; the budget accounts for both roundings.
 inline double taylor_add(double weight, double origin, double sum) {
-#ifdef FP_FAST_FMA
-  return std::fma(weight, origin, sum);
-#else
-  // Preserve independent vector lanes on portable targets as well. A scalar
-  // libm fma call would serialize them; the budget accounts for both roundings.
-  return weight * origin + sum;
-#endif
+  return mul_add(weight, origin, sum);
 }
 // Numeric outward steps for nonnegative binary64 bounds. Exceptional and
 // subnormal results retain nextafter's floating-point exception behavior.
@@ -55,6 +65,22 @@ inline double outward(double x, double direction) {
   }
   return std::nextafter(x, direction);
 }
+// Bound on a*b+c for a*b, c >= 0, rounded toward direction (0 or infinity):
+// one outward step per rounding.
+inline double outward_mul_add(double a, double b, double c, double direction) {
+  if (fast_fma) return outward(std::fma(a, b, c), direction);
+  return outward(outward(a * b, direction) + c, direction);
+}
+// T - R^2 with the product formed exactly. Near R = sqrt(T) the result is the
+// small displacement sqrt(T) - R times sqrt(T) + R, so rounding R^2 first
+// would cost a relative error of order T / (T - R^2).
+inline double difference_of_square(double T, double R) {
+  if (fast_fma) return std::fma(-R, R, T);
+  // Dekker's exact product R*R = p + e via Veltkamp splitting of R.
+  const double p = R * R, c = 134217729. * R, hi = c - (c - R), lo = R - hi;
+  const double e = ((hi * hi - p) + 2 * hi * lo) + lo * lo;
+  return (T - p) - e;
+}
 struct Sum {
   double value = 0, correction = 0, magnitude = 0;
   void add(double term) {
@@ -72,7 +98,7 @@ void validate(double R, double T, int mmax, const Options& options) {
     throw std::invalid_argument("invalid binary64 truncated-Coulomb request");
 }
 double root_difference(double R, double T, double s) {
-  if (R >= .5 * s && R <= 2 * s) return std::fma(-R, R, T) / (s + R);
+  if (R >= .5 * s && R <= 2 * s) return difference_of_square(T, R) / (s + R);
   return s - R;
 }
 struct TaylorPlan {
@@ -208,10 +234,10 @@ CutoffLimit finite_cutoff_limit(double R, double T, int n,
     std::frexp(options.precision / 32, &exponent);
     w.limit_power = std::max(0, 1 - exponent);
     const double square =
-        outward(std::fma(double(w.limit_power), log_two_hi, 2. * n), infinity);
+        outward_mul_add(double(w.limit_power), log_two_hi, 2. * n, infinity);
     w.limit_gap = outward(std::sqrt(square), infinity);
     w.limit_min_t =
-        outward(std::fma(double(w.limit_power), log_two_lo, double(n)), 0.);
+        outward_mul_add(double(w.limit_power), log_two_lo, double(n), 0.);
     w.limit_order = n;
     w.limit_precision = options.precision;
   }
@@ -238,9 +264,8 @@ CutoffLimit finite_cutoff_limit(double R, double T, int n,
           int exponent;
           std::frexp(R, &exponent);
           const double square =
-              outward(std::fma(double(w.limit_power + 2 * exponent), log_two_hi,
-                               2. * n),
-                      infinity);
+              outward_mul_add(double(w.limit_power + 2 * exponent), log_two_hi,
+                              2. * n, infinity);
           gap = outward(std::sqrt(square), infinity);
         }
         if (distance >= gap) return CutoffLimit::zero;
@@ -361,7 +386,7 @@ void boys_limit(double T, int n, Workspace& w, double* g) {
     const double e = std::exp(-T);
     int upward = 0;
     while (upward < n && upward + .5 < T) {
-      g[upward + 1] = std::fma(2. * upward + 1, g[upward], -e) / (2 * T);
+      g[upward + 1] = mul_add(2. * upward + 1, g[upward], -e) / (2 * T);
       ++upward;
     }
     if (upward < n) {
@@ -379,7 +404,7 @@ void boys_limit(double T, int n, Workspace& w, double* g) {
       }
       g[n] = value;
       for (int m = n - 1; m > upward; --m) {
-        value = std::fma(2 * T, value, e) / (2. * m + 1);
+        value = mul_add(2 * T, value, e) / (2. * m + 1);
         g[m] = value;
       }
     }
@@ -411,7 +436,7 @@ void origin_q(double R, unsigned last, Workspace& w) {
   w.ensure_reciprocals(static_cast<std::size_t>(last));
   for (unsigned k = static_cast<unsigned>(w.origin_last); k < last; ++k) {
     w.origin_difference =
-        std::fma(k, w.origin_difference, -x * w.origin[k]) * w.inverse_half[k];
+        mul_add(k, w.origin_difference, -x * w.origin[k]) * w.inverse_half[k];
     w.origin[k + 1] = w.origin[k] + w.origin_difference;
     w.origin_envelope = std::max(w.origin_envelope, std::abs(w.origin[k + 1]));
   }
@@ -446,7 +471,7 @@ Candidate r_series(double R, double T, unsigned m, bool g, double tolerance,
                                       : x * x * j * (j + m + .5) /
                                          (denominator * (j + 1.) * (j + .5)))
                             : x * x * (j + m - .5) / (denominator * (j - .5));
-    const double next = std::fma(a, term, -b * previous);
+    const double next = mul_add(a, term, -b * previous);
     if (!std::isfinite(next)) return {0, infinity};
     previous = term;
     term = next;
@@ -565,9 +590,9 @@ void scaled_hermites(double R, double T, unsigned last, Workspace& w) {
   for (unsigned k = 1; k < last; ++k) {
     const double b = k * inv2T;
     const double next_minus =
-        minus_active ? std::fma(a_minus, minus, -b * minus_previous) : 0;
+        minus_active ? mul_add(a_minus, minus, -b * minus_previous) : 0;
     const double next_plus =
-        plus_active ? std::fma(a_plus, plus, -b * plus_previous) : 0;
+        plus_active ? mul_add(a_plus, plus, -b * plus_previous) : 0;
     p[k + 1] = next_minus + next_plus;
     minus_previous = minus;
     plus_previous = plus;
@@ -719,13 +744,11 @@ struct MillerBoundary {
       }
       counted = true;
       if (order == n) return product;
-      const double flo = outward(
-          std::fma(double(order), hlo, outward(std::fma(xlo, qlo, .5), 0.)),
-          0.);
+      const double flo = outward_mul_add(double(order), hlo,
+                                         outward_mul_add(xlo, qlo, .5, 0.), 0.);
       const double fhi =
-          outward(std::fma(double(order), hhi,
-                           outward(std::fma(xhi, qhi, .5), infinity)),
-                  infinity);
+          outward_mul_add(double(order), hhi,
+                          outward_mul_add(xhi, qhi, .5, infinity), infinity);
       const double dlo = outward(T + flo, 0.), dhi = outward(T + fhi, infinity);
       qlo = outward(outward(T * outward(qlo + 1, 0.), 0.) / dhi, 0.);
       qhi = outward(outward(T * outward(qhi + 1, infinity), infinity) / dlo,
@@ -802,8 +825,8 @@ bool miller_q(double R, double T, unsigned last, double tolerance,
         const double factor = matrix[i][k - i + 2] / diagonal;
         for (unsigned j = k + 1; j < std::min(n, k + 4); ++j)
           matrix[i][j - i + 2] =
-              std::fma(-factor, matrix[k][j - k + 2], matrix[i][j - i + 2]);
-        rhs[i] = std::fma(-factor, rhs[k], rhs[i]);
+              mul_add(-factor, matrix[k][j - k + 2], matrix[i][j - i + 2]);
+        rhs[i] = mul_add(-factor, rhs[k], rhs[i]);
         matrix[i][k - i + 2] = factor;
       }
     }
@@ -811,7 +834,7 @@ bool miller_q(double R, double T, unsigned last, double tolerance,
     for (unsigned kk = n; kk > 0; --kk) {
       const unsigned k = kk - 1;
       for (unsigned j = k + 1; j < std::min(n, k + 4); ++j)
-        rhs[k] = std::fma(-matrix[k][j - k + 2], rhs[j], rhs[k]);
+        rhs[k] = mul_add(-matrix[k][j - k + 2], rhs[j], rhs[k]);
       rhs[k] /= matrix[k][2];
     }
     for (auto& value : rhs) value *= q0;
@@ -826,22 +849,22 @@ bool miller_q(double R, double T, unsigned last, double tolerance,
         const double previous = m == 0 ? 0 : m == 1 ? q0 : rhs[m - 2];
         const double next = rhs[m], after = m + 1 == n ? 0 : rhs[m + 1];
         const double difference = next - current;
-        const double residual = std::fma(
+        const double residual = mul_add(
             T, (after - next) - difference,
-            std::fma(double(m), current - previous, -(m + .5) * difference));
-        correction[m] = std::fma(R * R, current, -residual);
+            mul_add(double(m), current - previous, -(m + .5) * difference));
+        correction[m] = mul_add(R * R, current, -residual);
       }
       for (unsigned k = 0; k < n; ++k) {
         std::swap(correction[k], correction[pivots[k]]);
         for (unsigned i = k + 1; i < std::min(n, k + 3); ++i)
           correction[i] =
-              std::fma(-matrix[i][k - i + 2], correction[k], correction[i]);
+              mul_add(-matrix[i][k - i + 2], correction[k], correction[i]);
       }
       for (unsigned kk = n; kk > 0; --kk) {
         const unsigned k = kk - 1;
         for (unsigned j = k + 1; j < std::min(n, k + 4); ++j)
           correction[k] =
-              std::fma(-matrix[k][j - k + 2], correction[j], correction[k]);
+              mul_add(-matrix[k][j - k + 2], correction[j], correction[k]);
         correction[k] /= matrix[k][2];
       }
       for (unsigned k = 0; k < n; ++k) rhs[k] += correction[k];
@@ -872,12 +895,12 @@ double q_tolerances(double T, int last, double budget, Workspace& w) {
   tolerance.budget = budget;
   double h = 0;
   for (int m = 0; m < w.upward_last; ++m) {
-    h = std::fma((m + .5) / T, h, 1.);
+    h = mul_add((m + .5) / T, h, 1.);
   }
   tolerance.upward = h > 0 ? budget * (2 * T / h) : infinity;
   h = 0;
   for (int m = last; m > w.upward_last; --m) {
-    h = std::fma(T / (m + .5), h, 1.);
+    h = mul_add(T / (m + .5), h, 1.);
   }
   tolerance.downward_h = h;
   double minimum = tolerance.join > 1 ? tolerance.upward : infinity;
@@ -945,11 +968,11 @@ void propagate_work(double T, int n, Workspace& w, double* g) {
                        ? exponential(T, w)
                        : 0;
   for (int m = 0; m < w.upward_last; ++m)
-    g[m + 1] = std::fma(m + .5, g[m], .5 * (w.q[m] - e)) / T;
+    g[m + 1] = mul_add(m + .5, g[m], .5 * (w.q[m] - e)) / T;
   double next = w.seed;
   if (w.seed_order == n) g[n] = next;
   for (int m = w.seed_order - 1; m > w.upward_last; --m) {
-    next = std::fma(2 * T, next, e - w.q[m]) / (2. * m + 1);
+    next = mul_add(2 * T, next, e - w.q[m]) / (2. * m + 1);
     if (m <= n) g[m] = next;
   }
 }
