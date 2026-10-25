@@ -141,53 +141,73 @@ TEST_CASE("delcgtga_delcgtgb integrals", "[engine][2-body]") {
   geminal_t ga_plus_gb = ga;
   ga_plus_gb.insert(ga_plus_gb.end(), gb.begin(), gb.end());
 
-  if (LIBINT2_MAX_AM_eri >= max_l) {
-    auto engine = Engine(Operator::delcgtga_delcgtgb, max_nprim, max_l);
-    // N.B. delcgtg2 has no default params, must construct with params
-    auto engine_ref = Engine(Operator::delcgtg2, max_nprim, max_l, 0,
-                             std::numeric_limits<double>::epsilon(), ga);
+  if (LIBINT2_MAX_AM_eri < max_l) {
+    WARN("delcgtga_delcgtgb integrals: skipped, LIBINT2_MAX_AM_eri < "
+         << max_l);
+    return;
+  }
+  // also test 1st derivatives, if available
+  const int max_deriv_order =
+#if LIBINT2_DERIV_ERI_ORDER > 0
+      (LIBINT2_MAX_AM_eri1 >= max_l) ? 1 : 0;
+#else
+      0;
+#endif
+  const auto eps = std::numeric_limits<double>::epsilon();
+  using params_t = std::array<geminal_t, 2>;
 
-    // computes all shell quartets of obs with engine e
-    auto compute_all = [&](Engine& e) {
-      std::vector<double> ints;
-      const auto nshell = obs.size();
-      for (int s1 = 0; s1 != nshell; ++s1) {
-        for (int s2 = 0; s2 != nshell; ++s2) {
-          for (int s3 = 0; s3 != nshell; ++s3) {
-            for (int s4 = 0; s4 != nshell; ++s4) {
-              e.compute(obs[s1], obs[s2], obs[s3], obs[s4]);
-              const auto setsize = obs[s1].size() * obs[s2].size() *
-                                   obs[s3].size() * obs[s4].size();
-              if (e.results()[0] == nullptr)
+  // computes all shell quartets of obs (all targets, i.e. all derivatives)
+  // with engine e
+  auto compute_all = [&](Engine &e) {
+    std::vector<double> ints;
+    const auto nshell = obs.size();
+    for (std::size_t s1 = 0; s1 != nshell; ++s1) {
+      for (std::size_t s2 = 0; s2 != nshell; ++s2) {
+        for (std::size_t s3 = 0; s3 != nshell; ++s3) {
+          for (std::size_t s4 = 0; s4 != nshell; ++s4) {
+            e.compute(obs[s1], obs[s2], obs[s3], obs[s4]);
+            const auto setsize = obs[s1].size() * obs[s2].size() *
+                                 obs[s3].size() * obs[s4].size();
+            for (const auto *target : e.results()) {
+              if (target == nullptr)
                 ints.insert(ints.end(), setsize, 0.0);
               else
-                ints.insert(ints.end(), e.results()[0],
-                            e.results()[0] + setsize);
+                ints.insert(ints.end(), target, target + setsize);
             }
           }
         }
       }
-      return ints;
-    };
+    }
+    return ints;
+  };
 
-    SECTION("a = b reproduces delcgtg2") {
-      engine.set_params(std::array<geminal_t, 2>{ga, ga});
-      engine_ref.set_params(ga);
+  SECTION("a = b reproduces delcgtg2") {
+    for (int d = 0; d <= max_deriv_order; ++d) {
+      CAPTURE(d);
+      auto engine = Engine(Operator::delcgtga_delcgtgb, max_nprim, max_l, d,
+                           eps, params_t{ga, ga});
+      auto engine_ref =
+          Engine(Operator::delcgtg2, max_nprim, max_l, d, eps, ga);
       const auto ints = compute_all(engine);
       const auto ints_ref = compute_all(engine_ref);
       REQUIRE(ints.size() == ints_ref.size());
       for (std::size_t i = 0; i != ints.size(); ++i)
         REQUIRE(ints[i] == Approx(ints_ref[i]).margin(1e-12));
     }
+  }
 
-    SECTION("a != b: symmetric and satisfies polarization identity") {
-      // (Del g_a).(Del g_b) = ((Del (g_a + g_b))^2 - (Del g_a)^2 -
-      // (Del g_b)^2) / 2
-      engine.set_params(std::array<geminal_t, 2>{ga, gb});
+  SECTION("a != b: symmetric and satisfies polarization identity") {
+    // (Del g_a).(Del g_b) = ((Del (g_a + g_b))^2 - (Del g_a)^2 -
+    // (Del g_b)^2) / 2
+    for (int d = 0; d <= max_deriv_order; ++d) {
+      CAPTURE(d);
+      auto engine = Engine(Operator::delcgtga_delcgtgb, max_nprim, max_l, d,
+                           eps, params_t{ga, gb});
+      auto engine_ref =
+          Engine(Operator::delcgtg2, max_nprim, max_l, d, eps, ga_plus_gb);
       const auto ints_ab = compute_all(engine);
-      engine.set_params(std::array<geminal_t, 2>{gb, ga});
+      engine.set_params(params_t{gb, ga});
       const auto ints_ba = compute_all(engine);
-      engine_ref.set_params(ga_plus_gb);
       const auto ints_apb = compute_all(engine_ref);
       engine_ref.set_params(ga);
       const auto ints_a = compute_all(engine_ref);
@@ -197,13 +217,43 @@ TEST_CASE("delcgtga_delcgtgb integrals", "[engine][2-body]") {
       bool nontrivial = false;
       for (std::size_t i = 0; i != ints_ab.size(); ++i) {
         REQUIRE(ints_ab[i] == Approx(ints_ba[i]).margin(1e-12));
-        REQUIRE(ints_ab[i] ==
-                Approx((ints_apb[i] - ints_a[i] - ints_b[i]) / 2)
-                    .margin(1e-10));
+        REQUIRE(
+            ints_ab[i] ==
+            Approx((ints_apb[i] - ints_a[i] - ints_b[i]) / 2).margin(1e-10));
         if (std::abs(ints_ab[i]) > 1e-3) nontrivial = true;
       }
       REQUIRE(nontrivial);
     }
+  }
+
+  SECTION("params are required and validated") {
+    // no default params
+    REQUIRE_THROWS_AS(Engine(Operator::delcgtga_delcgtgb, max_nprim, max_l),
+                      std::logic_error);
+    // a single geminal is not valid
+    REQUIRE_THROWS(
+        Engine(Operator::delcgtga_delcgtgb, max_nprim, max_l, 0, eps, ga));
+    auto engine = Engine(Operator::delcgtga_delcgtgb, max_nprim, max_l, 0, eps,
+                         params_t{ga, gb});
+    REQUIRE_THROWS_AS(engine.set_params(ga), std::logic_error);
+    // negative exponents are rejected
+    const geminal_t gneg = {{-0.5, 1.0}};
+    REQUIRE_THROWS_AS(engine.set_params(params_t{ga, gneg}), std::logic_error);
+  }
+
+  SECTION("set(Operator) does not reuse params of the previous operator") {
+    auto engine = Engine(Operator::delcgtg2, max_nprim, max_l, 0, eps, ga);
+    engine.set(Operator::delcgtga_delcgtgb);
+    // delcgtg2's params must not be used, hence no params available
+    REQUIRE_THROWS(compute_all(engine));
+    engine.set_params(params_t{ga, gb});
+    auto engine_ref = Engine(Operator::delcgtga_delcgtgb, max_nprim, max_l, 0,
+                             eps, params_t{ga, gb});
+    const auto ints = compute_all(engine);
+    const auto ints_ref = compute_all(engine_ref);
+    REQUIRE(ints.size() == ints_ref.size());
+    for (std::size_t i = 0; i != ints.size(); ++i)
+      REQUIRE(ints[i] == Approx(ints_ref[i]).margin(1e-12));
   }
 }
 

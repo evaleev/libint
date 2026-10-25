@@ -225,9 +225,11 @@ enum class Operator {
   stg_x_coulomb,
   /// alias for Operator::stg_x_coulomb
   yukawa = stg_x_coulomb,
-  /// (Delta . contracted Gaussian geminal a) . (Delta . contracted Gaussian
-  /// geminal b), i.e. the two-geminal generalization of delcgtg2; params are
-  /// std::array<ContractedGaussianGeminal,2>{a, b}
+  /// \f$ (\nabla_1 g_a) \cdot (\nabla_1 g_b) \f$ , where \f$ g_a \f$ and
+  /// \f$ g_b \f$ are contracted Gaussian geminals, i.e. the two-geminal
+  /// generalization of delcgtg2 (delcgtga_delcgtgb with \f$ g_a = g_b = g \f$
+  /// is equivalent to delcgtg2 with \f$ g \f$ ); params (no defaults, must be
+  /// provided) are std::array<ContractedGaussianGeminal,2>{g_a, g_b}
   delcgtga_delcgtgb,
   // do not modify this
   invalid = -1,
@@ -459,8 +461,8 @@ template <>
 struct operator_traits<Operator::delcgtga_delcgtgb>
     : public detail::cgtg_operator_traits<2> {
   /// the two geminals a and b
+  /// N.B. like delcgtg2 there are no default params
   typedef std::array<ContractedGaussianGeminal, 2> oper_params_type;
-  static oper_params_type default_params() { return oper_params_type{}; }
 };
 
 template <>
@@ -803,6 +805,11 @@ class Engine {
       oper_ = new_oper;
       braket_ = default_braket(oper_);
       params_ = default_params(oper_);
+      // discard the core params of the previous operator; N.B. not using
+      // init_core_ints_params since it throws for operators without default
+      // params (e.g. delcgtg2), computing their integrals will throw until
+      // set_params() is called
+      core_ints_params_ = params_;
       initialize();
       core_eval_pack_ = make_core_eval_pack(oper_);  // must follow initialize()
                                                      // to ensure default
