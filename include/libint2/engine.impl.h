@@ -70,37 +70,38 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
 /// These MUST appear in the same order as in Operator.
 /// You must also update BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX when you add
 /// one-body ints
-#define BOOST_PP_NBODY_OPERATOR_LIST                                     \
-  (overlap,                                      /* overlap */           \
-   (kinetic,                                     /* kinetic */           \
-    (elecpot,                                    /* nuclear */           \
-     (elecpot,                                   /* erf_nuclear */       \
-      (elecpot,                                  /* erfc_nuclear */      \
-       (elecpot,                                 /* erfx_nuclear */      \
-        (elecpot,                                /* q_gau */             \
-         (1emultipole,                           /* emultipole1 */       \
-          (2emultipole,                          /* emultipole2 */       \
-           (3emultipole,                         /* emultipole3 */       \
-            (sphemultipole,                      /* sphemultipole */     \
-             (opVop,                             /* opVop */             \
-              (opVop,                            /* op_q_gau_op */       \
-               (opemuop,                         /* opemuop */           \
-                (eri,                            /* delta */             \
-                 (eri,                           /* coulomb */           \
-                  (eri,                          /* cgtg */              \
-                   (eri,                         /* cgtg_x_coulomb */    \
-                    (eri,                        /* delcgtg2 */          \
-                     (eri,                       /* r12 */               \
-                      (eri,                      /* erf_coulomb */       \
-                       (eri,                     /* erfc_coulomb */      \
-                        (eri,                    /* erfx_coulomb */      \
-                         (eri,                   /* stg */               \
-                          (eri,                  /* yukawa */            \
-                           (coulomb_opop,        /* coulomb_opop */      \
-                            (coulomb_op,         /* coulomb_op */        \
-                             (opop_coulomb_opop, /* opop_coulomb_opop */ \
-                              (op_coulomb_op,    /* op_coulomb_op */     \
-                               BOOST_PP_NIL)))))))))))))))))))))))))))))
+#define BOOST_PP_NBODY_OPERATOR_LIST                                      \
+  (overlap,                                       /* overlap */           \
+   (kinetic,                                      /* kinetic */           \
+    (elecpot,                                     /* nuclear */           \
+     (elecpot,                                    /* erf_nuclear */       \
+      (elecpot,                                   /* erfc_nuclear */      \
+       (elecpot,                                  /* erfx_nuclear */      \
+        (elecpot,                                 /* q_gau */             \
+         (1emultipole,                            /* emultipole1 */       \
+          (2emultipole,                           /* emultipole2 */       \
+           (3emultipole,                          /* emultipole3 */       \
+            (sphemultipole,                       /* sphemultipole */     \
+             (opVop,                              /* opVop */             \
+              (opVop,                             /* op_q_gau_op */       \
+               (opemuop,                          /* opemuop */           \
+                (eri,                             /* delta */             \
+                 (eri,                            /* coulomb */           \
+                  (eri,                           /* cgtg */              \
+                   (eri,                          /* cgtg_x_coulomb */    \
+                    (eri,                         /* delcgtg2 */          \
+                     (eri,                        /* r12 */               \
+                      (eri,                       /* erf_coulomb */       \
+                       (eri,                      /* erfc_coulomb */      \
+                        (eri,                     /* erfx_coulomb */      \
+                         (eri,                    /* stg */               \
+                          (eri,                   /* yukawa */            \
+                           (eri,                  /* delcgtga_delcgtgb */ \
+                            (coulomb_opop,        /* coulomb_opop */      \
+                             (coulomb_op,         /* coulomb_op */        \
+                              (opop_coulomb_opop, /* opop_coulomb_opop */ \
+                               (op_coulomb_op,    /* op_coulomb_op */     \
+                                BOOST_PP_NIL))))))))))))))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
@@ -969,14 +970,30 @@ __libint2_engine_inline any Engine::make_core_eval_pack(Operator oper) const {
 }
 
 __libint2_engine_inline void Engine::init_core_ints_params(const any& params) {
+  // geminal exponents must be nonnegative, else the integrals diverge
+  auto validate_geminal = [](const ContractedGaussianGeminal& g,
+                             const char* oper_name) {
+    for (const auto& p : g)
+      if (p.first < 0)
+        throw std::logic_error(
+            "Engine::set_params(Operator::" + std::string(oper_name) +
+            "): geminal exponent " + std::to_string(p.first) + " is negative");
+  };
+
   if (oper_ == Operator::delcgtg2) {
     // [g12,[- \Del^2, g12] = 2 (\Del g12) \cdot (\Del g12)
     // (\Del exp(-a r_12^2) \cdot (\Del exp(-b r_12^2) = 4 a b (r_{12}^2 exp(-
     // (a+b) r_{12}^2) )
     // i.e. need to scale each coefficient by 4 a b
-    const auto& oparams =
-        any_cast<const operator_traits<Operator::delcgtg2>::oper_params_type&>(
-            params);
+    const auto* oparams_ptr =
+        any_cast<operator_traits<Operator::delcgtg2>::oper_params_type>(
+            &params);
+    if (oparams_ptr == nullptr)
+      throw std::logic_error(
+          "Engine::set_params(Operator::delcgtg2): params must be provided as "
+          "a ContractedGaussianGeminal");
+    const auto& oparams = *oparams_ptr;
+    validate_geminal(oparams, "delcgtg2");
     const auto ng = oparams.size();
     operator_traits<Operator::delcgtg2>::oper_params_type core_ints_params;
     core_ints_params.reserve(ng * (ng + 1) / 2);
@@ -1004,6 +1021,32 @@ __libint2_engine_inline void Engine::init_core_ints_params(const any& params) {
           std::to_string(std::get<1>(q_gau_params).size()) + ")");
     }
     core_ints_params_ = params;
+  } else if (oper_ == Operator::delcgtga_delcgtgb) {
+    // (\Del g_a) \cdot (\Del g_b) with g_a = \sum_i c_i exp(-a_i r_12^2),
+    // g_b = \sum_j d_j exp(-b_j r_12^2):
+    // = \sum_ij 4 a_i b_j c_i d_j r_{12}^2 exp(-(a_i+b_j) r_{12}^2)
+    // i.e. product of the two geminals, each coefficient scaled by 4 a_i b_j
+    const auto* oparams_ptr = any_cast<
+        operator_traits<Operator::delcgtga_delcgtgb>::oper_params_type>(
+        &params);
+    if (oparams_ptr == nullptr)
+      throw std::logic_error(
+          "Engine::set_params(Operator::delcgtga_delcgtgb): params must be "
+          "provided as a std::array<ContractedGaussianGeminal,2>");
+    const auto& ga = (*oparams_ptr)[0];
+    const auto& gb = (*oparams_ptr)[1];
+    validate_geminal(ga, "delcgtga_delcgtgb");
+    validate_geminal(gb, "delcgtga_delcgtgb");
+    operator_traits<Operator::cgtg>::oper_params_type core_ints_params;
+    core_ints_params.reserve(ga.size() * gb.size());
+    for (const auto& pa : ga)
+      for (const auto& pb : gb) {
+        const auto gexp = pa.first + pb.first;
+        const auto gcoeff_rescaled =
+            4 * pa.first * pb.first * pa.second * pb.second;
+        core_ints_params.push_back(std::make_pair(gexp, gcoeff_rescaled));
+      }
+    core_ints_params_ = core_ints_params;
   } else {
     core_ints_params_ = params;
   }
@@ -1601,7 +1644,18 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                           core_ints_params_);
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
                 } break;
-                case Operator::delcgtg2: {
+                // N.B. delcgtga_delcgtgb has the same core evaluator as
+                // delcgtg2, and for both core_ints_params_ holds the product
+                // geminal, see init_core_ints_params
+                case Operator::delcgtg2:
+                case Operator::delcgtga_delcgtgb: {
+                  static_assert(
+                      std::is_same<
+                          detail::core_eval_pack_type<Operator::delcgtg2>,
+                          detail::core_eval_pack_type<
+                              Operator::delcgtga_delcgtgb>>::value,
+                      "delcgtg2 and delcgtga_delcgtgb must share the core "
+                      "evaluator");
                   const auto& core_eval_ptr =
                       any_cast<const detail::core_eval_pack_type<
                           Operator::delcgtg2>&>(core_eval_pack_)
@@ -2358,6 +2412,18 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #ifdef LIBINT2_DOES_NOT_INLINE_ENGINE
 template any Engine::enforce_params_type<Engine::empty_pod>(
     Operator oper, const Engine::empty_pod& params, bool throw_if_wrong_type);
+
+// operators without default params (e.g. delcgtg2) can only be constructed
+// with params, hence instantiate for their params types
+template any Engine::enforce_params_type<ContractedGaussianGeminal>(
+    Operator oper, const ContractedGaussianGeminal& params,
+    bool throw_if_wrong_type);
+template any Engine::enforce_params_type<
+    operator_traits<Operator::delcgtga_delcgtgb>::oper_params_type>(
+    Operator oper,
+    const operator_traits<Operator::delcgtga_delcgtgb>::oper_params_type&
+        params,
+    bool throw_if_wrong_type);
 
 template const Engine::target_ptr_vec& Engine::compute<Shell>(
     const Shell& first_shell, const Shell&);
