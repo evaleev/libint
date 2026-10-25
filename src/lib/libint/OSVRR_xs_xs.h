@@ -31,7 +31,8 @@ namespace libint2 {
 
 template <int part, int La, int Lc, bool unit_b, bool vectorize>
 struct OSVRR_xs_xs {
-  static void compute(const Libint_t* inteval, LIBINT2_REALTYPE* target,
+  static void compute(const Libint_t* inteval,
+                      LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
                       const LIBINT2_REALTYPE* src0,
                       const LIBINT2_REALTYPE* src1,
                       const LIBINT2_REALTYPE* src2,
@@ -48,7 +49,8 @@ struct OSVRR_xs_xs {
  **/
 template <int La, int Lc, bool unit_b, bool vectorize>
 struct OSVRR_xs_xs<0, La, Lc, unit_b, vectorize> {
-  static void compute(const Libint_t* inteval, LIBINT2_REALTYPE* target,
+  static void compute(const Libint_t* inteval,
+                      LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
                       const LIBINT2_REALTYPE* src0,
                       const LIBINT2_REALTYPE* src1,
                       const LIBINT2_REALTYPE* src2,
@@ -187,7 +189,8 @@ struct OSVRR_xs_xs<0, La, Lc, unit_b, vectorize> {
 // Ahlrichs' extension of OS VRR
 template <int part, int La, int Lc, bool vectorize>
 struct OSAVRR_xs_xs {
-  static void compute(const Libint_t* inteval, LIBINT2_REALTYPE* target,
+  static void compute(const Libint_t* inteval,
+                      LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
                       const LIBINT2_REALTYPE* src1,
                       const LIBINT2_REALTYPE* src4);
 };
@@ -198,7 +201,8 @@ struct OSAVRR_xs_xs {
  **/
 template <int La, int Lc, bool vectorize>
 struct OSAVRR_xs_xs<0, La, Lc, vectorize> {
-  static void compute(const Libint_t* inteval, LIBINT2_REALTYPE* target,
+  static void compute(const Libint_t* inteval,
+                      LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
                       const LIBINT2_REALTYPE* src1,
                       const LIBINT2_REALTYPE* src4) {
     // works for (ps|ps) and higher

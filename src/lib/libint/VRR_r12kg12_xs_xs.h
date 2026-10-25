@@ -31,13 +31,11 @@ namespace libint2 {
 
 template <int part, int La, int Lc, int K, bool vectorize>
 struct VRR_r12kg12_xs_xs {
-  static void compute(const Libint_t* inteval, LIBINT2_REALTYPE* target,
-                      const LIBINT2_REALTYPE* src0,
-                      const LIBINT2_REALTYPE* src1,
-                      const LIBINT2_REALTYPE* src2,
-                      const LIBINT2_REALTYPE* src3,
-                      const LIBINT2_REALTYPE* src4,
-                      const LIBINT2_REALTYPE* src5);
+  static void compute(
+      const Libint_t* inteval, LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
+      const LIBINT2_REALTYPE* src0, const LIBINT2_REALTYPE* src1,
+      const LIBINT2_REALTYPE* src2, const LIBINT2_REALTYPE* src3,
+      const LIBINT2_REALTYPE* src4, const LIBINT2_REALTYPE* src5);
 };
 
 /** builds (a0| G_K |c0), where G_K = r12^K * G12, for K >= 0. For K == -1 use
@@ -51,13 +49,11 @@ struct VRR_r12kg12_xs_xs {
  **/
 template <int La, int Lc, int K, bool vectorize>
 struct VRR_r12kg12_xs_xs<0, La, Lc, K, vectorize> {
-  static void compute(const Libint_t* inteval, LIBINT2_REALTYPE* target,
-                      const LIBINT2_REALTYPE* src0,
-                      const LIBINT2_REALTYPE* src1,
-                      const LIBINT2_REALTYPE* src2,
-                      const LIBINT2_REALTYPE* src3,
-                      const LIBINT2_REALTYPE* src4,
-                      const LIBINT2_REALTYPE* src5) {
+  static void compute(
+      const Libint_t* inteval, LIBINT2_REALTYPE* LIBINT2_RESTRICT target,
+      const LIBINT2_REALTYPE* src0, const LIBINT2_REALTYPE* src1,
+      const LIBINT2_REALTYPE* src2, const LIBINT2_REALTYPE* src3,
+      const LIBINT2_REALTYPE* src4, const LIBINT2_REALTYPE* src5) {
     // works for (ds|ps) and higher, K >= 0
     if ((La < 2 && Lc < 1) || K < 0) abort();
 
