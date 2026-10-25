@@ -329,6 +329,18 @@ include(CheckIncludeFileCXX)
 include(FeatureSummary)
 include(int_orderings)
 include(int_am)
+# config.h emits the scalar AM macros as `#define LIBINT_X @LIBINT_X@` followed by
+# `#if LIBINT_X == -1 / #undef LIBINT_X`, instead of `#cmakedefine`, so that a
+# value of 0 is preserved (#cmakedefine treats 0 as false and drops the macro,
+# see #445). Map unset/empty values to the -1 sentinel.
+foreach(_v MAX_AM OPT_AM
+        ONEBODY_MAX_AM ONEBODY_OPT_AM ERI_MAX_AM ERI_OPT_AM ERI3_MAX_AM ERI3_OPT_AM
+        ERI2_MAX_AM ERI2_OPT_AM RKB_ERI_MAX_AM RKB_ERI_OPT_AM RKB_ERI3_MAX_AM RKB_ERI3_OPT_AM
+        G12_MAX_AM G12_OPT_AM G12DKH_MAX_AM G12DKH_OPT_AM)
+    if ("${LIBINT_${_v}}" STREQUAL "")
+        set(LIBINT_${_v} -1)
+    endif()
+endforeach()
 
 check_function_exists(posix_memalign HAVE_POSIX_MEMALIGN)
 if (NOT HAVE_POSIX_MEMALIGN)

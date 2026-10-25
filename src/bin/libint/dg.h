@@ -344,6 +344,12 @@ class DirectedGraph : public std::enable_shared_from_this<DirectedGraph> {
    */
   FuncNameContainer func_names_;
 
+  /** precomputed quantities hoisted by assign_symbols() in scalar code, as
+     {local variable name, inteval field it is loaded from}, in the order
+     generate_code() declares them
+   */
+  std::vector<std::pair<std::string, std::string>> hoisted_precomputed_;
+
 #if !USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
   static const unsigned int default_size_ = 100;
 #endif
@@ -430,7 +436,7 @@ class DirectedGraph : public std::enable_shared_from_this<DirectedGraph> {
   /// graph
   std::shared_ptr<DGVertex> insert_expr_at(
       const std::shared_ptr<DGVertex>& where,
-      const std::shared_ptr<AlgebraicOperator<DGVertex> >& expr);
+      const std::shared_ptr<AlgebraicOperator<DGVertex>>& expr);
   /// This function replaces RecurrenceRelations with concrete arithemtical
   /// expressions
   void replace_rr_with_expr();
@@ -534,7 +540,7 @@ void extract_symbols(const std::shared_ptr<DirectedGraph>& dg);
 
 // use these functors with DirectedGraph::foreach
 struct PrerequisitesExtractor {
-  std::deque<std::shared_ptr<DGVertex> > vertices;
+  std::deque<std::shared_ptr<DGVertex>> vertices;
   void operator()(const std::shared_ptr<DGVertex>& v);
 };
 struct VertexPrinter {
