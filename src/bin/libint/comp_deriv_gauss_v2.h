@@ -44,8 +44,9 @@ namespace libint2 {
 
 /** Optimized compute relation for (geometric) derivative Gaussian integrals.
  *
- * Like CR_DerivGauss, this expands derivative Gaussians via:
- *   d/dr G(a) = 2*alpha * G(a+1) - a_i * G(a-1)
+ * Like CR_DerivGauss, this expands derivative Gaussians via
+ *   d/dA G(a) = 2*alpha * G(a+1) - a_i * G(a-1),
+ * the derivative with respect to the center A of the Gaussian (= -d/dr).
  *
  * Unlike CR_DerivGauss, this uses the HRR-like code-sharing optimization:
  * since differentiation of a Gaussian at position (part, where) depends only
@@ -435,7 +436,9 @@ std::string DerivGaussV2<IntType, part, where, trans_inv_part,
   if constexpr (using_trans_inv) {
     typedef typename TargetType::AuxIndexType mType;
     static std::shared_ptr<mType> aux0(new mType(0u));
-    os << "CR_DerivGauss"
+    // N.B. not "CR_DerivGauss...": CR_DerivGauss labels its own instances
+    // that way, and the RRStack deduplicates by label
+    os << "DerivGaussV2TI"
        << "P" << part << to_string(where) << "D" << dir_
        << genintegralset_label(target_->bra(), target_->ket(), aux0,
                                target_->oper());
@@ -571,7 +574,10 @@ bool DerivGaussV2<IntType, part, where, trans_inv_part, trans_inv_where>::
   // shell, hence base the decision on that shell alone
   const BasisFunctionType& sh =
       where == InBra ? target_->bra(part, 0) : target_->ket(part, 0);
-  return sh.norm() > cparams->max_am_opt();
+  // the OPT_AM of the current task (the per-class value, e.g.
+  // LIBINT2_ERI_OPT_AM), not that of the default task
+  return sh.norm() >
+         cparams->max_am_opt(LibraryTaskManager::Instance().current().label());
 }
 
 template <class IntType, int part, FunctionPosition where, int trans_inv_part,

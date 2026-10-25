@@ -493,6 +493,11 @@ struct Coulombσpσp_Descr : public Contractable<Coulombσpσp_Descr> {
   }
   std::string label() const { return description(); }
   int psymm(int i, int j) const { abort(); }
+  /// N.B. the Multiplicative*2Body_Props above make Oper::hermitian() return
+  /// +1, i.e. HRR would treat this operator as commuting with the transfer of
+  /// quanta between the centers, which it does not (σ·p acts on specific
+  /// functions). Harmless as long as only the composite relation is in this
+  /// operator's strategy: do not add HRR to it.
   int hermitian(int i) const { return +1; }
 
   int quaternion_index() const { return quaternion_index_; }
@@ -508,8 +513,10 @@ typedef GenOper<Coulombσpσp_Descr> CoulombσpσpOper;
  *  on the ket pair, folded via the Dirac identity into 4 quaternion
  *  components), a single σ·p produces no σ·σ folding: the result is the bare
  *  Cartesian gradient of ν, i.e. the SO(3) vector irrep with 3 components
- *  (x=0, y=1, z=2). Each component is exactly one first-derivative ERI child;
- *  the imaginary unit and Pauli matrix of σ·p are applied by the caller.
+ *  (x=0, y=1, z=2), each exactly one first-derivative ERI child: the
+ *  derivative of ν with respect to its center D. Since
+ *  p_k = -i ∂/∂r_k = +i ∂/∂D_k, the caller multiplies component k by +i and
+ *  contracts with σ_k (see the rkb_operators page in engine.h).
  */
 struct Coulombσp_Descr : public Contractable<Coulombσp_Descr> {
   // σ·p acts on particle 2 only, hence no particle 1<->2 symmetry
@@ -540,6 +547,11 @@ struct Coulombσp_Descr : public Contractable<Coulombσp_Descr> {
   }
   std::string label() const { return description(); }
   int psymm(int i, int j) const { abort(); }
+  /// N.B. the Multiplicative*2Body_Props above make Oper::hermitian() return
+  /// +1, i.e. HRR would treat this operator as commuting with the transfer of
+  /// quanta between the centers, which it does not (σ·p acts on specific
+  /// functions). Harmless as long as only the composite relation is in this
+  /// operator's strategy: do not add HRR to it.
   int hermitian(int i) const { return +1; }
 
   int cartesian_index() const { return cartesian_index_; }
@@ -557,17 +569,17 @@ struct σpσpCoulombσpσp_Descr : public Contractable<σpσpCoulombσpσp_Descr
   /// (ab|cd) != (ba|cd): the pairs can only be swapped together
   static constexpr PairSwap pair_swap = PairSwap::coupled;
 
-  σpσpCoulombσpσp_Descr() : quaternion_index_(0) {}
-  σpσpCoulombσpσp_Descr(int quaternion_index)
-      : quaternion_index_(quaternion_index) {
-    assert(quaternion_index >= 0 && quaternion_index <= 15);
+  σpσpCoulombσpσp_Descr() : component_index_(0) {}
+  σpσpCoulombσpσp_Descr(int component_index)
+      : component_index_(component_index) {
+    assert(component_index >= 0 && component_index <= 15);
   }
 
   /// 16 components from tensor product of two independent spin spaces:
   /// index = 4 * bra_spin_index + ket_spin_index
   /// where spin indices are: 0=S (scalar), 1=X, 2=Y, 3=Z (cross product)
   static const unsigned int max_key = 16;
-  unsigned int key() const { return quaternion_index(); }
+  unsigned int key() const { return component_index(); }
   std::string description() const {
     // clang-format off
     // Option A (tensor product order): index = 4 * bra_spin + ket_spin
@@ -578,18 +590,23 @@ struct σpσpCoulombσpσp_Descr : public Contractable<σpσpCoulombσpσp_Descr
         "ZS", "ZX", "ZY", "ZZ"
     };
     // clang-format on
-    const auto qi = quaternion_index();
+    const auto qi = component_index();
     if (qi > 15) abort();
     return std::string("opop_coulomb_opop[") + labels[qi] + "]";
   }
   std::string label() const { return description(); }
   int psymm(int i, int j) const { abort(); }
+  /// N.B. the Multiplicative*2Body_Props above make Oper::hermitian() return
+  /// +1, i.e. HRR would treat this operator as commuting with the transfer of
+  /// quanta between the centers, which it does not (σ·p acts on specific
+  /// functions). Harmless as long as only the composite relation is in this
+  /// operator's strategy: do not add HRR to it.
   int hermitian(int i) const { return +1; }
 
-  int quaternion_index() const { return quaternion_index_; }
+  int component_index() const { return component_index_; }
 
  private:
-  const int quaternion_index_ = -1;
+  const int component_index_ = -1;
 };
 typedef GenOper<σpσpCoulombσpσp_Descr> σpσpCoulombσpσpOper;
 
@@ -642,6 +659,11 @@ struct σpCoulombσp_Descr : public Contractable<σpCoulombσp_Descr> {
   }
   std::string label() const { return description(); }
   int psymm(int i, int j) const { abort(); }
+  /// N.B. the Multiplicative*2Body_Props above make Oper::hermitian() return
+  /// +1, i.e. HRR would treat this operator as commuting with the transfer of
+  /// quanta between the centers, which it does not (σ·p acts on specific
+  /// functions). Harmless as long as only the composite relation is in this
+  /// operator's strategy: do not add HRR to it.
   int hermitian(int i) const { return +1; }
 
   int component_index() const { return component_index_; }

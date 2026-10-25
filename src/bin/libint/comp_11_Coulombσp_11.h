@@ -30,23 +30,25 @@
 
 #include <rkb_fold_codegen.h>
 
+#include <stdexcept>
+
 namespace libint2 {
 
 /**
- * this computes the 3-center single-σ·p integral
- * \f$ \frac{1}{r_{12}} \, \sigma \cdot \hat{p}_2 \f$ acting on the 2nd ket
- * function ν, by rewriting it as the bare Cartesian gradient of ν, i.e. one
- * first-derivative integral over \f$ \frac{1}{r_{12}} \f$ per Cartesian
- * direction. Unlike Coulombσpσp there is no Dirac σ·σ folding: each of the 3
- * components (x,y,z) is exactly one derivative ERI child, so it routes
- * naturally through the TwoPRep DerivGaussV2 strategy.
+ * Computes the 3-center single-σ·p integral (a b | 1/r_{12} | c σ·p d), with
+ * the fitting function as a (bra1) and the unit function as b (ket1). Each
+ * Cartesian component k is the TwoPRep integral over d differentiated with
+ * respect to its center D in direction k (libint's derivative convention),
+ * i.e. exactly one first-derivative ERI child, so it routes naturally through
+ * the TwoPRep DerivGaussV2 strategy; unlike Coulombσpσp there is no σ·σ
+ * folding. Since p_k = -i ∂/∂r_k = +i ∂/∂D_k, the user multiplies component k
+ * by +i and contracts with σ_k (see the rkb_operators page in engine.h).
  * @tparam F basis function type. valid choices are CGShell or CGF
  */
 template <typename F>
-class CR_11_Coulombσp_11
-    : public GenericRecurrenceRelation<
-          CR_11_Coulombσp_11<F>, F,
-          GenIntegralSet_11_11<F, CoulombσpOper, mType>> {
+class CR_11_Coulombσp_11 : public GenericRecurrenceRelation<
+                               CR_11_Coulombσp_11<F>, F,
+                               GenIntegralSet_11_11<F, CoulombσpOper, mType>> {
  public:
   typedef CR_11_Coulombσp_11<F> ThisType;
   typedef F BasisFunctionType;
@@ -74,9 +76,20 @@ class CR_11_Coulombσp_11
 
   static std::string descr() { return "CR"; }
 
+  /// The single term of Cartesian component @p k: the first derivative of d
+  /// (ket2) with respect to its center, direction k. The constructor (the
+  /// children) and generate_code() (the element-wise expression) are both
+  /// driven by this table, so they cannot disagree.
+  static RKBFoldTerms fold_terms(int k) {
+    if (k < 0 || k > 2)
+      throw std::runtime_error("CR_11_Coulombσp_11: invalid Cartesian index " +
+                               std::to_string(k));
+    return {RKBFoldTerm{1, {{-1, -1, -1, k}}}};
+  }
+
   // --- Code sharing overrides ---
-  // All shell combos with the same Cartesian component share one function
-  // (the element-wise copy below is spectator-dimension-independent).
+  // All shell sets with the same Cartesian component share one function
+  // (the element-wise copy is spectator-dimension-independent).
 
   std::string generate_label() const override {
     return "CR_Coulombop_" +
@@ -94,15 +107,14 @@ class CR_11_Coulombσp_11
     return rkb_fold_adapt_dims(dims);
   }
 
-  /// Hand-emit a simple element-wise copy: target = src0 (the single
-  /// first-derivative child). 0 FLOPs per component.
+  /// emits the element-wise copy target = src0 (0 flops)
   void generate_code(const std::shared_ptr<CodeContext>& context,
                      const std::shared_ptr<ImplicitDimensions>& dims,
                      const std::string& funcname, std::ostream& decl,
                      std::ostream& def) override {
-    // target = src0 (the single first-derivative child), 0 flops.
-    rkb_fold_generate_code(*this, context, dims, funcname, decl, def,
-                           "src0[hsi]", 0);
+    rkb_fold_generate_code_from_terms(
+        *this, fold_terms(target_->oper()->descr().cartesian_index()),
+        "CR_11_Coulombσp_11", context, dims, funcname, decl, def);
   }
 };
 
@@ -120,41 +132,18 @@ CR_11_Coulombσp_11<F>::CR_11_Coulombσp_11(
   F c(Tint->bra(1, 0));
   F d(Tint->ket(1, 0));
 
-  const auto& oper = Tint->oper();
-
   if (a.contracted() || b.contracted() || c.contracted() || d.contracted())
     return;
-
-  using namespace libint2::algebra;
-  using namespace libint2::prefactor;
-  using libint2::algebra::operator*;
-
-  const mType zero_m(0u);
 
   ChildFactory<ThisType,
                GenIntegralSet_11_11<BasisFunctionType, TwoPRep, mType>>
       factory(this);
-
-  // single σ·p on ν (the 2nd ket function, d). Component k = ∂(d)/∂{x,y,z}.
-  // (Geometric-center derivative convention, matching CR_11_Coulombσpσp_11; the
-  // -i factor and Pauli matrix are applied by the caller.)
-  const int k = oper->descr().cartesian_index();
-  if (k < 0 || k > 2)
-    throw std::runtime_error("CR_11_Coulombσp_11: invalid Cartesian index");
-
-  F d_k{d};
-  d_k.deriv().inc(k);  // d(d)/d{x,y,z} = d_k
-
-  auto a_b_c_dk = factory.make_child(a, b, c, d_k, zero_m);
-  if (is_simple()) {
-    // Single derivative child; Scalar(1)* is only a registration vehicle (a
-    // bare child is not an expression). The actual emit is the element-wise
-    // copy in generate_code() above, so this contributes 0 real flops.
-    expr_ = Scalar(1) * a_b_c_dk;
-    nflops_ += 0;
-  }
+  rkb_fold_make_children(factory, a, b, c, d,
+                         fold_terms(Tint->oper()->descr().cartesian_index()),
+                         is_simple(), expr_, nflops_);
 
 }  // CR_11_Coulombσp_11<F>::CR_11_Coulombσp_11
-};  // namespace libint2
+
+}  // namespace libint2
 
 #endif  // LIBINT_COMP_11_COULOMBΣP_11_H

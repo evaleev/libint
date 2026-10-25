@@ -30,17 +30,22 @@
 
 #include <rkb_fold_codegen.h>
 
+#include <stdexcept>
+
 namespace libint2 {
 
 /**
- * Computes the "Gaunt LS bilinear" integral
- *   \f$ (\mu\, \sigma\cdot\hat{p}\,\nu | 1/r_{12} | \kappa\,
- * \sigma\cdot\hat{p}\,\lambda ) \f$ in the SO(3) irreducible decomposition of
- * the rank-2 tensor \f$ T_{ab} = ( \mu \cdot \partial_a \nu | 1/r_{12} | \kappa
- * \cdot \partial_b \lambda ) \f$: 1 scalar trace + 3 antisymmetric (curl-curl)
- * + 5 symmetric-traceless = 9 components total. Each output is a small linear
- * combination of raw deriv-TwoPRep children, mirroring
- * comp_11_Coulombσpσp_11.h's pattern of trace/antisym emission.
+ * Computes the "Gaunt LS bilinear" integral (a σ·p b | 1/r_{12} | c σ·p d),
+ * with one σ·p on the second function of each electron (b = ket1 in the spin
+ * space of electron 1, d = ket2 in that of electron 2), in the SO(3)
+ * irreducible decomposition of the rank-2 tensor
+ * T_ij = (a ∂_{B,i} b | 1/r_{12} | c ∂_{D,j} d): 1 scalar trace + 3
+ * antisymmetric (curl-curl) + 5 symmetric-traceless = 9 components, each a
+ * small linear combination of first-derivative TwoPRep integrals. The
+ * derivatives are with respect to the centers B and D; since
+ * (p_i b)(p_j d) = (+i ∂_{B,i} b)(+i ∂_{D,j} d) = -∂_{B,i} b ∂_{D,j} d, the
+ * user multiplies the tensor by -1 before contracting with σ_{1,i} σ_{2,j}
+ * (see the rkb_operators page in engine.h).
  *
  * @tparam F basis function type. valid choices are CGShell or CGF
  */
@@ -76,8 +81,45 @@ class CR_11_σpCoulombσp_11
 
   static std::string descr() { return "CR"; }
 
+  /// The terms of SO(3) irreducible component @p comp of T_ij: coefficient,
+  /// derivative direction i on b (ket1) and j on d (ket2). The constructor
+  /// (the children) and generate_code() (the element-wise expression) are both
+  /// driven by this table, so they cannot disagree.
+  static RKBFoldTerms fold_terms(int comp) {
+    constexpr int x = 0;
+    constexpr int y = 1;
+    constexpr int z = 2;
+    auto T = [](int coef, int i, int j) {
+      return RKBFoldTerm{coef, {{-1, i, -1, j}}};
+    };
+    switch (comp) {
+      case σpCoulombσp_Descr::Scalar:  // T_xx + T_yy + T_zz
+        return {T(1, x, x), T(1, y, y), T(1, z, z)};
+      case σpCoulombσp_Descr::AntisymX:  // T_yz - T_zy
+        return {T(1, y, z), T(-1, z, y)};
+      case σpCoulombσp_Descr::AntisymY:  // T_zx - T_xz
+        return {T(1, z, x), T(-1, x, z)};
+      case σpCoulombσp_Descr::AntisymZ:  // T_xy - T_yx
+        return {T(1, x, y), T(-1, y, x)};
+      case σpCoulombσp_Descr::SymTLDiagA:  // T_xx - T_yy
+        return {T(1, x, x), T(-1, y, y)};
+      case σpCoulombσp_Descr::SymTLDiagB:  // 2 T_zz - T_xx - T_yy
+        return {T(2, z, z), T(-1, x, x), T(-1, y, y)};
+      case σpCoulombσp_Descr::SymTLOffXY:  // T_xy + T_yx
+        return {T(1, x, y), T(1, y, x)};
+      case σpCoulombσp_Descr::SymTLOffXZ:  // T_xz + T_zx
+        return {T(1, x, z), T(1, z, x)};
+      case σpCoulombσp_Descr::SymTLOffYZ:  // T_yz + T_zy
+        return {T(1, y, z), T(1, z, y)};
+      default:
+        throw std::runtime_error(
+            "CR_11_σpCoulombσp_11: invalid component index " +
+            std::to_string(comp));
+    }
+  }
+
   // --- Code sharing overrides (mirror Coulombσpσp pattern) ---
-  // All shell quartets with the same quaternion component share one function.
+  // All shell sets with the same component share one function.
 
   std::string generate_label() const override {
     return "CR_opCoulombop_" +
@@ -95,57 +137,15 @@ class CR_11_σpCoulombσp_11
     return rkb_fold_adapt_dims(dims);
   }
 
-  /// Hand-emit the per-component irrep linear combination over deriv-ERI
-  /// children. The combination is selected by the target's component index;
-  /// the child order it relies on is fixed by the constructor.
+  /// emits the element-wise irrep combination of the children, e.g.
+  /// target = 2.0*src0 - src1 - src2 for SymTLDiagB
   void generate_code(const std::shared_ptr<CodeContext>& context,
                      const std::shared_ptr<ImplicitDimensions>& dims,
                      const std::string& funcname, std::ostream& decl,
                      std::ostream& def) override {
-    const int comp = this->target_->oper()->descr().component_index();
-    std::string rhs;
-    unsigned int nflops = 0;
-    unsigned int nchildren = 0;
-    switch (comp) {
-      case σpCoulombσp_Descr::Scalar:
-        rhs = "src0[hsi] + src1[hsi] + src2[hsi]";
-        nflops = 2;
-        nchildren = 3;
-        break;
-      case σpCoulombσp_Descr::AntisymX:
-      case σpCoulombσp_Descr::AntisymY:
-      case σpCoulombσp_Descr::AntisymZ:
-      case σpCoulombσp_Descr::SymTLDiagA:
-        rhs = "src0[hsi] - src1[hsi]";
-        nflops = 1;
-        nchildren = 2;
-        break;
-      case σpCoulombσp_Descr::SymTLDiagB:
-        rhs = "2.0*src0[hsi] - src1[hsi] - src2[hsi]";
-        nflops = 3;
-        nchildren = 3;
-        break;
-      case σpCoulombσp_Descr::SymTLOffXY:
-      case σpCoulombσp_Descr::SymTLOffXZ:
-      case σpCoulombσp_Descr::SymTLOffYZ:
-        rhs = "src0[hsi] + src1[hsi]";
-        nflops = 1;
-        nchildren = 2;
-        break;
-      default:
-        throw std::runtime_error(
-            "CR_11_σpCoulombσp_11::generate_code: invalid component index");
-    }
-    // add_child() deduplicates children by instance (see generic_rr.h), so a
-    // collision among the deriv-ERI children would silently shift the src
-    // slots; fail the export loudly instead of emitting a wrong expression.
-    if (this->num_children() != nchildren)
-      throw std::logic_error("CR_11_σpCoulombσp_11::generate_code: component " +
-                             std::to_string(comp) + " expects " +
-                             std::to_string(nchildren) + " children, got " +
-                             std::to_string(this->num_children()));
-    rkb_fold_generate_code(*this, context, dims, funcname, decl, def, rhs,
-                           nflops);
+    rkb_fold_generate_code_from_terms(
+        *this, fold_terms(target_->oper()->descr().component_index()),
+        "CR_11_σpCoulombσp_11", context, dims, funcname, decl, def);
   }
 };
 
@@ -163,116 +163,15 @@ CR_11_σpCoulombσp_11<F>::CR_11_σpCoulombσp_11(
   F c(Tint->bra(1, 0));
   F d(Tint->ket(1, 0));
 
-  const auto& oper = Tint->oper();
-
   if (a.contracted() || b.contracted() || c.contracted() || d.contracted())
     return;
-
-  using namespace libint2::algebra;
-  using namespace libint2::prefactor;
-  using libint2::algebra::operator*;
-
-  const mType zero_m(0u);
 
   ChildFactory<ThisType,
                GenIntegralSet_11_11<BasisFunctionType, TwoPRep, mType>>
       factory(this);
-
-  // Chemist notation: (a b | op c op d). σ·p acts on one function per electron
-  // — direction `i` on ket(0,0) = b (electron 1), direction `j` on ket(1,0) = d
-  // (electron 2). Each output is an SO(3) irrep combination of the raw 3×3
-  // T_{ij} dyadic; case bodies build only the children each combination needs.
-  constexpr auto x = 0;
-  constexpr auto y = 1;
-  constexpr auto z = 2;
-
-  auto T = [&](int i, int j) {
-    F b_d{b};
-    b_d.deriv().inc(i);
-    F d_d{d};
-    d_d.deriv().inc(j);
-    return factory.make_child(a, b_d, c, d_d, zero_m);
-  };
-
-  switch (oper->descr().component_index()) {
-    case σpCoulombσp_Descr::Scalar: {
-      auto Txx = T(x, x);
-      auto Tyy = T(y, y);
-      auto Tzz = T(z, z);
-      if (is_simple()) {
-        expr_ = Txx + Tyy + Tzz;
-        nflops_ += 2;
-      }
-    } break;
-    case σpCoulombσp_Descr::AntisymX: {
-      auto Tyz = T(y, z);
-      auto Tzy = T(z, y);
-      if (is_simple()) {
-        expr_ = Tyz - Tzy;
-        nflops_ += 1;
-      }
-    } break;
-    case σpCoulombσp_Descr::AntisymY: {
-      auto Tzx = T(z, x);
-      auto Txz = T(x, z);
-      if (is_simple()) {
-        expr_ = Tzx - Txz;
-        nflops_ += 1;
-      }
-    } break;
-    case σpCoulombσp_Descr::AntisymZ: {
-      auto Txy = T(x, y);
-      auto Tyx = T(y, x);
-      if (is_simple()) {
-        expr_ = Txy - Tyx;
-        nflops_ += 1;
-      }
-    } break;
-    case σpCoulombσp_Descr::SymTLDiagA: {
-      auto Txx = T(x, x);
-      auto Tyy = T(y, y);
-      if (is_simple()) {
-        expr_ = Txx - Tyy;
-        nflops_ += 1;
-      }
-    } break;
-    case σpCoulombσp_Descr::SymTLDiagB: {
-      // 2·T_zz − T_xx − T_yy: child order (Tzz, Txx, Tyy) matches generate_code
-      auto Tzz = T(z, z);
-      auto Txx = T(x, x);
-      auto Tyy = T(y, y);
-      if (is_simple()) {
-        expr_ = Scalar(2) * Tzz - Txx - Tyy;
-        nflops_ += 3;
-      }
-    } break;
-    case σpCoulombσp_Descr::SymTLOffXY: {
-      auto Txy = T(x, y);
-      auto Tyx = T(y, x);
-      if (is_simple()) {
-        expr_ = Txy + Tyx;
-        nflops_ += 1;
-      }
-    } break;
-    case σpCoulombσp_Descr::SymTLOffXZ: {
-      auto Txz = T(x, z);
-      auto Tzx = T(z, x);
-      if (is_simple()) {
-        expr_ = Txz + Tzx;
-        nflops_ += 1;
-      }
-    } break;
-    case σpCoulombσp_Descr::SymTLOffYZ: {
-      auto Tyz = T(y, z);
-      auto Tzy = T(z, y);
-      if (is_simple()) {
-        expr_ = Tyz + Tzy;
-        nflops_ += 1;
-      }
-    } break;
-    default:
-      throw std::runtime_error("CR_11_σpCoulombσp_11: invalid component index");
-  }
+  rkb_fold_make_children(factory, a, b, c, d,
+                         fold_terms(Tint->oper()->descr().component_index()),
+                         is_simple(), expr_, nflops_);
 
 }  // CR_11_σpCoulombσp_11<F>::CR_11_σpCoulombσp_11
 

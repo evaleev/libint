@@ -35,10 +35,15 @@
 namespace libint2 {
 
 /**
- * this computes integral of
- * \f$ \frac{1}{r_{ij}} \sigma \cdot \hat{p}_1 \sigma \cdot \hat{p}_2 \f$ over
- * CGShell/CGF by rewriting it as a linear combination of integrals over
- * derivatives of \frac{1}{r_{ij}}
+ * Computes the integral (a b | 1/r_{12} | (σ·p c)† (σ·p d)) over CGShell/CGF,
+ * with σ·p acting on both functions of electron 2 (c = bra2, d = ket2), as a
+ * linear combination of first-derivative TwoPRep integrals. The Dirac identity
+ * σ_i σ_j = δ_ij + i ε_ijk σ_k folds the two Pauli matrices into 4 quaternion
+ * components: 0: ∇_c·∇_d, 1-3: (∇_c × ∇_d)_{x,y,z}. The derivatives are with
+ * respect to the centers of c and d; since (p_i c)† (p_j d) =
+ * (-i ∂_{C,i} c)(+i ∂_{D,j} d) = ∂_{C,i} c ∂_{D,j} d, the user assembles the
+ * 2×2 spin block as q₀ + i (q₁ σ_x + q₂ σ_y + q₃ σ_z) with no further
+ * prefactor (see the rkb_operators page in engine.h).
  * @tparam F basis function type. valid choices are CGShell or CGF
  */
 template <typename F>
@@ -55,9 +60,8 @@ class CR_11_Coulombσpσp_11
       ParentType;
   friend class GenericRecurrenceRelation<ThisType, BasisFunctionType,
                                          TargetType>;
-  // children_.reserve() hint only (see generic_rr.h). The densest component
-  // sums 3 deriv-ERI children (the 2-component case uses 2), so 3 is the true
-  // upper bound across the 4 components.
+  // children_.reserve() hint only (see generic_rr.h): the scalar component
+  // sums 3 deriv-ERI children, the cross-product components 2
   static const unsigned int max_nchildren = 3;
 
   using ParentType::Instance;
@@ -76,8 +80,19 @@ class CR_11_Coulombσpσp_11
 
   static std::string descr() { return "CR"; }
 
+  /// The terms of quaternion component @p q of (σ·∇_c)(σ·∇_d) (see
+  /// rkb_fold_pair_terms): derivative direction i on c (bra2), j on d (ket2).
+  /// The constructor (the children) and generate_code() (the element-wise
+  /// expression) are both driven by this table, so they cannot disagree.
+  static RKBFoldTerms fold_terms(int q) {
+    RKBFoldTerms terms;
+    for (const auto& p : rkb_fold_pair_terms(q))
+      terms.push_back(RKBFoldTerm{p.coef, {{-1, -1, p.i, p.j}}});
+    return terms;
+  }
+
   // --- Code sharing overrides ---
-  // All shell combos with the same quaternion component share one function.
+  // All shell sets with the same quaternion component share one function.
 
   std::string generate_label() const override {
     return "CR_Coulombopop_" +
@@ -95,43 +110,15 @@ class CR_11_Coulombσpσp_11
     return rkb_fold_adapt_dims(dims);
   }
 
-  /// Hand-emit a simple element-wise loop function. The right-hand side is
-  /// selected by the target's quaternion component; the child order it relies
-  /// on is fixed by the constructor:
-  /// comp 0: target = src0 + src1 + src2 (dot product)
-  /// comp 1-3: target = src0 - src1 (cross product components)
+  /// emits the element-wise fold of the children, e.g.
+  /// target = src0 + src1 + src2 for the scalar component
   void generate_code(const std::shared_ptr<CodeContext>& context,
                      const std::shared_ptr<ImplicitDimensions>& dims,
                      const std::string& funcname, std::ostream& decl,
                      std::ostream& def) override {
-    const int comp = target_->oper()->descr().quaternion_index();
-    std::string rhs;
-    unsigned int nchildren;
-    switch (comp) {
-      case 0:
-        rhs = "src0[hsi] + src1[hsi] + src2[hsi]";
-        nchildren = 3;
-        break;
-      case 1:
-      case 2:
-      case 3:
-        rhs = "src0[hsi] - src1[hsi]";
-        nchildren = 2;
-        break;
-      default:
-        throw std::runtime_error(
-            "CR_11_Coulombσpσp_11::generate_code: invalid quaternionic index");
-    }
-    // add_child() deduplicates children by instance (see generic_rr.h), so a
-    // collision among the deriv-ERI children would silently shift the src
-    // slots; fail the export loudly instead of emitting a wrong expression.
-    if (this->num_children() != nchildren)
-      throw std::logic_error("CR_11_Coulombσpσp_11::generate_code: component " +
-                             std::to_string(comp) + " expects " +
-                             std::to_string(nchildren) + " children, got " +
-                             std::to_string(this->num_children()));
-    rkb_fold_generate_code(*this, context, dims, funcname, decl, def, rhs,
-                           nchildren - 1);
+    rkb_fold_generate_code_from_terms(
+        *this, fold_terms(target_->oper()->descr().quaternion_index()),
+        "CR_11_Coulombσpσp_11", context, dims, funcname, decl, def);
   }
 };
 
@@ -149,84 +136,18 @@ CR_11_Coulombσpσp_11<F>::CR_11_Coulombσpσp_11(
   F c(Tint->bra(1, 0));
   F d(Tint->ket(1, 0));
 
-  const auto& oper = Tint->oper();
-
   if (a.contracted() || b.contracted() || c.contracted() || d.contracted())
     return;
-
-  using namespace libint2::algebra;
-  using namespace libint2::prefactor;
-  using libint2::algebra::operator*;
-
-  const mType zero_m(0u);
 
   ChildFactory<ThisType,
                GenIntegralSet_11_11<BasisFunctionType, TwoPRep, mType>>
       factory(this);
-
-  constexpr auto x = 0;
-  constexpr auto y = 1;
-  constexpr auto z = 2;
-
-  F c_x{c};
-  c_x.deriv().inc(x);  // d(c)/dx = c_x
-  F c_y{c};
-  c_y.deriv().inc(y);  // d(c)/dy = c_y
-  F c_z{c};
-  c_z.deriv().inc(z);  // d(c)/dz = c_z
-
-  F d_x{d};
-  d_x.deriv().inc(x);  // d(d)/dx = d_x
-  F d_y{d};
-  d_y.deriv().inc(y);  // d(d)/dy = d_y
-  F d_z{d};
-  d_z.deriv().inc(z);  // d(d)/dz = d_z
-
-  // Component wise generation for quaternion ( a b | 1/r12 | (σ.p) c (σ.p) d )
-  switch (oper->descr().quaternion_index()) {
-    case 0: {
-      // zeroth component = (a b | c_x d_x) + (a b | c_y d_y) + (a b | c_z d_z)
-      auto a_b_cx_dx = factory.make_child(a, b, c_x, d_x, zero_m);
-      auto a_b_cy_dy = factory.make_child(a, b, c_y, d_y, zero_m);
-      auto a_b_cz_dz = factory.make_child(a, b, c_z, d_z, zero_m);
-      if (is_simple()) {
-        expr_ = a_b_cx_dx + a_b_cy_dy + a_b_cz_dz;
-        nflops_ += 2;
-      }
-    } break;
-    case 1: {
-      // x component = (a b | c_y d_z) - (a b | c_z d_y)
-      auto a_b_cy_dz = factory.make_child(a, b, c_y, d_z, zero_m);
-      auto a_b_cz_dy = factory.make_child(a, b, c_z, d_y, zero_m);
-      if (is_simple()) {
-        expr_ = a_b_cy_dz - a_b_cz_dy;
-        nflops_ += 1;
-      }
-    } break;
-    case 2: {
-      // y component = (a b | c_z d_x) - (a b | c_x d_z)
-      auto a_b_cz_dx = factory.make_child(a, b, c_z, d_x, zero_m);
-      auto a_b_cx_dz = factory.make_child(a, b, c_x, d_z, zero_m);
-      if (is_simple()) {
-        expr_ = a_b_cz_dx - a_b_cx_dz;
-        nflops_ += 1;
-      }
-    } break;
-    case 3: {
-      // z component = (a b | c_x d_y) - (a b | c_y d_x)
-      auto a_b_cx_dy = factory.make_child(a, b, c_x, d_y, zero_m);
-      auto a_b_cy_dx = factory.make_child(a, b, c_y, d_x, zero_m);
-      if (is_simple()) {
-        expr_ = a_b_cx_dy - a_b_cy_dx;
-        nflops_ += 1;
-      }
-    } break;
-    default:
-      throw std::runtime_error(
-          "CR_11_Coulombσpσp_11: invalid quaternionic index");
-  }
+  rkb_fold_make_children(factory, a, b, c, d,
+                         fold_terms(Tint->oper()->descr().quaternion_index()),
+                         is_simple(), expr_, nflops_);
 
 }  // CR_11_Coulombσpσp_11<F>::CR_11_Coulombσpσp_11
-};  // namespace libint2
+
+}  // namespace libint2
 
 #endif  // LIBINT_COMP_11_COULOMBΣPΣP_11_H
