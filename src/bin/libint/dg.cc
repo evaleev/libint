@@ -37,6 +37,7 @@
 #include <cstdio>
 #include <fstream>
 #include <functional>
+#include <set>
 #include <utility>
 
 using namespace std;
@@ -427,6 +428,7 @@ void DirectedGraph::reset() {
   targets_.clear();
   first_to_compute_.reset();
   func_names_.clear();
+  hoisted_precomputed_.clear();
 }
 
 /// Apply a strategy to all vertices not yet computed (i.e. which do not have
@@ -1205,6 +1207,12 @@ void DirectedGraph::generate_code(
     def << context->macro_endif();
   }
 
+  // load the precomputed quantities that assign_symbols() hoisted
+  for (const auto& h : hoisted_precomputed_)
+    def << context->decldef(
+        context->const_modifier() + context->type_name<double>(), h.first,
+        h.second);
+
   // now print out the code for this graph
   print_def(context, def, dims, args);
 
@@ -1502,6 +1510,8 @@ void DirectedGraph::assign_symbols(
   }
 
   // then process all other symbols, EXCEPT operators
+  hoisted_precomputed_.clear();
+  std::set<std::string> hoisted_names;
   for (iter v = stack_.begin(); v != stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
 #if DEBUG
@@ -1528,10 +1538,22 @@ void DirectedGraph::assign_symbols(
     // test if the vertex is precomputed runtime quantity, like a geometric
     // parameter
     if ((vptr)->precomputed()) {
-      std::string symbol("inteval->");
-      symbol += context->label_to_name((vptr)->label());
-      symbol += "[vi]";
-      (vptr)->set_symbol(symbol);
+      const std::string field =
+          "inteval->" + context->label_to_name((vptr)->label());
+      // in scalar code load each such quantity from inteval once, into a
+      // local declared by generate_code(): stores to the stack may alias
+      // inteval's fields, so the compiler cannot hoist these loads itself.
+      // a vertex that refers to another takes its symbol from the referred
+      // vertex, so do not hoist it
+      if (context->cparams()->max_vector_length() == 1 &&
+          !(vptr)->refers_to_another()) {
+        const std::string local =
+            "hv_" + context->label_to_name((vptr)->label());
+        (vptr)->set_symbol(local);
+        if (hoisted_names.insert(local).second)
+          hoisted_precomputed_.emplace_back(local, field + "[0]");
+      } else
+        (vptr)->set_symbol(field + "[vi]");
       continue;
     }
 
