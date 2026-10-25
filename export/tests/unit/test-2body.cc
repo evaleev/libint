@@ -559,18 +559,38 @@ TEST_CASE("eri geometric derivatives vs finite differences",
 // the next compute() must throw Engine::missing_kernel rather than use the
 // kernel table of the previous task
 TEST_CASE("lmax_exceeded leaves no kernels", "[engine][2-body]") {
+  // @param lmax valid for the 3-center task of @p oper, too high for its
+  //             4-center task
+  // @param pure_fit whether the fitting shell is a solid harmonics shell
+  //                 (required by LIBINT2_ERI3_PURE_SH for l > 1, not
+  //                 generated for the RKB 3-center kernels)
+  auto check = [](Operator oper, int lmax, bool pure_fit) {
+    const Shell fit{{1.5}, {{lmax, pure_fit, {1.0}}}, {{-1.0, 0.5, 0.0}}};
+    const Shell s{{1.0}, {{0, false, {1.0}}}, {{0.0, 0.0, 0.0}}};
+    const auto eps = std::numeric_limits<double>::epsilon();
+    Engine engine(oper, 1, lmax, 0, eps, libint2::default_params(oper),
+                  BraKet::xs_xx);
+    REQUIRE(engine.compute(fit, s, s)[0] != nullptr);
+    REQUIRE_THROWS_AS(engine.set(BraKet::xx_xx), Engine::lmax_exceeded);
+    // set() changes the braket before it (re)initializes the kernels, so the
+    // Engine is left as a kernel-less 4-center Engine: compute() takes 4
+    // shells (a 3-shell call would violate the argument count, which is
+    // asserted in Debug builds) and has no kernels to dispatch
+    CHECK(engine.braket() == BraKet::xx_xx);
+    CHECK_THROWS_AS(engine.compute(s, s, s, s), Engine::missing_kernel);
+  };
 #if defined(LIBINT2_SUPPORT_ERI) && defined(LIBINT2_SUPPORT_ERI3) && \
     LIBINT2_MAX_AM_3eri > LIBINT2_MAX_AM_eri
-  const int lmax = LIBINT2_MAX_AM_3eri;  // valid for 3eri, too high for eri
-  const Shell fit{{1.5}, {{lmax, true, {1.0}}}, {{-1.0, 0.5, 0.0}}};
-  const Shell s{{1.0}, {{0, false, {1.0}}}, {{0.0, 0.0, 0.0}}};
-  const auto eps = std::numeric_limits<double>::epsilon();
-  Engine engine(Operator::coulomb, 1, lmax, 0, eps,
-                libint2::default_params(Operator::coulomb), BraKet::xs_xx);
-  REQUIRE(engine.compute(fit, s, s)[0] != nullptr);
-  REQUIRE_THROWS_AS(engine.set(BraKet::xx_xx), Engine::lmax_exceeded);
-  CHECK_THROWS_AS(engine.compute(s, s, s, s), Engine::missing_kernel);
-  CHECK_THROWS_AS(engine.compute(fit, s, s), Engine::missing_kernel);
+  SECTION("coulomb") {
+    check(Operator::coulomb, LIBINT2_MAX_AM_3eri, /* pure_fit = */ true);
+  }
+#endif
+#if LIBINT2_TASK_EXISTS_3coulomb_opop && LIBINT2_TASK_EXISTS_4coulomb_opop && \
+    LIBINT2_MAX_AM_3coulomb_opop > LIBINT2_MAX_AM_coulomb_opop
+  SECTION("coulomb_opop") {
+    check(Operator::coulomb_opop, LIBINT2_MAX_AM_3coulomb_opop,
+          /* pure_fit = */ false);
+  }
 #endif
 }
 
@@ -1078,7 +1098,10 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
     Shell dfsh{{1.5}, {{0, false, {1.0}}}, {{-1.0, 0.5, 0.0}}};
     std::vector<Shell> dfs{dfsh};
 
-    const auto obs = shells_upto(LIBINT2_MAX_AM_3coulomb_opop);
+    // the AO pair is limited by LIBINT2_MAX_AM, the fitting center by
+    // LIBINT2_RKB_ERI3_MAX_AM
+    const auto obs = shells_upto(
+        std::min(LIBINT2_MAX_AM_3coulomb_opop, LIBINT2_MAX_AM_default));
     const auto max_nprim = libint2::max_nprim(obs);
     const auto max_l = libint2::max_l(obs);
     // pass the braket to the constructor: the default (4-center) braket may
@@ -1153,7 +1176,8 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
     Shell dfsh{{1.5}, {{0, false, {1.0}}}, {{-1.0, 0.5, 0.0}}};
     std::vector<Shell> dfs{dfsh};
 
-    const auto obs = shells_upto(LIBINT2_MAX_AM_3coulomb_op);
+    const auto obs = shells_upto(
+        std::min(LIBINT2_MAX_AM_3coulomb_op, LIBINT2_MAX_AM_default));
     const auto max_nprim = libint2::max_nprim(obs);
     const auto max_l = libint2::max_l(obs);
     Engine engine_3c(Operator::coulomb_op,
