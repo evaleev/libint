@@ -1,10 +1,10 @@
-/* Binary64 truncated-Coulomb V2 radial evaluator.
+/* Binary64 truncated-Coulomb radial evaluator.
  * SPDX-License-Identifier: LGPL-3.0-or-later
  *
  * No extended precision, MPFR, or high-precision fallback.
  */
-#ifndef LIBINT2_TRUNCATED_COULOMB_V2_H
-#define LIBINT2_TRUNCATED_COULOMB_V2_H
+#ifndef LIBINT2_TRUNCATED_COULOMB_H
+#define LIBINT2_TRUNCATED_COULOMB_H
 
 #include <cmath>
 #include <limits>
@@ -13,7 +13,7 @@
 
 namespace libint2 {
 namespace detail {
-namespace truncated_coulomb_v2 {
+namespace truncated_coulomb {
 
 struct Options {
   double precision = std::numeric_limits<double>::epsilon();
@@ -51,7 +51,7 @@ void evaluate_to(double* output, double R, double T, int mmax, Scratch& scratch,
 // preconditions; output has at least mmax+1 elements and scratch is nonnull.
 void evaluate_to_unchecked(double* output, double R, double T, int mmax,
                            Scratch& scratch, const Options& options);
-}  // namespace truncated_coulomb_v2
+}  // namespace truncated_coulomb
 }  // namespace detail
 
 namespace os_core_ints {
@@ -59,24 +59,23 @@ namespace os_core_ints {
 /// All runtime numerical arithmetic uses double. Geometry and normalization
 /// remain with the caller; the evaluator itself has no mutable work arrays.
 template <typename Real>
-struct truncated_coulomb_v2_gm_eval {
+struct truncated_coulomb_gm_eval {
   using value_type = Real;
-  using scratch_type = detail::truncated_coulomb_v2::Scratch;
+  using scratch_type = detail::truncated_coulomb::Scratch;
 
-  truncated_coulomb_v2_gm_eval(int mmax, Real precision) : mmax_(mmax) {
+  truncated_coulomb_gm_eval(int mmax, Real precision) : mmax_(mmax) {
     options_.precision = static_cast<double>(precision);
     if (mmax < 0 ||
         !(options_.precision >= std::numeric_limits<double>::epsilon()) ||
         !std::isfinite(options_.precision))
-      throw std::invalid_argument(
-          "invalid truncated Coulomb V2 evaluator setup");
+      throw std::invalid_argument("invalid truncated Coulomb evaluator setup");
   }
   void operator()(Real* output, Real rho, Real T, int mmax, Real cutoff,
                   scratch_type* scratch = nullptr) const {
     if (!output || mmax < 0 || mmax > mmax_ || !(rho > 0) ||
         !std::isfinite(rho) || !(T >= 0) || !std::isfinite(T) || !(cutoff >= 0))
       throw std::invalid_argument(
-          "invalid truncated Coulomb V2 evaluator request");
+          "invalid truncated Coulomb evaluator request");
     const double R =
         static_cast<double>(cutoff) * std::sqrt(static_cast<double>(rho));
     if (!scratch) {
@@ -100,42 +99,42 @@ struct truncated_coulomb_v2_gm_eval {
  private:
   static void evaluate_unchecked(
       double* output, double R, double T, int mmax, scratch_type& scratch,
-      const detail::truncated_coulomb_v2::Options& options) {
-    detail::truncated_coulomb_v2::evaluate_to_unchecked(output, R, T, mmax,
-                                                        scratch, options);
+      const detail::truncated_coulomb::Options& options) {
+    detail::truncated_coulomb::evaluate_to_unchecked(output, R, T, mmax,
+                                                     scratch, options);
   }
   template <typename Output>
   static void evaluate_unchecked(
       Output* output, double R, double T, int mmax, scratch_type& scratch,
-      const detail::truncated_coulomb_v2::Options& options) {
-    const double* values = detail::truncated_coulomb_v2::evaluate_into(
-        R, T, mmax, scratch, options);
+      const detail::truncated_coulomb::Options& options) {
+    const double* values =
+        detail::truncated_coulomb::evaluate_into(R, T, mmax, scratch, options);
     for (int m = 0; m <= mmax; ++m) output[m] = static_cast<Output>(values[m]);
   }
   static void evaluate_output(
       double* output, double R, double T, int mmax, scratch_type& scratch,
-      const detail::truncated_coulomb_v2::Options& options) {
-    detail::truncated_coulomb_v2::evaluate_to(output, R, T, mmax, scratch,
-                                              options);
+      const detail::truncated_coulomb::Options& options) {
+    detail::truncated_coulomb::evaluate_to(output, R, T, mmax, scratch,
+                                           options);
     for (int m = 0; m <= mmax; ++m)
       if (!std::isfinite(output[m]))
-        throw std::runtime_error("nonfinite truncated Coulomb V2 result");
+        throw std::runtime_error("nonfinite truncated Coulomb result");
   }
   template <typename Output>
   static void evaluate_output(
       Output* output, double R, double T, int mmax, scratch_type& scratch,
-      const detail::truncated_coulomb_v2::Options& options) {
-    const double* values = detail::truncated_coulomb_v2::evaluate_into(
-        R, T, mmax, scratch, options);
+      const detail::truncated_coulomb::Options& options) {
+    const double* values =
+        detail::truncated_coulomb::evaluate_into(R, T, mmax, scratch, options);
     for (int m = 0; m <= mmax; ++m) {
       if (!std::isfinite(values[m]))
-        throw std::runtime_error("nonfinite truncated Coulomb V2 result");
+        throw std::runtime_error("nonfinite truncated Coulomb result");
       output[m] = static_cast<Output>(values[m]);
     }
   }
 
   int mmax_;
-  detail::truncated_coulomb_v2::Options options_;
+  detail::truncated_coulomb::Options options_;
 };
 }  // namespace os_core_ints
 }  // namespace libint2

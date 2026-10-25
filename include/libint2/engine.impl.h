@@ -70,38 +70,38 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
 /// These MUST appear in the same order as in Operator.
 /// You must also update BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX when you add
 /// one-body ints
-#define BOOST_PP_NBODY_OPERATOR_LIST                                         \
-  (overlap,                                       /* overlap */              \
-   (kinetic,                                      /* kinetic */              \
-    (elecpot,                                     /* nuclear */              \
-     (elecpot,                                    /* erf_nuclear */          \
-      (elecpot,                                   /* erfc_nuclear */         \
-       (elecpot,                                  /* erfx_nuclear */         \
-        (elecpot,                                 /* q_gau */                \
-         (1emultipole,                            /* emultipole1 */          \
-          (2emultipole,                           /* emultipole2 */          \
-           (3emultipole,                          /* emultipole3 */          \
-            (sphemultipole,                       /* sphemultipole */        \
-             (opVop,                              /* opVop */                \
-              (opVop,                             /* op_q_gau_op */          \
-               (opemuop,                          /* opemuop */              \
-                (eri,                             /* delta */                \
-                 (eri,                            /* coulomb */              \
-                  (eri,                           /* cgtg */                 \
-                   (eri,                          /* cgtg_x_coulomb */       \
-                    (eri,                         /* delcgtg2 */             \
-                     (eri,                        /* r12 */                  \
-                      (eri,                       /* erf_coulomb */          \
-                       (eri,                      /* erfc_coulomb */         \
-                        (eri,                     /* erfx_coulomb */         \
-                         (eri,                    /* stg */                  \
-                          (eri,                   /* yukawa */               \
-                           (eri,                  /* delcgtga_delcgtgb */    \
-                            (coulomb_opop,        /* coulomb_opop */         \
-                             (coulomb_op,         /* coulomb_op */           \
-                              (opop_coulomb_opop, /* opop_coulomb_opop */    \
-                               (op_coulomb_op,    /* op_coulomb_op */        \
-                                (eri,             /* truncated_coulomb_v2 */ \
+#define BOOST_PP_NBODY_OPERATOR_LIST                                      \
+  (overlap,                                       /* overlap */           \
+   (kinetic,                                      /* kinetic */           \
+    (elecpot,                                     /* nuclear */           \
+     (elecpot,                                    /* erf_nuclear */       \
+      (elecpot,                                   /* erfc_nuclear */      \
+       (elecpot,                                  /* erfx_nuclear */      \
+        (elecpot,                                 /* q_gau */             \
+         (1emultipole,                            /* emultipole1 */       \
+          (2emultipole,                           /* emultipole2 */       \
+           (3emultipole,                          /* emultipole3 */       \
+            (sphemultipole,                       /* sphemultipole */     \
+             (opVop,                              /* opVop */             \
+              (opVop,                             /* op_q_gau_op */       \
+               (opemuop,                          /* opemuop */           \
+                (eri,                             /* delta */             \
+                 (eri,                            /* coulomb */           \
+                  (eri,                           /* cgtg */              \
+                   (eri,                          /* cgtg_x_coulomb */    \
+                    (eri,                         /* delcgtg2 */          \
+                     (eri,                        /* r12 */               \
+                      (eri,                       /* erf_coulomb */       \
+                       (eri,                      /* erfc_coulomb */      \
+                        (eri,                     /* erfx_coulomb */      \
+                         (eri,                    /* stg */               \
+                          (eri,                   /* yukawa */            \
+                           (eri,                  /* delcgtga_delcgtgb */ \
+                            (coulomb_opop,        /* coulomb_opop */      \
+                             (coulomb_op,         /* coulomb_op */        \
+                              (opop_coulomb_opop, /* opop_coulomb_opop */ \
+                               (op_coulomb_op,    /* op_coulomb_op */     \
+                                (eri,             /* truncated_coulomb */ \
                                  BOOST_PP_NIL)))))))))))))))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
@@ -981,10 +981,9 @@ __libint2_engine_inline void Engine::init_core_ints_params(const any& params) {
             "): geminal exponent " + std::to_string(p.first) + " is negative");
   };
 
-  if (oper_ == Operator::truncated_coulomb_v2) {
+  if (oper_ == Operator::truncated_coulomb) {
     const auto cutoff = any_cast<
-        operator_traits<Operator::truncated_coulomb_v2>::oper_params_type>(
-        params);
+        operator_traits<Operator::truncated_coulomb>::oper_params_type>(params);
     if (!(cutoff >= 0))
       throw std::invalid_argument(
           "truncated Coulomb cutoff must be nonnegative");
@@ -1691,11 +1690,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                           .first();
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax);
                 } break;
-                case Operator::truncated_coulomb_v2: {
+                case Operator::truncated_coulomb: {
                   auto& pack = any_cast<detail::core_eval_pack_type<
-                      Operator::truncated_coulomb_v2>&>(core_eval_pack_);
+                      Operator::truncated_coulomb>&>(core_eval_pack_);
                   const auto cutoff = any_cast<typename operator_traits<
-                      Operator::truncated_coulomb_v2>::oper_params_type>(
+                      Operator::truncated_coulomb>::oper_params_type>(
                       core_ints_params_);
                   pack.first()->eval_unchecked(gm_ptr, rho, T, mmax, cutoff,
                                                &pack.second());

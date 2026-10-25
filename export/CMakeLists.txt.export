@@ -239,7 +239,7 @@ libint2_install_path(_libint2_installed_datadir "${LIBINT2_INSTALL_DATADIR}" "\$
 include(srclist.cmake)
 # Keep the truncated-Coulomb numerical kernel in its own translation unit.
 foreach(_source IN LISTS LIBINT2_LIBRARY_CXX_SRC)
-    if (_source MATCHES "truncated_coulomb_v2")
+    if (_source MATCHES "truncated_coulomb")
         set_source_files_properties(${_source} PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
     endif()
 endforeach()

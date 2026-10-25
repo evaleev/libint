@@ -52,29 +52,29 @@ void check_truncated_coulomb_radial(Evaluator& eval) {
 TEST_CASE("Truncated Coulomb auxiliary integrals",
           "[core-ints][truncated-coulomb]") {
   const double eps = std::numeric_limits<double>::epsilon();
-  libint2::os_core_ints::truncated_coulomb_v2_gm_eval<double> v2(192, eps);
-  check_truncated_coulomb_radial(v2);
+  libint2::os_core_ints::truncated_coulomb_gm_eval<double> eval(192, eps);
+  check_truncated_coulomb_radial(eval);
 
   // Independent defining-erf references, generated at 100 decimal digits and
   // checked at 140 digits. These inputs exposed cancellation at m=40 and a
   // parasitic high-order solution at m=192; the criterion is absolute error.
   std::array<double, 193> values;
-  decltype(v2)::scratch_type scratch(192);
-  v2(values.data(), 1., 15., 40, 1., &scratch);
+  decltype(eval)::scratch_type scratch(192);
+  eval(values.data(), 1., 15., 40, 1., &scratch);
   CHECK(std::abs(values[40] - 9.1989225488094219e-09) <= eps);
-  v2(values.data(), 1., 59., 192, .1, &scratch);
+  eval(values.data(), 1., 59., 192, .1, &scratch);
   CHECK(std::abs(values[192] - 1.4877535827085252e-28) <= eps);
   // Reusing a larger workspace must not retain the preceding hierarchy.
-  v2(values.data(), 1., 15., 40, 1., &scratch);
+  eval(values.data(), 1., 15., 40, 1., &scratch);
   CHECK(std::abs(values[40] - 9.1989225488094219e-09) <= eps);
   // A reserve beyond the native Boys table must still use its supported
   // orders for later, lower-order requests, even if the singleton has grown.
   std::array<double, 9> coulomb;
   libint2::FmEval_Chebyshev7<double>::instance(8)->eval(coulomb.data(), .24, 8);
-  v2(values.data(), 1., .24, 8, std::numeric_limits<double>::infinity(),
-     &scratch);
+  eval(values.data(), 1., .24, 8, std::numeric_limits<double>::infinity(),
+       &scratch);
   for (int m = 0; m <= 8; ++m) CHECK(values[m] == coulomb[m]);
-  v2(values.data(), 1., .24, 8, 20., &scratch);
+  eval(values.data(), 1., .24, 8, 20., &scratch);
   for (int m = 0; m <= 8; ++m) CHECK(std::abs(values[m] - coulomb[m]) <= eps);
 }
 
@@ -82,7 +82,7 @@ TEST_CASE("Truncated Coulomb auxiliary integrals",
 TEST_CASE("Truncated Coulomb Engine limits and derivatives",
           "[engine][2-body][truncated-coulomb]") {
   using namespace libint2;
-  for (const auto op : {Operator::truncated_coulomb_v2}) {
+  for (const auto op : {Operator::truncated_coulomb}) {
     REQUIRE(rank(op) == 2);
     const double infinity = std::numeric_limits<double>::infinity();
     Shell a{{0.8}, {{0, false, {1.0}}}, {{0.1, -0.2, 0.3}}};
@@ -194,7 +194,7 @@ TEST_CASE("Truncated Coulomb Engine limits and derivatives",
 TEST_CASE("Truncated Coulomb contractions and reduced centers",
           "[engine][2-body][truncated-coulomb]") {
   using namespace libint2;
-  for (const auto op : {Operator::truncated_coulomb_v2}) {
+  for (const auto op : {Operator::truncated_coulomb}) {
     const double inf = std::numeric_limits<double>::infinity();
     for (bool pure : {false, true}) {
       Shell a{{0.8, 1.7}, {{1, pure, {0.6, 0.4}}}, {{0.1, -0.2, 0.3}}};

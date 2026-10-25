@@ -58,7 +58,7 @@
 #include <libint2/boys_fwd.h>
 #include <libint2/initialize.h>
 #include <libint2/numeric.h>
-#include <libint2/truncated_coulomb_v2.h>
+#include <libint2/truncated_coulomb.h>
 
 #if HAVE_LAPACK  // use F77-type interface for now, switch to LAPACKE later
 extern "C" void dgesv_(const int* n, const int* nrhs, double* A, const int* lda,
@@ -2121,18 +2121,17 @@ struct GenericGmEval : private GmEvalFunction {
 namespace detail {
 /// Interpolation-free truncated Coulomb keeps mutable work with the caller.
 template <typename Real>
-struct CoreEvalScratch<os_core_ints::truncated_coulomb_v2_gm_eval<Real>>
-    : os_core_ints::truncated_coulomb_v2_gm_eval<Real>::scratch_type {
+struct CoreEvalScratch<os_core_ints::truncated_coulomb_gm_eval<Real>>
+    : os_core_ints::truncated_coulomb_gm_eval<Real>::scratch_type {
   explicit CoreEvalScratch(int mmax)
-      : os_core_ints::truncated_coulomb_v2_gm_eval<Real>::scratch_type(mmax) {}
+      : os_core_ints::truncated_coulomb_gm_eval<Real>::scratch_type(mmax) {}
 };
 template <typename Real>
 struct CoreEvalScratch<
-    const GenericGmEval<os_core_ints::truncated_coulomb_v2_gm_eval<Real>>>
-    : CoreEvalScratch<os_core_ints::truncated_coulomb_v2_gm_eval<Real>> {
+    const GenericGmEval<os_core_ints::truncated_coulomb_gm_eval<Real>>>
+    : CoreEvalScratch<os_core_ints::truncated_coulomb_gm_eval<Real>> {
   explicit CoreEvalScratch(int mmax)
-      : CoreEvalScratch<os_core_ints::truncated_coulomb_v2_gm_eval<Real>>(
-            mmax) {}
+      : CoreEvalScratch<os_core_ints::truncated_coulomb_gm_eval<Real>>(mmax) {}
 };
 /// Boys function scratch for core evaluators that need Boys function values
 /// in a separate buffer; lives on the caller's stack, so that evaluators

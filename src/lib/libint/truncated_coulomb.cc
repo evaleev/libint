@@ -1,8 +1,8 @@
-/* Binary64 truncated-Coulomb V2 numerical kernel.
+/* Binary64 truncated-Coulomb numerical kernel.
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 #include <libint2/boys.h>
-#include <libint2/truncated_coulomb_v2.h>
+#include <libint2/truncated_coulomb.h>
 
 #include <algorithm>
 #include <array>
@@ -14,7 +14,7 @@
 
 namespace libint2 {
 namespace detail {
-namespace truncated_coulomb_v2 {
+namespace truncated_coulomb {
 namespace {
 constexpr double unit = std::numeric_limits<double>::epsilon() / 2;
 constexpr double infinity = std::numeric_limits<double>::infinity();
@@ -38,7 +38,7 @@ inline double outward(double x, double direction) {
   static_assert(sizeof(double) == sizeof(std::uint64_t) &&
                     std::numeric_limits<double>::is_iec559 &&
                     std::numeric_limits<double>::digits == 53,
-                "V2 requires IEEE binary64 arithmetic");
+                "truncated Coulomb requires IEEE binary64 arithmetic");
   std::uint64_t bits;
   std::memcpy(&bits, &x, sizeof(bits));
   // Integer classification also leaves quiet NaNs quiet until nextafter.
@@ -171,7 +171,8 @@ struct Workspace {
   }
 };
 Scratch::Scratch(int n) {
-  if (n < 0) throw std::invalid_argument("negative V2 scratch order");
+  if (n < 0)
+    throw std::invalid_argument("negative truncated Coulomb scratch order");
   workspace_.reset(new Workspace(n));
 }
 Scratch::~Scratch() = default;
@@ -1026,6 +1027,6 @@ void evaluate_to_unchecked(double* output, double R, double T, int n,
     scratch.workspace_.reset(new Workspace(std::max(n, 0)));
   evaluate_work(R, T, n, options, *scratch.workspace_, output);
 }
-}  // namespace truncated_coulomb_v2
+}  // namespace truncated_coulomb
 }  // namespace detail
 }  // namespace libint2
