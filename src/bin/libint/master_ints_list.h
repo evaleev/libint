@@ -159,16 +159,17 @@ typedef boost::mpl::list<
     σpeμσp_1_1_int, CMultipole_1_1_sh, CMultipole_1_1_int, CMultipole_1_1_sh_x,
     CMultipole_1_1_sh_y, CMultipole_1_1_sh_z, CMultipole_1_1_int_x,
     CMultipole_1_1_int_y, CMultipole_1_1_int_z, SMultipole_1_1_sh,
+    SMultipole_1_1_int
 #endif
-    SMultipole_1_1_int>
+    >
     MasterIntegralTypeList_1body_part;
 typedef boost::mpl::list<
     TwoPRep_11_11_sq, TwoPRep_11_11_int, Coulombσpσp_11_11_sq,
     Coulombσpσp_11_11_int, σpσpCoulombσpσp_11_11_sq, σpσpCoulombσpσp_11_11_int,
     σpCoulombσp_11_11_sq, σpCoulombσp_11_11_int, Coulombσp_11_11_sq,
-    Coulombσp_11_11_int, R12kG12_11_11_sq,
-    R12kG12_11_11_int, R12kR12lG12_11_11_sq, R12kR12lG12_11_11_int,
-    TiG12_11_11_sq, TiG12_11_11_int, G12TiG12_11_11_sq, G12TiG12_11_11_int,
+    Coulombσp_11_11_int, R12kG12_11_11_sq, R12kG12_11_11_int,
+    R12kR12lG12_11_11_sq, R12kR12lG12_11_11_int, TiG12_11_11_sq,
+    TiG12_11_11_int, G12TiG12_11_11_sq, G12TiG12_11_11_int,
     DivG12prime_xTx_11_11_sq, DivG12prime_xTx_11_11_int,
     DummySymmIntegral_11_11_sq, DummySymmIntegral_11_11_int>
     MasterIntegralTypeList_2body_part;
