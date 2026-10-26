@@ -4,6 +4,10 @@
 Following is a brief summary of changes made in each release of Libint.
 
 - unreleased:
+  - PR #450: Engine::compute() throws Engine::lmax_exceeded, in all builds, if a shell exceeds the
+             max_l of the Engine (previously a Debug-only assert); Engine::lmax_exceeded::lmax_limit()
+             is the max angular momentum also when thrown by the constructor/set() (previously the
+             max angular momentum + 1)
   - PR #399: relativistic restricted kinetic balance (RKB) integrals: 2-body Operator::coulomb_opop,
     Operator::coulomb_op, Operator::opop_coulomb_opop, Operator::op_coulomb_op (enabled by
     LIBINT2_ENABLE_RKB_ERI and LIBINT2_ENABLE_RKB_ERI3, off by default; no geometric derivatives yet)
