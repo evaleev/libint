@@ -217,8 +217,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
 
   const auto l1 = s1.contr[0].l;
   const auto l2 = s2.contr[0].l;
-  assert(l1 <= lmax_ && "the angular momentum limit is exceeded");
-  assert(l2 <= lmax_ && "the angular momentum limit is exceeded");
+  // the scratch and the stack are sized for lmax_, check in all builds
+  if (std::max(l1, l2) > lmax_)
+    throw lmax_exceeded(task_name_, lmax_, std::max(l1, l2));
 
   // if want nuclear, make sure there is at least one nucleus .. otherwise the
   // user likely forgot to call set_params
@@ -274,7 +275,6 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
 
   // adjust max angular momentum, if needed
   const auto lmax = std::max(l1, l2);
-  assert(lmax <= lmax_ && "the angular momentum limit is exceeded");
 
   // N.B. for l=0 no need to transform to solid harmonics
   // this is a workaround for the corner case of oper_ == Operator::*nuclear,
@@ -660,7 +660,7 @@ __libint2_engine_inline void Engine::_initialize() {
         std::max(hard_lmax_, hard_default_lmax_), hard_lmax_);                 \
     if (lmax_ >= lmax) {                                                       \
       buildfnptrs_ = nullptr; /* leave no table for kernels we cannot use */   \
-      throw Engine::lmax_exceeded(BOOST_PP_STRINGIZE(BOOST_PP_NBODYENGINE_MCR3_TASK(product)), lmax, lmax_);              \
+      throw Engine::lmax_exceeded(BOOST_PP_STRINGIZE(BOOST_PP_NBODYENGINE_MCR3_TASK(product)), lmax - 1, lmax_);          \
     }                                                                          \
     if (stack_size_ > 0)                                                       \
       LIBINT2_PREFIXED_NAME(libint2_cleanup_default)(&primdata_[0]);           \
@@ -1437,7 +1437,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   // adjust max angular momentum, if needed
   auto lmax = std::max(std::max(bra1.contr[0].l, bra2.contr[0].l),
                        std::max(ket1.contr[0].l, ket2.contr[0].l));
-  assert(lmax <= lmax_ && "the angular momentum limit is exceeded");
+  // the scratch, the stack and the core evaluator are sized for lmax_, check
+  // in all builds
+  if (lmax > lmax_) throw lmax_exceeded(task_name_, lmax_, lmax);
   const auto lmax_bra = std::max(bra1.contr[0].l, bra2.contr[0].l);
   const auto lmax_ket = std::max(ket1.contr[0].l, ket2.contr[0].l);
 

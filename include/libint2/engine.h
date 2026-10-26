@@ -54,6 +54,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -308,8 +309,13 @@ enum class Operator {
  σ_i σ_j = δ_ij + i ε_ijk σ_k into a scalar (component 0) and a vector
  (components 1-3) part; the user assembles the 2×2 spin block of that electron
  as q₀·1 + i (q₁ σ_x + q₂ σ_y + q₃ σ_z) and must not apply the Pauli matrices
- again. "Not folded" means the result is the spatial tensor and the user
- contracts it with the Pauli matrices.
+ again. This applies as stated to the operators with one folded electron
+ (`coulomb_opop` and the 1-body operators); for `opop_coulomb_opop`, which
+ folds both electrons, use its prefactor column instead: the product of the two
+ i's of the vector ⊗ vector block (i² = −1) is already in the kernel, so
+ assembling each electron's block as q₀ + i σ·q would apply it twice.
+ "Not folded" means the result is the spatial tensor and the user contracts it
+ with the Pauli matrices.
 
  | Engine (C++ API)    | Compiler          | task label          | #comp | σ·p acts on | component index                                                                                                                                              | prefactor                                                                                                                                                                                                   |
  |---------------------|-------------------|---------------------|-------|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -1273,10 +1279,18 @@ class Engine {
   /// Exception class to be used when the angular momentum limit is exceeded.
   class lmax_exceeded : virtual public std::logic_error {
    public:
+    /// @param task_name the label of the task (or the empty string)
+    /// @param lmax_limit the max angular momentum supported
+    /// @param lmax_requested the angular momentum that was requested
     lmax_exceeded(const char* task_name, size_t lmax_limit,
                   size_t lmax_requested)
         : std::logic_error(
-              "Engine::lmax_exceeded -- angular momentum limit exceeded"),
+              std::string(
+                  "Engine::lmax_exceeded -- angular momentum limit exceeded") +
+              (task_name[0] != '\0' ? std::string(" for task ") + task_name
+                                    : std::string()) +
+              ": the max angular momentum is " + std::to_string(lmax_limit) +
+              ", requested " + std::to_string(lmax_requested)),
           lmax_limit_(lmax_limit),
           lmax_requested_(lmax_requested) {
       strncpy(task_name_, task_name, 64);
