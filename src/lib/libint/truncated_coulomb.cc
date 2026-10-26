@@ -29,6 +29,8 @@ constexpr double unit = std::numeric_limits<double>::epsilon() / 2;
 // Target precision and resource limits of a request; exhausting a limit
 // throws std::runtime_error.
 struct Options {
+  // C++11 aggregates have no default member initializers
+  explicit Options(double precision) : precision(precision) {}
   double precision;
   unsigned max_extra_orders = 4096;
   unsigned max_taylor_terms = 4096;
