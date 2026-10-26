@@ -273,6 +273,9 @@ enum class Operator {
   /// these components are not σ·σ-folded; the user multiplies them by -1
   /// (see \ref rkb_operators).
   op_coulomb_op,
+  /// Spherically truncated Coulomb, theta(Rc-r12)/r12; Rc has length units.
+  /// Interpolation-free evaluation with binary64 order recurrences.
+  truncated_coulomb,
   // do not modify this
   invalid = -1,
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!keep this
@@ -280,7 +283,7 @@ enum class Operator {
   first_1body_oper = overlap,
   last_1body_oper = opemuop,
   first_2body_oper = delta,
-  last_2body_oper = op_coulomb_op,
+  last_2body_oper = truncated_coulomb,
   first_oper = first_1body_oper,
   last_oper = last_2body_oper
 };
@@ -729,6 +732,17 @@ struct operator_traits<Operator::stg_x_coulomb>
   typedef scalar_type oper_params_type;
   static oper_params_type default_params() { return oper_params_type{0}; }
   typedef const libint2::TennoGmEval<scalar_type> core_eval_type;
+};
+
+template <>
+struct operator_traits<Operator::truncated_coulomb>
+    : public detail::default_operator_traits {
+  /// Cutoff in the same length units as Shell::O. Zero gives zero integrals;
+  /// positive infinity gives ordinary Coulomb integrals.
+  typedef scalar_type oper_params_type;
+  static oper_params_type default_params() { return oper_params_type{0}; }
+  typedef const libint2::os_core_ints::truncated_coulomb_gm_eval<scalar_type>
+      core_eval_type;
 };
 
 /// the runtime version of \c operator_traits<oper>::default_params()

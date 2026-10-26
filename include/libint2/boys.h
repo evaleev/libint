@@ -58,6 +58,7 @@
 #include <libint2/boys_fwd.h>
 #include <libint2/initialize.h>
 #include <libint2/numeric.h>
+#include <libint2/truncated_coulomb.h>
 
 #if HAVE_LAPACK  // use F77-type interface for now, switch to LAPACKE later
 extern "C" void dgesv_(const int* n, const int* nrhs, double* A, const int* lda,
@@ -349,7 +350,7 @@ class FmEval_Chebyshev7 {
   inline void eval(Real* Fm, Real x, int m_max) const {
     // large T => use upward recursion
     // cost = 1 div + 1 sqrt + (1 + 2*(m-1)) muls
-    if (x > T_crit) {
+    if (x >= T_crit) {
       const double one_over_x = 1 / x;
       Fm[0] = 0.88622692545275801365 *
               sqrt(one_over_x);  // see Eq. (9.8.9) in Helgaker-Jorgensen-Olsen
@@ -2109,6 +2110,13 @@ struct GenericGmEval : private GmEvalFunction {
 };
 
 namespace detail {
+/// the truncated Coulomb evaluator keeps its mutable work in Engine's scratch
+template <typename Real>
+struct CoreEvalScratch<const os_core_ints::truncated_coulomb_gm_eval<Real>>
+    : os_core_ints::truncated_coulomb_gm_eval<Real>::scratch_type {
+  explicit CoreEvalScratch(int mmax)
+      : os_core_ints::truncated_coulomb_gm_eval<Real>::scratch_type(mmax) {}
+};
 /// Boys function scratch for core evaluators that need Boys function values
 /// in a separate buffer; lives on the caller's stack, so that evaluators
 /// can be invoked through a const reference from any number of threads
