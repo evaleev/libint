@@ -53,6 +53,7 @@ void test5();
 void test6();
 void test7();
 void test8();
+void test9();
 void test_cgshell_iter(const CGShell& sh);
 
 template <class Callback>
@@ -88,6 +89,7 @@ int main(int argc, char* argv[]) {
          << "  WARNING! Caught a standard exception:" << endl
          << "    " << a.what() << endl
          << endl;
+    return 1;
   }
   return 0;
 }
@@ -147,6 +149,9 @@ int try_main(int argc, char* argv[]) {
 #endif
 #if 1
   RunTest(test8, "contracted G12 integral build");
+#endif
+#if 1
+  RunTest(test9, "DerivGaussV2 relation");
 #endif
 
   return 0;
@@ -515,6 +520,150 @@ void test8() {
                                use_quartets);
 
   cparams->contracted_targets(contracted_targets_old_value);
+}
+
+// DerivGaussV2: the children of direct differentiation and of translational
+// invariance, and the labels by which the RRStack shares the generated code
+void test9() {
+  typedef TwoPRep_11_11_sq IType;
+  auto check = [](bool ok, const std::string& what) {
+    if (!ok) throw ProgrammingError("DerivGaussV2 test: " + what);
+  };
+  // @return whether child @p i of @p rr is @p iset
+  auto child_is = [](const std::shared_ptr<RecurrenceRelation>& rr,
+                     unsigned int i, const std::shared_ptr<IType>& iset) {
+    return rr->rr_child(i) == std::static_pointer_cast<DGVertex, IType>(iset);
+  };
+  // @return shell of angular momentum @p l (primitive, unless @p contracted)
+  // with derivative quanta @p dx, @p dy, @p dz
+  auto shell = [](unsigned int l, unsigned int dx = 0, unsigned int dy = 0,
+                  unsigned int dz = 0, bool contracted = false) {
+    CGShell sh(l);
+    if (contracted)
+      sh.contract();
+    else
+      sh.uncontract();
+    if (dx) sh.deriv().inc(0, dx);
+    if (dy) sh.deriv().inc(1, dy);
+    if (dz) sh.deriv().inc(2, dz);
+    return sh;
+  };
+  const mType m0(0u);
+
+  // direct differentiation of a (particle 0, bra), in x:
+  //   ∂_Ax (p_x s|s s) = 2α (d s|s s) - 1 (s s|s s)
+  {
+    auto target =
+        IType::Instance(shell(1, 1), shell(0), shell(0), shell(0), m0);
+    auto rr = DerivV2_a_11_TwoPRep_11_sh::Instance(target, 0);
+    check(rr != nullptr, "no relation for (p_x s|s s)");
+    check(rr->num_children() == 2, "(p_x s|s s) must have 2 children");
+    check(child_is(rr, 0,
+                   IType::Instance(shell(2), shell(0), shell(0), shell(0), m0)),
+          "child 0 of (p_x s|s s) must be (d s|s s)");
+    check(child_is(rr, 1,
+                   IType::Instance(shell(0), shell(0), shell(0), shell(0), m0)),
+          "child 1 of (p_x s|s s) must be (s s|s s)");
+    // s has no a-1 term
+    auto target_s =
+        IType::Instance(shell(0, 1), shell(0), shell(0), shell(0), m0);
+    auto rr_s = DerivV2_a_11_TwoPRep_11_sh::Instance(target_s, 0);
+    check(rr_s != nullptr && rr_s->num_children() == 1,
+          "(s_x s|s s) must have 1 child");
+    check(child_is(rr_s, 0,
+                   IType::Instance(shell(1), shell(0), shell(0), shell(0), m0)),
+          "child 0 of (s_x s|s s) must be (p s|s s)");
+    // no derivative quanta in y, no relation
+    check(DerivV2_a_11_TwoPRep_11_sh::Instance(target, 1) == nullptr,
+          "(p_x s|s s) must not be differentiated in y");
+    // direct differentiation applies to primitives only
+    auto target_c =
+        IType::Instance(shell(1, 1, 0, 0, true), shell(0, 0, 0, 0, true),
+                        shell(0, 0, 0, 0, true), shell(0, 0, 0, 0, true), m0);
+    check(DerivV2_a_11_TwoPRep_11_sh::Instance(target_c, 0) == nullptr,
+          "contracted (p_x s|s s) must not be differentiated directly");
+  }
+
+  // code sharing: the label depends on the differentiated shell and the
+  // direction only, not on the spectators
+  {
+    auto rr1 = DerivV2_a_11_TwoPRep_11_sh::Instance(
+        IType::Instance(shell(1, 1), shell(0), shell(0), shell(0), m0), 0);
+    auto rr2 = DerivV2_a_11_TwoPRep_11_sh::Instance(
+        IType::Instance(shell(1, 1), shell(2), shell(1), shell(1), m0), 0);
+    auto rr3 = DerivV2_a_11_TwoPRep_11_sh::Instance(
+        IType::Instance(shell(2, 1), shell(0), shell(0), shell(0), m0), 0);
+    check(rr1 != nullptr && rr2 != nullptr && rr3 != nullptr,
+          "no relation for (p_x s|s s), (p_x d|p p) or (d_x s|s s)");
+    check(rr1->label() == rr2->label(),
+          "(p_x s|s s) and (p_x d|p p) must share the code: " + rr1->label() +
+              " vs " + rr2->label());
+    check(rr1->label() != rr3->label(),
+          "(p_x s|s s) and (d_x s|s s) must not share the code");
+    // a shell with derivative quanta in x and y is differentiated in either
+    // direction, with different children: the labels must differ
+    auto target_xy =
+        IType::Instance(shell(1, 1, 1), shell(0), shell(0), shell(0), m0);
+    auto rr_x = DerivV2_a_11_TwoPRep_11_sh::Instance(target_xy, 0);
+    auto rr_y = DerivV2_a_11_TwoPRep_11_sh::Instance(target_xy, 1);
+    check(rr_x != nullptr && rr_y != nullptr,
+          "(p_xy s|s s) must be differentiated in x and y");
+    check(rr_x->label() != rr_y->label(),
+          "the x and y derivatives of (p_xy s|s s) must not share the code");
+  }
+
+  // translational invariance (particle 1, bra = c), also for contracted
+  // shells: ∂_Cx (a b|c d) = -∂_Ax (a b|c d) - ∂_Bx (a b|c d) - ∂_Dx (a b|c d)
+  {
+    typedef DerivGaussV2<IType, 1, InBra, 1, InBra> TIType;
+    const bool c = true;
+    auto sh = [&](unsigned int l, unsigned int dx = 0) {
+      return shell(l, dx, 0, 0, c);
+    };
+    auto target = IType::Instance(sh(1), sh(0), sh(1, 1), sh(1), m0);
+    auto rr = TIType::Instance(target, 0);
+    check(rr != nullptr, "no translational invariance relation");
+    check(rr->num_children() == 3,
+          "translational invariance must have 3 children");
+    check(child_is(rr, 0, IType::Instance(sh(1, 1), sh(0), sh(1), sh(1), m0)),
+          "child 0 must be (p_x s|p p)");
+    check(child_is(rr, 1, IType::Instance(sh(1), sh(0, 1), sh(1), sh(1), m0)),
+          "child 1 must be (p s_x|p p)");
+    check(child_is(rr, 2, IType::Instance(sh(1), sh(0), sh(1), sh(1, 1), m0)),
+          "child 2 must be (p s|p p_x)");
+    check(rr->label().rfind("DerivGaussV2TI", 0) == 0,
+          "translational invariance label must start with DerivGaussV2TI: " +
+              rr->label());
+  }
+
+  // build contracted shell sets, without unrolling, hence with calls to the
+  // generated DerivGaussV2 functions: differentiation of a (direct, shared by
+  // the spectators) and of c (translational invariance)
+  {
+    CGShell::set_contracted_default_value(true);
+    const bool contracted_targets_old_value = cparams->contracted_targets();
+    cparams->contracted_targets(true);
+    const bool c = true;
+    RunBuildTest<IType>(shell(1, 1, 0, 0, c), shell(1, 0, 0, 0, c),
+                        shell(0, 0, 0, 0, c), shell(1, 0, 0, 0, c), 0,
+                        use_quartets);
+    RunBuildTest<IType>(shell(1, 0, 0, 0, c), shell(0, 0, 0, 0, c),
+                        shell(1, 0, 1, 0, c), shell(0, 0, 0, 0, c), 0,
+                        use_quartets);
+    cparams->contracted_targets(contracted_targets_old_value);
+  }
+
+  // CR_11_Coulombσp_11 is an alias (target = child, see
+  // DirectedGraph::handle_trivial_nodes()), CR_11_Coulombσpσp_11 is not
+  {
+    for (int k = 0; k != 3; ++k) {
+      auto target = Coulombσp_11_11_sq::Instance(
+          shell(1), shell(0), shell(1), shell(1), m0, Coulombσp_Descr(k));
+      auto rr = CR_11_Coulombσp_11_sh::Instance(target, 0);
+      check(rr != nullptr && rr->num_children() == 1 && rr->is_alias(),
+            "CR_11_Coulombσp_11 must be an alias");
+    }
+  }
 }
 
 };  // namespace
