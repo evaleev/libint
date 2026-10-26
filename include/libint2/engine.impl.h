@@ -21,6 +21,7 @@
 #ifndef _libint2_src_lib_libint_engineimpl_h_
 #define _libint2_src_lib_libint_engineimpl_h_
 
+#include <initializer_list>
 #include <iterator>
 
 #include "./deriv_map.h"
@@ -1347,13 +1348,12 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           tket2.ncontr() == 1) &&
          "generally-contracted shells are not yet supported");
 
-  // angular momentum limit obeyed? can only be fully checked in
-  // braket-dependent code, here only do a basic test that does not guarantee
-  // that the shell-set can be computed
-  assert(tbra1.contr[0].l <= lmax_ && "the angular momentum limit is exceeded");
-  assert(tbra2.contr[0].l <= lmax_ && "the angular momentum limit is exceeded");
-  assert(tket1.contr[0].l <= lmax_ && "the angular momentum limit is exceeded");
-  assert(tket2.contr[0].l <= lmax_ && "the angular momentum limit is exceeded");
+  // angular momentum limit obeyed? the scratch, the stack and the core
+  // evaluator are sized for lmax_, hence check in all builds; the limits of the
+  // kernels can only be fully checked in braket-dependent code
+  for (const auto* sh : {&tbra1, &tbra2, &tket1, &tket2})
+    if (sh->contr[0].l > lmax_)
+      throw lmax_exceeded(task_name_, lmax_, sh->contr[0].l);
 
 #if LIBINT2_SHELLQUARTET_SET == \
     LIBINT2_SHELLQUARTET_SET_STANDARD  // standard angular momentum ordering
@@ -1437,9 +1437,6 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   // adjust max angular momentum, if needed
   auto lmax = std::max(std::max(bra1.contr[0].l, bra2.contr[0].l),
                        std::max(ket1.contr[0].l, ket2.contr[0].l));
-  // the scratch, the stack and the core evaluator are sized for lmax_, check
-  // in all builds
-  if (lmax > lmax_) throw lmax_exceeded(task_name_, lmax_, lmax);
   const auto lmax_bra = std::max(bra1.contr[0].l, bra2.contr[0].l);
   const auto lmax_ket = std::max(ket1.contr[0].l, ket2.contr[0].l);
 
