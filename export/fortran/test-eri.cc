@@ -5,6 +5,8 @@
 #include <libint2/util/generated/libint2_types.h>
 #include <libint2/util/memory.h>
 
+#include <algorithm>
+#include <cmath>
 #include <iomanip>
 
 #include "../tests/eri/prep_libint2.h"
@@ -498,13 +500,20 @@ bool test_eri_c_f(int &contrdepth, int &am1, double *c1, double *alpha1,
     const unsigned int n2 = (am2 + 1) * (am2 + 2) / 2;
     const unsigned int n3 = (am3 + 1) * (am3 + 2) / 2;
     const unsigned int n4 = (am4 + 1) * (am4 + 2) / 2;
+    // the C and Fortran codes compute the primitive data with differently
+    // ordered arithmetic; the resulting roundoff is relative to the magnitude
+    // of the shell set, not of each element (elements of derivative shell sets
+    // can be small differences of large terms)
+    double max_abs = 0.0;
+    for (unsigned int i = 0; i != n1 * n2 * n3 * n4; ++i)
+      max_abs = std::max(max_abs, std::abs(eri_shell_set_c[i]));
     unsigned int nel = 0;
     for (int a = 0; a < n1; a++) {
       for (int b = 0; b < n2; b++) {
         for (int c = 0; c < n3; c++) {
           for (int d = 0; d < n4; d++, nel++) {
             const double abs_error = abs(*eri_shell_set_c - *eri_shell_set_f);
-            const double rel_error = abs_error / abs(*eri_shell_set_c);
+            const double rel_error = abs_error / max_abs;
             if (rel_error > threshold) {
               std::cout << std::setprecision(17) << "Elem " << nel
                         << " di= " << deriv_order
