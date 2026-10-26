@@ -97,6 +97,33 @@ inline double difference_of_square(double T, double R) {
   const double e = ((hi * hi - p) + 2 * hi * lo) + lo * lo;
   return (T - p) - e;
 }
+// Double-word arithmetic: two_sum and two_product are error-free (Knuth,
+// Dekker). Pairs are left unnormalized; callers bound their roundings.
+struct Pair {
+  double hi, lo;
+};
+inline Pair two_sum(double a, double b) {
+  const double s = a + b, t = s - a;
+  return {s, (a - (s - t)) + (b - t)};
+}
+inline Pair fast_two_sum(double a, double b) {  // |a| >= |b|
+  const double s = a + b;
+  return {s, b - (s - a)};
+}
+// Veltkamp splitting, exact for |a| < 2^996.
+inline Pair split(double a) {
+  const double c = 134217729. * a, hi = c - (c - a);
+  return {hi, a - hi};
+}
+// a*b - p for p = fl(a*b), from split operands.
+inline double product_error(Pair a, Pair b, double p) {
+  return ((a.hi * b.hi - p) + a.hi * b.lo + a.lo * b.hi) + a.lo * b.lo;
+}
+inline Pair two_product(double a, double b) {
+  const double p = a * b;
+  if (fast_fma) return {p, std::fma(a, b, -p)};
+  return {p, product_error(split(a), split(b), p)};
+}
 struct Sum {
   double value = 0, correction = 0, magnitude = 0;
   void add(double term) {
@@ -156,6 +183,7 @@ struct QTolerances {
 // All mutable storage belongs to the caller and is reused between requests.
 struct Workspace {
   std::vector<double> q, origin, hermite, weights, tails;
+  std::vector<double> pair_terms;  // origin_pair_taylor
   std::vector<double> inverse_integer, inverse_half;
   QTolerances tolerance;
   std::vector<double> rhs, correction;
@@ -1010,6 +1038,270 @@ void evaluate_q(double R, double T, unsigned last, double tolerance,
       "truncated Coulomb: no finite bounded Q representation");
 }
 
+// Double-word tables of 1/((1/2)_k (2k+1)) and 1/k!. Each entry takes at
+// most k double-word scalings by a double, each with a relative error of a
+// few u^2 (Joldes, Muller, Popescu, ACM TOMS 44, 2017), and one Newton
+// reciprocal. The bound 512 u^2 = 2^-97 used below exceeds the 9 u^2
+// measured against 60-digit values; FMA and Dekker products give the same
+// entries.
+constexpr int origin_pair_capacity = 160;
+constexpr double origin_pair_max_t = 12;
+struct OriginPairTables {
+  std::array<Pair, origin_pair_capacity> coefficient, inverse_factorial;
+  // log (1/2)_k, and kappa_k = k! / (1/2)_{k+1} for the error estimate
+  std::array<double, origin_pair_capacity> log_pochhammer, kappa;
+  static constexpr double error = 6.310887241768094e-30;  // 2^-97
+  OriginPairTables() {
+    Pair pochhammer{1, 0}, factorial{1, 0};
+    for (int k = 0; k < origin_pair_capacity; ++k) {
+      coefficient[k] = reciprocal(scale(pochhammer, 2. * k + 1));
+      inverse_factorial[k] = reciprocal(factorial);
+      log_pochhammer[k] = std::log(pochhammer.hi);
+      pochhammer = scale(pochhammer, k + .5);
+      kappa[k] = factorial.hi / pochhammer.hi;
+      factorial = scale(factorial, k + 1.);
+    }
+  }
+  static Pair scale(Pair a, double b) {
+    const Pair p = two_product(a.hi, b);
+    return fast_two_sum(p.hi, p.lo + a.lo * b);
+  }
+  static Pair reciprocal(Pair d) {
+    const double r = 1 / d.hi;
+    const Pair p = two_product(d.hi, r);
+    return fast_two_sum(r, r * (((1 - p.hi) - p.lo) - d.lo * r));
+  }
+};
+
+// Taylor expansion about T = 0 for all orders at once, in double-word
+// arithmetic: with x = R^2,
+//   G_m = F_m(T) - exp(-x) S_m,  S_m = sum_j (-T)^j / j! p_{m+j},
+// p_k = P_k(x) / (2k+1) and P_k = 1F1(-k; 1/2; x). Q_k(R,0) = exp(-x) P_k,
+// so |exp(-x) p_k| <= 1/(2k+1) (see direct_seed). The absolute terms of
+// exp(-x) S_m sum to at most exp(T)/(2m+1), so binary64 summation would lose
+// log10 exp(T) digits; the double-word error stays near u^2 exp(T).
+// U_k = (1/2)_k P_k obeys the division-free recurrence
+//   U_{k+1} = c_k U_k + d_k U_{k-1},  c_k = 2k + 1/2 - x,  d_k = -k(k - 1/2),
+// and p_k = U_k / ((1/2)_k (2k+1)) uses a table. Returns false, leaving g
+// unspecified, when the error estimate exceeds the budget or the request
+// exceeds the tables.
+bool origin_pair_taylor(double R, double T, int n, const Options& options,
+                        Workspace& w, double* g) {
+  static const OriginPairTables tables;
+  constexpr int capacity = origin_pair_capacity;
+  // sum_{j>d} T^j / (j! (2j+1)) bounds the truncation of exp(-x) S_m.
+  const double target = options.precision / 128;
+  double term = 1, tail = infinity;
+  int degree = 0;
+  for (; n + degree + 1 < capacity; ++degree) {
+    term *= T / (degree + 1);
+    const double ratio = T / (degree + 2.);
+    if (ratio < 1) {
+      tail = term / ((1 - ratio) * (2. * degree + 3));
+      if (tail <= target) break;
+    }
+  }
+  if (!(tail <= target)) return false;
+  const int last = n + degree;
+  const Pair x = two_product(R, R);
+  // |U_k| <= (1/2)_k exp(x) < 2^900 keeps every split exact, and the
+  // error estimate below finite.
+  if (!(x.hi <= 300) || tables.log_pochhammer[last] + x.hi > 600) return false;
+  const double ex = std::exp(-x.hi) * (1 - x.lo);
+  const double underflow = 16 * std::numeric_limits<double>::denorm_min();
+
+  w.pair_terms.resize(14 * capacity);
+  double* const p_hi = w.pair_terms.data();
+  double* const p_lo = p_hi + capacity;
+  double* const p_split_hi = p_lo + capacity;
+  double* const p_split_lo = p_split_hi + capacity;
+  double* const w_hi = p_split_lo + capacity;
+  double* const w_lo = w_hi + capacity;
+  double* const s_hi = w_lo + capacity;
+  double* const s_lo = s_hi + capacity;
+  double* const u_hi = s_lo + capacity;  // U_k
+  double* const u_lo = u_hi + capacity;
+  double* const v = u_lo + capacity;  // V_k
+  double* const alpha = v + capacity;
+  double* const P = alpha + capacity;  // |exp(-x) P_k|
+  double* const Q = P + capacity;      // |Q_k|
+
+  // U_k, with c_k = c.hi + c_lo (the latter rounded once) and exact d_k.
+  // tau_{k+1} bounds the rounding in forming U_{k+1}, to first order: the
+  // products c.hi U_k.lo and c_lo U_k.hi and the sums after them (5 times),
+  // d U_{k-1}.lo (4 times), the error-free product and sum residuals (u
+  // times their leading parts, 3 and 1 times), the rounding of c_lo and the
+  // dropped c_lo U_k.lo. alpha_{k+1} = tau_{k+1} / k! is used below; it is
+  // independent of the recurrence and costs little here.
+  const double u = unit;
+  const Pair c0 = two_sum(.5, -x.hi);
+  u_hi[0] = 1;
+  u_lo[0] = 0;
+  u_hi[1] = c0.hi;
+  u_lo[1] = c0.lo - x.lo;
+  v[0] = 0;
+  v[1] = 1;
+  alpha[1] = u * std::abs(u_lo[1]) + underflow;
+  double magnitude_previous = 3 * u;  // 5 |U_0.lo| + 3 u |U_0.hi|
+  for (int k = 1; k < last; ++k) {
+    const Pair c = two_sum(2. * k + .5, -x.hi);
+    const double c_lo = c.lo - x.lo, d = -k * (k - .5);
+    const Pair p1 = two_product(c.hi, u_hi[k]);
+    const Pair p2 = two_product(d, u_hi[k - 1]);
+    const double e1 = p1.lo + (c.hi * u_lo[k] + c_lo * u_hi[k]);
+    const double e2 = p2.lo + d * u_lo[k - 1];
+    const Pair sum = two_sum(p1.hi, p2.hi);
+    u_hi[k + 1] = sum.hi;
+    u_lo[k + 1] = sum.lo + (e1 + e2);
+    v[k + 1] = mul_add(c.hi, v[k], d * v[k - 1]);
+    const double magnitude = 5 * std::abs(u_lo[k]) + 3 * u * std::abs(u_hi[k]);
+    const double tau =
+        u * (std::abs(c.hi) * magnitude - d * magnitude_previous +
+             u * std::abs(sum.hi)) +
+        std::abs(c_lo) * (std::abs(u_lo[k]) + 6 * u * std::abs(u_hi[k])) +
+        underflow;
+    alpha[k + 1] = tau * tables.inverse_factorial[k].hi;
+    magnitude_previous = magnitude;
+  }
+  // p_k = U_k c_k; P_k and Q_k = V_k / (1/2)_k for the estimate below.
+  p_hi[0] = 1;
+  p_lo[0] = 0;
+  P[0] = ex;
+  Q[0] = 0;
+  double max_p = 1, max_p_lo = 0;
+  for (int k = 1; k <= last; ++k) {
+    const Pair coefficient = tables.coefficient[k];
+    const Pair product = two_product(u_hi[k], coefficient.hi);
+    p_hi[k] = product.hi;
+    p_lo[k] =
+        product.lo + (u_hi[k] * coefficient.lo + u_lo[k] * coefficient.hi);
+    const double order = 2. * k + 1;
+    P[k] = ex * order * std::abs(product.hi);
+    Q[k] = order * coefficient.hi * std::abs(v[k]);
+    max_p = std::max(max_p, std::abs(product.hi));
+    max_p_lo = std::max(max_p_lo, std::abs(p_lo[k]));
+  }
+  // Rounding of p_k: with |c_k.lo| <= u c_k.hi the three roundings after
+  // the exact product are at most u (3 |p_k.lo| + 10 u |p_k.hi|), to first
+  // order; the table adds its relative error.
+  const double p_rounding =
+      ex * (u * (3 * max_p_lo + 10 * u * max_p) + tables.error * max_p) +
+      underflow;
+
+  // An estimate of the error of exp(-x) P_k = (2k+1) exp(-x) p_k. The
+  // recurrence error follows its Green's function: a local error tau_i in
+  // U_i reaches U_k as
+  //   tau_i (U_{i-1} V_k - V_{i-1} U_k) / C_{i-1},
+  // with V a second solution (V_0 = 0, V_1 = 1) and the Casoratian
+  // C_i = U_i V_{i+1} - U_{i+1} V_i = i! (1/2)_i. With kappa_i =
+  // i! / (1/2)_{i+1} the error of exp(-x) P_k is at most
+  // sum_i alpha_i |g_ki|, where
+  //   g_ki = exp(-x) (P_{i-1} Q_k - Q_{i-1} P_k)
+  //        = exp(-x) Q_{i-1} Q_k sum_{l=i-1}^{k-1} kappa_l / (Q_l Q_{l+1}).
+  // Bounding the first form term by term suits oscillating U and V. Where
+  // both grow with the dominant solution (x >~ 4k) its terms cancel; the
+  // second form, as prefix sums of positive terms, then stays near the
+  // true error, and is evaluated when the first one misses the budget.
+  // This is a first-order estimate: V and the sums are rounded binary64,
+  // and the result enters doubled below.
+  const auto recurrence_error = [&](bool nested_form) -> double {
+    double sum_P = 0, sum_Q = 0, nested = 0, result = 0;
+    const double first = ex * alpha[1];  // the i = 1 term; Q_0 = 0
+    for (int k = 1; k <= last; ++k) {
+      sum_P += P[k - 1] * alpha[k];
+      sum_Q += Q[k - 1] * alpha[k];
+      double bound = Q[k] * sum_P + P[k] * sum_Q;
+      if (nested_form) {
+        if (k > 1) nested += tables.kappa[k - 1] / (Q[k - 1] * Q[k]) * sum_Q;
+        bound = std::min(bound, Q[k] * (first + ex * nested));
+      }
+      result = std::max(result, bound);
+    }
+    return result + p_rounding;
+  };
+
+  // (-T)^j / j!, with absolute error bounds.
+  Pair power{1, 0};
+  double power_error = 0, weight_sum = 1, weight_lo_sum = 0, weight_error = 0;
+  w_hi[0] = 1;
+  w_lo[0] = 0;
+  for (int j = 1; j <= degree; ++j) {
+    const Pair p = two_product(power.hi, -T);
+    const double t = power.lo * -T, lo = p.lo + t;
+    power_error = T * power_error + u * (std::abs(t) + std::abs(lo));
+    power = {p.hi, lo};
+    const Pair f = tables.inverse_factorial[j];
+    const Pair q = two_product(power.hi, f.hi);
+    const double ta = power.hi * f.lo, tb = power.lo * f.hi, tc = ta + tb;
+    w_hi[j] = q.hi;
+    w_lo[j] = q.lo + tc;
+    weight_error +=
+        f.hi * power_error +
+        u * (std::abs(ta) + std::abs(tb) + std::abs(tc) + std::abs(w_lo[j])) +
+        tables.error * std::abs(q.hi) + underflow;
+    weight_sum += std::abs(q.hi);
+    weight_lo_sum += std::abs(w_lo[j]);
+  }
+
+  // Rounding in the accumulation below, per order: |s_hi| <= A and
+  // |s_lo| <= AL; each step rounds the two lower-order products, their sum,
+  // e, the sum of e and the TwoSum error, and s_lo.
+  const double products = weight_sum * max_p_lo + weight_lo_sum * max_p;
+  const double exact_lo = u * weight_sum * max_p;
+  const double A = 1.01 * (weight_sum + weight_lo_sum) * (max_p + max_p_lo);
+  const double AL = 1.01 * (degree * u * A + products + exact_lo);
+  const double accumulation =
+      1.02 * u * (6 * products + 3 * exact_lo + degree * (u * A + AL));
+  const double fixed_error =
+      2 * ex * (accumulation + weight_error * (max_p + max_p_lo)) + tail;
+  const double budget = options.precision / 4;
+  const double total = weight_sum + weight_lo_sum;
+  if (!(fixed_error + 2 * total * recurrence_error(false) <= budget) &&
+      !(fixed_error + 2 * total * recurrence_error(true) <= budget))
+    return false;
+
+  // S_m = sum_j w_j p_{m+j}; independent m lanes vectorize.
+  std::copy(p_hi, p_hi + n + 1, s_hi);
+  std::copy(p_lo, p_lo + n + 1, s_lo);
+  if (fast_fma) {
+    for (int j = 1; j <= degree; ++j) {
+      const double wh = w_hi[j], wl = w_lo[j];
+      const double *ph = p_hi + j, *pl = p_lo + j;
+      for (int m = 0; m <= n; ++m) {
+        const double p = wh * ph[m];
+        const double e = std::fma(wh, ph[m], -p) + (wh * pl[m] + wl * ph[m]);
+        const double sum = s_hi[m] + p, t = sum - s_hi[m];
+        s_lo[m] += ((s_hi[m] - (sum - t)) + (p - t)) + e;
+        s_hi[m] = sum;
+      }
+    }
+  } else {
+    // Split each operand once, outside the m loop.
+    for (int k = 0; k <= last; ++k) {
+      const Pair parts = split(p_hi[k]);
+      p_split_hi[k] = parts.hi;
+      p_split_lo[k] = parts.lo;
+    }
+    for (int j = 1; j <= degree; ++j) {
+      const double wh = w_hi[j], wl = w_lo[j];
+      const Pair weight = split(wh);
+      const double *ph = p_hi + j, *pl = p_lo + j;
+      const double *qh = p_split_hi + j, *ql = p_split_lo + j;
+      for (int m = 0; m <= n; ++m) {
+        const double p = wh * ph[m];
+        const double e = product_error(weight, {qh[m], ql[m]}, p) +
+                         (wh * pl[m] + wl * ph[m]);
+        const double sum = s_hi[m] + p, t = sum - s_hi[m];
+        s_lo[m] += ((s_hi[m] - (sum - t)) + (p - t)) + e;
+        s_hi[m] = sum;
+      }
+    }
+  }
+  boys_limit(T, n, w, g);
+  for (int m = 0; m <= n; ++m) g[m] = mul_add(-ex, s_hi[m] + s_lo[m], g[m]);
+  return true;
+}
+
 void propagate_work(double T, int n, Workspace& w, double* g) {
   g[0] = w.g0;
   if (T == 0) {
@@ -1044,6 +1336,14 @@ void evaluate_work(double R, double T, int n, const Options& options,
     evaluate_limit(T, n, limit, w, g);
     return;
   }
+  // Below the join at m ~ T - 1/2 the downward branch needs Q_m, which for
+  // T >~ 1 only Miller's boundary solve supplies, at several microseconds.
+  // The double-word origin expansion gives every order directly; its degree
+  // grows with T, which sets the upper end. Small R keeps the radius series.
+  if (n > 0 && T > 0 && T < n + .5 && T <= origin_pair_max_t &&
+      !(R * R * ((n + 1.5 + T) / 3) <= .25) &&
+      origin_pair_taylor(R, T, n, options, w, g))
+    return;
   w.reset_request();
   w.g0 = evaluate_g0(R, T, options, w).value;
   if (n == 0) {
