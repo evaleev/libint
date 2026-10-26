@@ -140,6 +140,19 @@ option_with_default(LIBINT2_ENABLE_ERI3
   "Compile with support for up to N-th derivatives of 3-center electron repulsion integrals (-1 for OFF)" -1)
 option_with_default(LIBINT2_ENABLE_ERI2
   "Compile with support for up to N-th derivatives of 2-center electron repulsion integrals (-1 for OFF)" -1)
+option_with_default(LIBINT2_ENABLE_RKB_ERI
+        "Compile with support for up to N-th derivatives of relativistic restricted kinetic
+         balance (RKB) 4-center electron repulsion integrals (-1 for OFF). Only N=0 is currently supported." -1)
+option_with_default(LIBINT2_ENABLE_RKB_ERI3
+        "Compile with support for up to N-th derivatives of relativistic restricted kinetic
+         balance (RKB) 3-center electron repulsion integrals (-1 for OFF).
+         σ·p acts on the two paired (AO) centers; the unpaired/fitting center is a spectator.
+         Only N=0 is currently supported." -1)
+foreach(_cls RKB_ERI;RKB_ERI3)
+    if (LIBINT2_ENABLE_${_cls} GREATER 0)
+        message(FATAL_ERROR "LIBINT2_ENABLE_${_cls}=${LIBINT2_ENABLE_${_cls}}: geometric derivatives of RKB integrals are not yet implemented; use 0 (or -1 for OFF)")
+    endif()
+endforeach()
 option_with_default(LIBINT2_ENABLE_G12
   "Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors (-1 for OFF)" -1)
 option_with_default(LIBINT2_ENABLE_G12DKH
@@ -219,10 +232,25 @@ option_with_default(LIBINT2_ERI_OPT_AM
   "Optimize 4-center ERIs maximally for up to angular momentum N (N <= max-am).
    Can specify values for each derivative level as a semicolon-separated string (default: (max_am/2)+1)" -1)
 
+option_with_default(LIBINT2_RKB_ERI_MAX_AM
+        "Support relativistic restricted kinetic balance (RKB) 4-center ERIs for Gaussians of angular momentum up to N.
+   Can specify values for each derivative level as a semicolon-separated string. (default: max_am)" -1)
+option_with_default(LIBINT2_RKB_ERI_OPT_AM
+        "Optimize relativistic restricted kinetic balance (RKB) 4-center ERIs maximally for up to angular momentum N (N <= max-am).
+   Can specify values for each derivative level as a semicolon-separated string (default: (max_am/2)+1)" -1)
+
+option_with_default(LIBINT2_RKB_ERI3_MAX_AM
+        "Support relativistic restricted kinetic balance (RKB) 3-center ERIs for Gaussians of angular momentum up to N.
+   Can specify values for each derivative level as a semicolon-separated string. (default: max_am)
+   This sets the max AM of the density fitting (auxiliary/DF) basis on the single fitting center. The paired AO centers (on which σ·p acts) use LIBINT2_MAX_AM." -1)
+option_with_default(LIBINT2_RKB_ERI3_OPT_AM
+        "Optimize relativistic restricted kinetic balance (RKB) 3-center ERIs maximally for up to angular momentum N (N <= max-am).
+   Can specify values for each derivative level as a semicolon-separated string (default: (max_am/2)+1)" -1)
+
 option_with_default(LIBINT2_ERI3_MAX_AM
   "Support 3-center ERIs for Gaussians of angular momentum up to N.
    Can specify values for each derivative level as a semicolon-separated string. (default: max_am)
-   This option controls only the single fitting center. The paired centers use LIBINT2_MAX_AM." -1)
+   This sets the max AM of the density fitting (auxiliary/DF) basis on the single fitting center. The paired AO centers use LIBINT2_MAX_AM." -1)
 option_with_default(LIBINT2_ERI3_OPT_AM
   "Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am).
    Can specify values for each derivative level as a semicolon-separated string. (default: (max_am/2)+1)" -1)
@@ -307,7 +335,8 @@ include(int_am)
 # see #445). Map unset/empty values to the -1 sentinel.
 foreach(_v MAX_AM OPT_AM
         ONEBODY_MAX_AM ONEBODY_OPT_AM ERI_MAX_AM ERI_OPT_AM ERI3_MAX_AM ERI3_OPT_AM
-        ERI2_MAX_AM ERI2_OPT_AM G12_MAX_AM G12_OPT_AM G12DKH_MAX_AM G12DKH_OPT_AM)
+        ERI2_MAX_AM ERI2_OPT_AM RKB_ERI_MAX_AM RKB_ERI_OPT_AM RKB_ERI3_MAX_AM RKB_ERI3_OPT_AM
+        G12_MAX_AM G12_OPT_AM G12DKH_MAX_AM G12DKH_OPT_AM)
     if ("${LIBINT_${_v}}" STREQUAL "")
         set(LIBINT_${_v} -1)
     endif()

@@ -580,23 +580,24 @@ TEST_CASE("Fortran ERI", "[eri]") {
   double c4[] = {rsqset.coef[3][0][0], rsqset.coef[3][0][1]};
 
 #ifdef LIBINT_INCLUDE_ERI
-  int deriv_order = 0;
-  REQUIRE(test_eri_c_f(contrdepth, am1, c1, alpha1, A, am2, c2, alpha2, B, am3,
-                       c3, alpha3, C, am4, c4, alpha4, D, deriv_order,
-                       threshold));
-
+  // the derivative kernels may stop at a lower angular momentum than the
+  // energy kernels (e.g. LIBINT2_MAX_AM="2;2;1"): clamp the shells of each
+  // derivative order to the limit of its kernels
+  auto test_deriv_order = [&](int deriv_order, int lmax) {
+    int am1_d = std::min(am1, lmax);
+    int am2_d = std::min(am2, lmax);
+    int am3_d = std::min(am3, lmax);
+    int am4_d = std::min(am4, lmax);
+    return test_eri_c_f(contrdepth, am1_d, c1, alpha1, A, am2_d, c2, alpha2, B,
+                        am3_d, c3, alpha3, C, am4_d, c4, alpha4, D, deriv_order,
+                        threshold);
+  };
+  REQUIRE(test_deriv_order(0, LIBINT2_MAX_AM_eri));
 #if LIBINT_INCLUDE_ERI >= 1
-  deriv_order = 1;
-  REQUIRE(test_eri_c_f(contrdepth, am1, c1, alpha1, A, am2, c2, alpha2, B, am3,
-                       c3, alpha3, C, am4, c4, alpha4, D, deriv_order,
-                       threshold));
+  REQUIRE(test_deriv_order(1, LIBINT2_MAX_AM_eri1));
 #endif
-
 #if LIBINT_INCLUDE_ERI >= 2
-  deriv_order = 2;
-  REQUIRE(test_eri_c_f(contrdepth, am1, c1, alpha1, A, am2, c2, alpha2, B, am3,
-                       c3, alpha3, C, am4, c4, alpha4, D, deriv_order,
-                       threshold));
+  REQUIRE(test_deriv_order(2, LIBINT2_MAX_AM_eri2));
 #endif
 #endif  // LIBINT_INCLUDE_ERI
 }

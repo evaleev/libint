@@ -101,10 +101,10 @@ struct ExpensiveMath {
 namespace libint2 {
 inline int min(int t1, unsigned int t2) { return t1 > (int)t2 ? (int)t2 : t1; }
 
+/// @return \f$ (-1)^a \f$ for any integer @p a , negative included
 template <typename Int>
 int parity(Int a) {
-  if (a % 2 == 1) return -1;
-  return 1;
+  return (a % 2 != 0) ? -1 : 1;
 }
 };  // namespace libint2
 

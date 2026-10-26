@@ -39,16 +39,21 @@
 #include <libint2/initialize.h>
 #include <libint2/shell.h>
 
-namespace {
-template <typename Int>
-signed char parity(Int i) {
-  return i % 2 ? -1 : 1;
-}
-}  // namespace
-
 namespace libint2 {
 
 namespace solidharmonics {
+
+namespace detail {
+/// @return \f$ (-1)^i \f$ for any integer @p i , negative included
+/// @note always call this qualified (detail::parity): under MSVC-style delayed
+/// template parsing (clang-cl's default) an unqualified call from a template
+/// body is bound at instantiation and can pick up an unrelated `parity` that
+/// an including TU has brought into namespace libint2 (test_eri/eri.h did)
+template <typename Int>
+constexpr signed char parity(Int i) {
+  return (i % 2 != 0) ? -1 : 1;
+}
+}  // namespace detail
 
 // to avoid overhead of Eigen::SparseMatrix will roll our own
 
@@ -129,7 +134,7 @@ class SolidHarmonicsCoefficients {
     auto comp = (m >= 0) ? 1 : -1;
     /*  if (comp != ((abs_m-lx)%2 ? -1 : 1))*/
     auto i = abs_m - lx;
-    if (comp != parity(abs(i))) return 0.0;
+    if (comp != detail::parity(std::abs(i))) return 0.0;
 
     Real pfac;
     pfac = sqrt(((fac_real<Real>(2 * lx) * fac_real<Real>(2 * ly) *
@@ -144,16 +149,16 @@ class SolidHarmonicsCoefficients {
      * sqrt(fac_real<Real>(l-abs_m)/(fac_real<Real>(l)*fac_real<Real>(l)*fac[l+abs_m]));*/
     pfac /= (1L << l);
     if (m < 0)
-      pfac *= parity((i - 1) / 2);
+      pfac *= detail::parity((i - 1) / 2);
     else
-      pfac *= parity(i / 2);
+      pfac *= detail::parity(i / 2);
 
     auto i_min = j;
     auto i_max = (l - abs_m) / 2;
     Real sum = 0;
     for (auto i = i_min; i <= i_max; i++) {
       Real pfac1 = bc_real<Real>(l, i) * bc_real<Real>(i, j);
-      pfac1 *= (Real(parity(i) * fac_real<Real>(2 * (l - i))) /
+      pfac1 *= (Real(detail::parity(i) * fac_real<Real>(2 * (l - i))) /
                 fac_real<Real>(l - abs_m - 2 * i));
       Real sum1 = 0.0;
       const int k_min = std::max((lx - abs_m) / 2, 0);
@@ -161,7 +166,7 @@ class SolidHarmonicsCoefficients {
       for (int k = k_min; k <= k_max; k++) {
         if (lx - 2 * k <= abs_m)
           sum1 += bc_real<Real>(j, k) * bc_real<Real>(abs_m, lx - 2 * k) *
-                  parity(k);
+                  detail::parity(k);
       }
       sum += pfac1 * sum1;
     }

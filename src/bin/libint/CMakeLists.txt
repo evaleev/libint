@@ -52,7 +52,7 @@ target_compile_options(
 target_compile_features(
   libint-libcompiler
   PUBLIC
-    "cxx_std_11"
+    "cxx_std_17"  # if constexpr
   )
 
 set_target_properties(

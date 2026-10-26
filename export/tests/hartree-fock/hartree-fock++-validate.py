@@ -137,6 +137,13 @@ for line in instr:
     match13 = re.match(r'\*\* Hartree-Fock hessian =' + pat_numbers(45), line)
     match14 = re.match(r'\*\* sph edipole =' + pat_numbers(3), line)
     match15 = re.match(r'\*\* sph equadrupole =' + pat_numbers(5), line)
+    # the derivative ERI kernels of the library may stop below the AM of the
+    # basis (e.g. LIBINT2_MAX_AM="2;2;1"); hartree-fock++ then says so instead
+    # of printing the quantity, and there is nothing to validate
+    match16 = re.match(r'\*\* 2-body forces skipped', line)
+    match17 = re.match(r'\*\* Hartree-Fock forces skipped', line)
+    match18 = re.match(r'\*\* 2-body hessian skipped', line)
+    match19 = re.match(r'\*\* Hartree-Fock hessian skipped', line)
     if match1:
         eok = validate("HF energy", match1.groups(), eref, etol, line)
     elif match2:
@@ -167,6 +174,18 @@ for line in instr:
         smuok = validate("spherical electric dipole moment", match14.groups(), smuref, smutol, line)
     elif match15:
         sQok = validate("spherical electric quadrupole moment", match15.groups(), sQref, sQtol, line)
+    elif match16:
+        F2ok = True
+        print(line,end="")
+    elif match17:
+        Fok = True
+        print(line,end="")
+    elif match18:
+        H2ok = True
+        print(line,end="")
+    elif match19:
+        Hok = True
+        print(line,end="")
     else:
         print(line,end="")
 

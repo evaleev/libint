@@ -661,23 +661,32 @@ int main(int argc, char* argv[]) {
 #if LIBINT2_DERIV_ERI_ORDER
       // compute 2-e forces
       Matrix F2 = Matrix::Zero(atoms.size(), 3);
-
-      //////////
-      // two-body contributions to the forces
-      //////////
-      auto G1 = compute_2body_fock_deriv<1>(obs, atoms, D);
-      for (auto atom = 0, i = 0; atom != atoms.size(); ++atom) {
-        for (auto xyz = 0; xyz != 3; ++xyz, ++i) {
-          // identity prefactor since E(HF) = trace(H + F, D) = trace(2H + G, D)
-          auto force = G1[i].cwiseProduct(D).sum();
-          F2(atom, xyz) += force;
+      // the derivative kernels may stop at a lower angular momentum than the
+      // energy kernels (e.g. LIBINT2_MAX_AM="2;2;1"): then say so instead of
+      // printing the quantity (the validator accepts that)
+      const bool have_F2 = obs.max_l() <= LIBINT2_MAX_AM_eri1;
+      if (have_F2) {
+        //////////
+        // two-body contributions to the forces
+        //////////
+        auto G1 = compute_2body_fock_deriv<1>(obs, atoms, D);
+        for (auto atom = 0, i = 0; atom != atoms.size(); ++atom) {
+          for (auto xyz = 0; xyz != 3; ++xyz, ++i) {
+            // identity prefactor since E(HF) = trace(H + F, D) = trace(2H + G,
+            // D)
+            auto force = G1[i].cwiseProduct(D).sum();
+            F2(atom, xyz) += force;
+          }
         }
-      }
 
-      std::cout << "** 2-body forces = ";
-      for (int atom = 0; atom != atoms.size(); ++atom)
-        for (int xyz = 0; xyz != 3; ++xyz) std::cout << F2(atom, xyz) << " ";
-      std::cout << std::endl;
+        std::cout << "** 2-body forces = ";
+        for (int atom = 0; atom != atoms.size(); ++atom)
+          for (int xyz = 0; xyz != 3; ++xyz) std::cout << F2(atom, xyz) << " ";
+        std::cout << std::endl;
+      } else
+        std::cout << "** 2-body forces skipped: the 1st-derivative ERI kernels "
+                     "of this library support l <= "
+                  << LIBINT2_MAX_AM_eri1 << " only" << std::endl;
 #endif
 
 // if support 1-e and 2-e derivatives compute nuclear repulsion force and the
@@ -720,11 +729,15 @@ int main(int argc, char* argv[]) {
         for (int xyz = 0; xyz != 3; ++xyz) std::cout << FN(atom, xyz) << " ";
       std::cout << std::endl;
 
-      auto F = F1 + F_Pulay + F2 + FN;
-      std::cout << "** Hartree-Fock forces = ";
-      for (int atom = 0; atom != atoms.size(); ++atom)
-        for (int xyz = 0; xyz != 3; ++xyz) std::cout << F(atom, xyz) << " ";
-      std::cout << std::endl;
+      if (have_F2) {
+        auto F = F1 + F_Pulay + F2 + FN;
+        std::cout << "** Hartree-Fock forces = ";
+        for (int atom = 0; atom != atoms.size(); ++atom)
+          for (int xyz = 0; xyz != 3; ++xyz) std::cout << F(atom, xyz) << " ";
+        std::cout << std::endl;
+      } else
+        std::cout << "** Hartree-Fock forces skipped: no 2-body forces"
+                  << std::endl;
 #endif
     }
 
@@ -780,28 +793,36 @@ int main(int argc, char* argv[]) {
 #endif  // LIBINT2_DERIV_ONEBODY_ORDER > 1
 
 #if LIBINT2_DERIV_ERI_ORDER > 1
-      // compute 2-e forces
+      // compute 2-e hessian
       Matrix H2 = Matrix::Zero(ncoords, ncoords);
-
-      //////////
-      // two-body contributions to the forces
-      //////////
-      auto G2 = compute_2body_fock_deriv<2>(obs, atoms, D);
-      for (auto row = 0, i = 0; row != ncoords; ++row) {
-        for (auto col = row; col != ncoords; ++col, ++i) {
-          // identity prefactor since E(HF) = trace(H + F, D) = trace(2H + G, D)
-          auto hess = G2[i].cwiseProduct(D).sum();
-          H2(row, col) += hess;
+      // as for the forces: the 2nd-derivative kernels may not support the AM
+      // of the basis (e.g. LIBINT2_MAX_AM="2;2;1")
+      const bool have_H2 = obs.max_l() <= LIBINT2_MAX_AM_eri2;
+      if (have_H2) {
+        //////////
+        // two-body contributions to the hessian
+        //////////
+        auto G2 = compute_2body_fock_deriv<2>(obs, atoms, D);
+        for (auto row = 0, i = 0; row != ncoords; ++row) {
+          for (auto col = row; col != ncoords; ++col, ++i) {
+            // identity prefactor since E(HF) = trace(H + F, D) = trace(2H + G,
+            // D)
+            auto hess = G2[i].cwiseProduct(D).sum();
+            H2(row, col) += hess;
+          }
         }
-      }
 
-      std::cout << "** 2-body hessian = ";
-      for (auto row = 0, i = 0; row != ncoords; ++row) {
-        for (auto col = row; col != ncoords; ++col) {
-          std::cout << H2(row, col) << " ";
+        std::cout << "** 2-body hessian = ";
+        for (auto row = 0, i = 0; row != ncoords; ++row) {
+          for (auto col = row; col != ncoords; ++col) {
+            std::cout << H2(row, col) << " ";
+          }
         }
-      }
-      std::cout << std::endl;
+        std::cout << std::endl;
+      } else
+        std::cout << "** 2-body hessian skipped: the 2nd-derivative ERI "
+                     "kernels of this library support l <= "
+                  << LIBINT2_MAX_AM_eri2 << " only" << std::endl;
 #endif
 
 // if support 1-e and 2-e 2nd derivatives compute nuclear repulsion hessian and
@@ -866,14 +887,18 @@ int main(int argc, char* argv[]) {
       }
       std::cout << std::endl;
 
-      auto H = H1 + H_Pulay + H2 + HN;
-      std::cout << "** Hartree-Fock hessian = ";
-      for (auto row = 0, i = 0; row != ncoords; ++row) {
-        for (auto col = row; col != ncoords; ++col) {
-          std::cout << H(row, col) << " ";
+      if (have_H2) {
+        auto H = H1 + H_Pulay + H2 + HN;
+        std::cout << "** Hartree-Fock hessian = ";
+        for (auto row = 0, i = 0; row != ncoords; ++row) {
+          for (auto col = row; col != ncoords; ++col) {
+            std::cout << H(row, col) << " ";
+          }
         }
-      }
-      std::cout << std::endl;
+        std::cout << std::endl;
+      } else
+        std::cout << "** Hartree-Fock hessian skipped: no 2-body hessian"
+                  << std::endl;
 #endif
     }
 
@@ -2564,7 +2589,8 @@ void api_basic_compile_test(const BasisSet& obs,
   }
 
 #if LIBINT2_DERIV_ERI_ORDER
-  {  // test deriv 2-index ints
+  // skipped if the derivative kernels do not support the AM of the basis
+  if (obs.max_l() <= LIBINT2_MAX_AM_eri1) {  // test deriv 2-index ints
     Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), 1);
     Engine eri2_engine = eri4_engine;
     eri2_engine.set(BraKet::xs_xs);
@@ -2599,7 +2625,7 @@ void api_basic_compile_test(const BasisSet& obs,
 #endif
 
 #if LIBINT2_DERIV_ERI_ORDER > 1
-  {  // test 2nd deriv 2-index ints
+  if (obs.max_l() <= LIBINT2_MAX_AM_eri2) {  // test 2nd deriv 2-index ints
     Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), 2);
     Engine eri2_engine = eri4_engine;
     eri2_engine.set(BraKet::xs_xs);

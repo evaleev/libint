@@ -10,10 +10,10 @@ PROGRAM fortran_example
 #ifdef LIBINT_INCLUDE_ERI
    USE libint_f, ONLY: libint2_init_eri, libint2_cleanup_eri
 #if LIBINT_INCLUDE_ERI >= 1
-   USE libint_f, ONLY: libint2_init_eri1, libint2_cleanup_eri1
+   USE libint_f, ONLY: libint2_init_eri1, libint2_cleanup_eri1, libint2_max_am_eri1
 #endif
 #if LIBINT_INCLUDE_ERI >= 2
-   USE libint_f, ONLY: libint2_init_eri2, libint2_cleanup_eri2
+   USE libint_f, ONLY: libint2_init_eri2, libint2_cleanup_eri2, libint2_max_am_eri2
 #endif
 #endif
 
@@ -68,7 +68,14 @@ PROGRAM fortran_example
    CALL libint2_cleanup_eri(erieval)
 
 #if LIBINT_INCLUDE_ERI >= 1
+   ! the derivative kernels may stop at a lower angular momentum than the
+   ! energy kernels (e.g. LIBINT2_MAX_AM="2;2;1"): clamp the shells to it
    deriv_order = 1
+   am1 = MINVAL([1, libint2_max_am_eri1])
+   am2 = MINVAL([0, libint2_max_am_eri1])
+   am3 = MINVAL([2, libint2_max_am_eri1])
+   am4 = MINVAL([0, libint2_max_am_eri1])
+   max_am = MAXVAL([am1, am2, am3, am4])
    CALL libint2_init_eri1(erieval, max_am, C_NULL_PTR)
    CALL compute_eri_f(1, deriv_order, am1, c1, alpha1, A, &
                     am2, c2, alpha2, B, &
@@ -80,6 +87,11 @@ PROGRAM fortran_example
 #endif
 #if LIBINT_INCLUDE_ERI >= 2
    deriv_order = 2
+   am1 = MINVAL([1, libint2_max_am_eri2])
+   am2 = MINVAL([0, libint2_max_am_eri2])
+   am3 = MINVAL([2, libint2_max_am_eri2])
+   am4 = MINVAL([0, libint2_max_am_eri2])
+   max_am = MAXVAL([am1, am2, am3, am4])
    CALL libint2_init_eri2(erieval, max_am, C_NULL_PTR)
    CALL compute_eri_f(1, deriv_order, am1, c1, alpha1, A, &
                     am2, c2, alpha2, B, &
