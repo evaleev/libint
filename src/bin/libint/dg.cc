@@ -846,6 +846,32 @@ void DirectedGraph::handle_trivial_nodes(
       }
     }
 
+    // Is the exit arc an RR whose target is identical to its child (e.g.
+    // CR_11_Coulombσp_11)? Then make the vertex refer to the child, so that the
+    // child is computed in its place and no code is generated for the RR.
+    // N.B. the child must have no other parent: a referring vertex is never
+    // allocated, hence never tags its child, and freeing it (once its parents
+    // are allocated) frees the child; if it is a target, the child takes over
+    // its address.
+    if (!(vptr)->refers_to_another()) {
+      std::shared_ptr<DGArcRR> arc_cast =
+          std::dynamic_pointer_cast<DGArcRR, DGArc>(arc);
+      if (arc_cast && arc_cast->rr()->is_alias()) {
+        std::shared_ptr<DGVertex> child = arc->dest();
+        // the vertex and the child must not be pinned to different locations
+        const bool location_conflict =
+            ((vptr)->address_set() || (vptr)->symbol_set()) &&
+            (child->address_set() || child->symbol_set());
+        if (!location_conflict && !child->is_a_target() &&
+            child->num_entry_arcs() == 1) {
+          if ((vptr)->address_set()) child->set_address((vptr)->address());
+          vptr->refer_this_to(child);
+          vptr->reset_symbol();
+          continue;
+        }
+      }
+    }
+
     // Is the exit arc DGArcDirect?
     {
       std::shared_ptr<DGArcDirect> arc_cast =
@@ -2270,6 +2296,9 @@ void DirectedGraph::update_func_names() {
   typedef vertices::iterator iter;
   for (iter v = stack_.begin(); v != stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
+    // no code is generated for a vertex that refers to another (see
+    // handle_trivial_nodes()), hence no function is called for it
+    if ((vptr)->refers_to_another()) continue;
     // for every vertex with children
     if ((vptr)->num_exit_arcs() > 0) {
       // if it must be computed using a RR

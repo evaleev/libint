@@ -126,6 +126,13 @@ class RecurrenceRelation
   */
   virtual bool is_simple() const = 0;
   /**
+     Returns true if the target is identical, element by element and in the
+     same layout, to the only child; then the vertex of the target is made to
+     refer to the child (see DirectedGraph::handle_trivial_nodes()), hence no
+     code is generated for this recurrence relation.
+  */
+  virtual bool is_alias() const { return false; }
+  /**
      Returns true is the type of target and all children are exactly the same
   */
   virtual bool invariant_type() const;

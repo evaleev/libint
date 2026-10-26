@@ -79,6 +79,10 @@ const ExtractExternSymbols::Symbols& ExtractExternSymbols::symbols() const {
 ////
 
 void ExtractRR::operator()(const VertexPtr& v) {
+  // no code is generated for a vertex that refers to another (e.g. a vertex
+  // whose RR is an alias, see DirectedGraph::handle_trivial_nodes()), hence
+  // neither is its RR used
+  if (v->refers_to_another()) return;
   if (v->num_exit_arcs() != 0) {
     std::shared_ptr<DGArc> arc = *(v->first_exit_arc());
     std::shared_ptr<DGArcRR> arc_rr =
