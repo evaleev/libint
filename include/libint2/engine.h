@@ -909,6 +909,7 @@ class Engine {
         primdata_(std::move(other.primdata_)),
         spbra_(std::move(other.spbra_)),
         spket_(std::move(other.spket_)),
+        max_nprim_(other.max_nprim_),
         stack_size_(other.stack_size_),
         lmax_(other.lmax_),
         hard_lmax_(other.hard_lmax_),
@@ -941,6 +942,7 @@ class Engine {
         primdata_(other.primdata_.size()),
         spbra_(other.spbra_),
         spket_(other.spket_),
+        max_nprim_(other.max_nprim_),
         stack_size_(other.stack_size_),
         lmax_(other.lmax_),
         deriv_order_(other.deriv_order_),
@@ -964,6 +966,7 @@ class Engine {
     primdata_ = std::move(other.primdata_);
     spbra_ = std::move(other.spbra_);
     spket_ = std::move(other.spket_);
+    max_nprim_ = other.max_nprim_;
     stack_size_ = other.stack_size_;
     lmax_ = other.lmax_;
     hard_lmax_ = other.hard_lmax_;
@@ -997,6 +1000,7 @@ class Engine {
     primdata_.resize(other.primdata_.size());
     spbra_ = other.spbra_;
     spket_ = other.spket_;
+    max_nprim_ = other.max_nprim_;
     stack_size_ = other.stack_size_;
     lmax_ = other.lmax_;
     deriv_order_ = other.deriv_order_;
@@ -1075,17 +1079,14 @@ class Engine {
   }
 
   /// @return the maximum number of primitives that this engine can handle
-  std::size_t max_nprim() const {
-    assert(spbra_.primpairs.size() == spket_.primpairs.size());
-    return static_cast<std::size_t>(std::sqrt(spbra_.primpairs.size()));
-  }
+  std::size_t max_nprim() const { return max_nprim_; }
 
   /// reset the maximum number of primitives
   /// @param[in] n the maximum number of primitives
   /// @note left unchanged if the value returned by Engine::max_nprim is greater
   /// than @c n
   Engine& set_max_nprim(std::size_t n) {
-    if (n * n > spbra_.primpairs.size()) {
+    if (n > max_nprim_) {
       spbra_.resize(n);
       spket_.resize(n);
       initialize(n);
@@ -1338,6 +1339,8 @@ class Engine {
   BraKet braket_;
   std::vector<Libint_t> primdata_;
   ShellPair spbra_, spket_;
+  // primdata_ is sized for max_nprim_ primitives per shell; set by initialize()
+  std::size_t max_nprim_ = 0;
   size_t stack_size_;  // amount allocated by libint2_init_xxx in
                        // primdata_[0].stack
   int lmax_;

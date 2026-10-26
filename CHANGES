@@ -8,6 +8,10 @@ Following is a brief summary of changes made in each release of Libint.
              max_l of the Engine (previously a Debug-only assert); Engine::lmax_exceeded::lmax_limit()
              is the max angular momentum also when thrown by the constructor/set() (previously the
              max angular momentum + 1)
+  - PR #450: Engine::set(BraKet) and Engine::set(Operator) resize the primitive data for the rank
+             of the new braket (previously e.g. switching an Engine from a 3-center to a 4-center
+             braket overran a buffer); Engine::max_nprim() returns the max number of primitives the
+             Engine was sized for (previously derived from the last computed shell pair)
   - PR #399: relativistic restricted kinetic balance (RKB) integrals: 2-body Operator::coulomb_opop,
     Operator::coulomb_op, Operator::opop_coulomb_opop, Operator::op_coulomb_op (enabled by
     LIBINT2_ENABLE_RKB_ERI and LIBINT2_ENABLE_RKB_ERI3, off by default; no geometric derivatives yet)

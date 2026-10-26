@@ -721,7 +721,10 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
   // initialize braket, if needed
   if (braket_ == BraKet::invalid) braket_ = default_braket(oper_);
 
-  if (max_nprim != 0) primdata_.resize(std::pow(max_nprim, braket_rank()));
+  // the size of primdata_ depends on the rank of the braket, hence resize it
+  // also when called without max_nprim, e.g. by set(BraKet) or set(Operator)
+  if (max_nprim != 0) max_nprim_ = max_nprim;
+  primdata_.resize(std::pow(max_nprim_, braket_rank()));
 
   // initialize targets
   {
