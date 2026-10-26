@@ -25,10 +25,9 @@
 #include <entity.h>
 #include <gaussoper.h>
 #include <generic_rr.h>
+#include <rkb_fold_codegen.h>
 #include <task.h>
 #include <twoprep_11_11.h>
-
-#include <rkb_fold_codegen.h>
 
 #include <stdexcept>
 
@@ -48,8 +47,9 @@ namespace libint2 {
  * Molecules", Springer, 2007):
  *   \f$ (\sigma \cdot u)(\sigma \cdot v) = (u \cdot v)I
  *       + i\sigma \cdot (u \times v) \f$
- * applied independently to each electron's spin space gives a tensor product
- * of two quaternions with \f$ 4 \times 4 = 16 \f$ components:
+ * applied independently to each electron's spin space gives the tensor
+ * product of two 4-component (scalar + vector) objects, with
+ * \f$ 4 \times 4 = 16 \f$ components:
  *
  *   index = 4 * q₁ + q₂
  *

@@ -87,3 +87,4 @@ list(PREPEND Libint2_CONFIG_COMPONENTS "${_o1st}${_o2nd}")
 
 # for features and libint2-config.cmake files
 set(Libint2_MAX_AM_ERI "@_candidate_ERI_d0@")
+set(Libint2_MAX_AM_ERI_DERIVS "@Libint2_MAX_AM_ERI_DERIVS@")

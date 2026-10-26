@@ -107,9 +107,9 @@ void rkb_fold_make_children(Factory& factory, const F& a, const F& b,
   using libint2::prefactor::Scalar;
 
   const typename Factory::AuxIndexType zero_m(0u);
-  std::shared_ptr<DGVertex> first_child;
-  for (std::size_t t = 0; t != terms.size(); ++t) {
-    const RKBFoldTerm& term = terms[t];
+  std::vector<std::shared_ptr<DGVertex>> children;
+  children.reserve(terms.size());
+  for (const RKBFoldTerm& term : terms) {
     F fa{a};
     F fb{b};
     F fc{c};
@@ -118,28 +118,42 @@ void rkb_fold_make_children(Factory& factory, const F& a, const F& b,
     if (term.deriv[1] >= 0) fb.deriv().inc(term.deriv[1]);
     if (term.deriv[2] >= 0) fc.deriv().inc(term.deriv[2]);
     if (term.deriv[3] >= 0) fd.deriv().inc(term.deriv[3]);
-    const std::shared_ptr<DGVertex> child =
-        factory.make_child(fa, fb, fc, fd, zero_m);
-    if (!simple) continue;
+    children.push_back(factory.make_child(fa, fb, fc, fd, zero_m));
+  }
+  if (!simple) return;
 
-    if (t == 0) {
-      first_child = child;
-      // a bare child is not an expression: a leading +child is combined with
-      // the second term below, any other leading term is Scalar(coef) * child
-      if (term.coef != 1 || terms.size() == 1) expr = Scalar(term.coef) * child;
-    } else {
-      const std::shared_ptr<DGVertex> lhs =
-          (t == 1 && terms[0].coef == 1) ? first_child
-                                         : std::shared_ptr<DGVertex>(expr);
-      if (term.coef == 1)
-        expr = lhs + child;
-      else if (term.coef == -1)
-        expr = lhs - child;
-      else
-        expr = lhs + Scalar(term.coef) * child;
+  // the order of the children (= the order of the terms) is fixed by
+  // generate_code(), but the expression may sum them in any order: lead with
+  // a +1 term, if any, so that no Scalar(-1)*child is needed (a bare child is
+  // not an expression, hence a lone +1 term is Scalar(1)*child, which is free)
+  std::size_t lead = 0;
+  for (std::size_t t = 0; t != terms.size(); ++t)
+    if (terms[t].coef == 1) {
+      lead = t;
+      break;
+    }
+  std::shared_ptr<DGVertex> lhs = children[lead];
+  if (terms[lead].coef != 1) {
+    expr = Scalar(terms[lead].coef) * children[lead];
+    lhs = expr;
+    nflops += 1;
+  } else if (terms.size() == 1) {
+    expr = Scalar(1) * children[lead];
+    return;
+  }
+  for (std::size_t t = 0; t != terms.size(); ++t) {
+    if (t == lead) continue;
+    const auto coef = terms[t].coef;
+    if (coef == 1)
+      expr = lhs + children[t];
+    else if (coef == -1)
+      expr = lhs - children[t];
+    else {
+      expr = lhs + Scalar(coef) * children[t];
       nflops += 1;
     }
-    if (std::abs(term.coef) != 1) nflops += 1;
+    nflops += 1;
+    lhs = expr;
   }
 }
 

@@ -436,8 +436,8 @@ std::string DerivGaussV2<IntType, part, where, trans_inv_part,
   if constexpr (using_trans_inv) {
     typedef typename TargetType::AuxIndexType mType;
     static std::shared_ptr<mType> aux0(new mType(0u));
-    // N.B. not "CR_DerivGauss...": CR_DerivGauss labels its own instances
-    // that way, and the RRStack deduplicates by label
+    // N.B. a prefix of its own, distinct from the "CR_DerivGauss " labels of
+    // CR_DerivGauss instances (the RRStack deduplicates by label)
     os << "DerivGaussV2TI"
        << "P" << part << to_string(where) << "D" << dir_
        << genintegralset_label(target_->bra(), target_->ket(), aux0,

@@ -21,6 +21,7 @@
 #ifndef _libint2_src_lib_libint_engineimpl_h_
 #define _libint2_src_lib_libint_engineimpl_h_
 
+#include <initializer_list>
 #include <iterator>
 
 #include "./deriv_map.h"
@@ -218,8 +219,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
 
   const auto l1 = s1.contr[0].l;
   const auto l2 = s2.contr[0].l;
-  assert(l1 <= lmax_ && "the angular momentum limit is exceeded");
-  assert(l2 <= lmax_ && "the angular momentum limit is exceeded");
+  // the scratch and the stack are sized for lmax_, check in all builds
+  if (std::max(l1, l2) > lmax_)
+    throw lmax_exceeded(task_name_, lmax_, std::max(l1, l2));
 
   // if want nuclear, make sure there is at least one nucleus .. otherwise the
   // user likely forgot to call set_params
@@ -275,7 +277,6 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
 
   // adjust max angular momentum, if needed
   const auto lmax = std::max(l1, l2);
-  assert(lmax <= lmax_ && "the angular momentum limit is exceeded");
 
   // N.B. for l=0 no need to transform to solid harmonics
   // this is a workaround for the corner case of oper_ == Operator::*nuclear,
@@ -661,7 +662,7 @@ __libint2_engine_inline void Engine::_initialize() {
         std::max(hard_lmax_, hard_default_lmax_), hard_lmax_);                 \
     if (lmax_ >= lmax) {                                                       \
       buildfnptrs_ = nullptr; /* leave no table for kernels we cannot use */   \
-      throw Engine::lmax_exceeded(BOOST_PP_STRINGIZE(BOOST_PP_NBODYENGINE_MCR3_TASK(product)), lmax, lmax_);              \
+      throw Engine::lmax_exceeded(BOOST_PP_STRINGIZE(BOOST_PP_NBODYENGINE_MCR3_TASK(product)), lmax - 1, lmax_);          \
     }                                                                          \
     if (stack_size_ > 0)                                                       \
       LIBINT2_PREFIXED_NAME(libint2_cleanup_default)(&primdata_[0]);           \
@@ -721,7 +722,10 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
   // initialize braket, if needed
   if (braket_ == BraKet::invalid) braket_ = default_braket(oper_);
 
-  if (max_nprim != 0) primdata_.resize(std::pow(max_nprim, braket_rank()));
+  // the size of primdata_ depends on the rank of the braket, hence resize it
+  // also when called without max_nprim, e.g. by set(BraKet) or set(Operator)
+  if (max_nprim != 0) max_nprim_ = max_nprim;
+  primdata_.resize(std::pow(max_nprim_, braket_rank()));
 
   // initialize targets
   {
@@ -1344,6 +1348,10 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           (tspbra != nullptr && tspket != nullptr)) &&
          "Engine::compute2 -- expects zero or two ShellPair objects");
   assert(screening_method_ != ScreeningMethod::Invalid);
+  // the derivative order of the integrals over the operator, known at compile
+  // time, hence evaluated once rather than per primitive
+  constexpr auto total_deriv_order =
+      der + operator_traits<op>::intrinsic_deriv_order;
   if (buildfnptrs_ == nullptr) throw missing_kernel();
 
   //
@@ -1355,13 +1363,12 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           tket2.ncontr() == 1) &&
          "generally-contracted shells are not yet supported");
 
-  // angular momentum limit obeyed? can only be fully checked in
-  // braket-dependent code, here only do a basic test that does not guarantee
-  // that the shell-set can be computed
-  assert(tbra1.contr[0].l <= lmax_ && "the angular momentum limit is exceeded");
-  assert(tbra2.contr[0].l <= lmax_ && "the angular momentum limit is exceeded");
-  assert(tket1.contr[0].l <= lmax_ && "the angular momentum limit is exceeded");
-  assert(tket2.contr[0].l <= lmax_ && "the angular momentum limit is exceeded");
+  // angular momentum limit obeyed? the scratch, the stack and the core
+  // evaluator are sized for lmax_, hence check in all builds; the limits of the
+  // kernels can only be fully checked in braket-dependent code
+  for (const auto* sh : {&tbra1, &tbra2, &tket1, &tket2})
+    if (sh->contr[0].l > lmax_)
+      throw lmax_exceeded(task_name_, lmax_, sh->contr[0].l);
 
 #if LIBINT2_SHELLQUARTET_SET == \
     LIBINT2_SHELLQUARTET_SET_STANDARD  // standard angular momentum ordering
@@ -1445,7 +1452,6 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   // adjust max angular momentum, if needed
   auto lmax = std::max(std::max(bra1.contr[0].l, bra2.contr[0].l),
                        std::max(ket1.contr[0].l, ket2.contr[0].l));
-  assert(lmax <= lmax_ && "the angular momentum limit is exceeded");
   const auto lmax_bra = std::max(bra1.contr[0].l, bra2.contr[0].l);
   const auto lmax_ket = std::max(ket1.contr[0].l, ket2.contr[0].l);
 
@@ -1605,7 +1611,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             const scalar_type rho = gammap * gammaq * oogammapq;
             const scalar_type T = PQ2 * rho;
             auto* gm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
-            const auto mmax = l + deriv_order_ + intrinsic_deriv_order();
+            const auto mmax = l + total_deriv_order;
 
             if (!skip_core_ints) {
 // Simple core-eval dispatch: just `core_eval_ptr->eval(gm_ptr, T, mmax)`.
@@ -1864,7 +1870,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
               const auto Wz =
                   (gammap_o_gammapgammaq * P[2] + gammaq_o_gammapgammaq * Q[2]);
 
-              if (deriv_order_ + intrinsic_deriv_order() > 0 || lmax_bra > 0) {
+              if (total_deriv_order > 0 || lmax_bra > 0) {
 #if LIBINT2_DEFINED(eri, WP_x)
                 primdata.WP_x[0] = Wx - P[0];
 #endif
@@ -1875,7 +1881,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 primdata.WP_z[0] = Wz - P[2];
 #endif
               }
-              if (deriv_order_ + intrinsic_deriv_order() > 0 || lmax_ket > 0) {
+              if (total_deriv_order > 0 || lmax_ket > 0) {
 #if LIBINT2_DEFINED(eri, WQ_x)
                 primdata.WQ_x[0] = Wx - Q[0];
 #endif
@@ -1959,7 +1965,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
 
               // prefactors for derivative ERI relations
-              if (deriv_order_ + intrinsic_deriv_order() > 0) {
+              if (total_deriv_order > 0) {
 #if LIBINT2_DEFINED(eri, alpha1_rho_over_zeta2)
                 primdata.alpha1_rho_over_zeta2[0] =
                     alpha0 * (oogammap * gammaq_o_gammapgammaq);
@@ -2042,8 +2048,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   }
 
   // compute directly (ss|ss)
-  const auto compute_directly =
-      lmax == 0 && deriv_order_ == 0 && intrinsic_deriv_order() == 0;
+  const auto compute_directly = lmax == 0 && total_deriv_order == 0;
 
   if (compute_directly) {
 #ifdef LIBINT2_ENGINE_TIMERS

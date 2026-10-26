@@ -21,6 +21,7 @@
 #include <libint2/deriv_iter.h>
 
 #include <algorithm>
+#include <functional>
 #include <limits>
 #include <sstream>
 
@@ -738,6 +739,82 @@ TEST_CASE("rejected set() leaves no kernels", "[engine][2-body]") {
   REQUIRE(engine.compute(s, s, s, s)[0] != nullptr);
   REQUIRE_THROWS_AS(engine.set(Operator::coulomb_opop), std::invalid_argument);
   CHECK_THROWS_AS(engine.compute(s, s, s, s), Engine::missing_kernel);
+#endif
+}
+
+// compute() must throw Engine::lmax_exceeded, in all builds, for a shell
+// beyond the max_l of the Engine or beyond the limit of the kernels for its
+// center
+TEST_CASE("compute() checks the angular momentum limits", "[engine][2-body]") {
+  const auto eps = std::numeric_limits<double>::epsilon();
+  const Shell s{{1.0}, {{0, false, {1.0}}}, {{0.0, 0.0, 0.0}}};
+  // @return the lmax_exceeded thrown by @p f
+  auto thrown_by =
+      [](const std::function<void()> &f) -> std::pair<size_t, size_t> {
+    try {
+      f();
+    } catch (Engine::lmax_exceeded &e) {
+      return {e.lmax_limit(), e.lmax_requested()};
+    }
+    FAIL("lmax_exceeded was not thrown");
+    return {0, 0};
+  };
+
+#if defined(LIBINT2_SUPPORT_ERI) && LIBINT2_MAX_AM_eri > 0
+  SECTION("max_l of the Engine") {
+    const Shell p{{1.0}, {{1, false, {1.0}}}, {{0.0, 0.0, 1.0}}};
+    Engine engine(Operator::coulomb, 1, 0);
+    CHECK(thrown_by([&]() { engine.compute(s, s, s, p); }) ==
+          std::make_pair(size_t(0), size_t(1)));
+    Engine engine1(Operator::overlap, 1, 0);
+    CHECK(thrown_by([&]() { engine1.compute(p, s); }) ==
+          std::make_pair(size_t(0), size_t(1)));
+  }
+#endif
+
+  // the kernels of a center-dependent task support higher AM on the fitting
+  // center than on the AO centers, the Engine's max_l does not tell them apart
+#if defined(LIBINT2_SUPPORT_ERI3) && LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri && \
+    LIBINT2_MAX_AM_3eri > LIBINT2_MAX_AM_default
+  SECTION("AM limit of the AO centers of 3-center kernels") {
+    const int l_ao = LIBINT2_MAX_AM_default + 1;
+    const Shell ao{{1.0}, {{l_ao, true, {1.0}}}, {{0.0, 0.0, 1.0}}};
+    Engine engine(Operator::coulomb, 1, LIBINT2_MAX_AM_3eri, 0, eps,
+                  libint2::default_params(Operator::coulomb), BraKet::xs_xx);
+    CHECK(thrown_by([&]() { engine.compute(s, ao, s); }) ==
+          std::make_pair(size_t(LIBINT2_MAX_AM_default), size_t(l_ao)));
+  }
+#endif
+
+  // the limit reported by initialize() is the max AM, not the max AM + 1
+#if defined(LIBINT2_SUPPORT_ERI)
+  SECTION("AM limit reported by initialize()") {
+    CHECK(thrown_by([&]() {
+            Engine engine(Operator::coulomb, 1, LIBINT2_MAX_AM_eri + 1);
+          }) == std::make_pair(size_t(LIBINT2_MAX_AM_eri),
+                               size_t(LIBINT2_MAX_AM_eri + 1)));
+  }
+#endif
+}
+
+// set(BraKet) must resize the core evaluator for the new braket: a 3-center
+// Engine needs Boys functions up to 3·max_l, a 4-center one up to 4·max_l
+TEST_CASE("set(BraKet) rebuilds the core evaluator", "[engine][2-body]") {
+#if defined(LIBINT2_SUPPORT_ERI) && defined(LIBINT2_SUPPORT_ERI3)
+  const int l = std::min(LIBINT2_MAX_AM_eri, LIBINT2_MAX_AM_3eri);
+  const Shell a{{1.0, 0.3}, {{l, false, {0.4, 0.7}}}, {{0.0, 0.0, 0.0}}};
+  const Shell b{{1.1, 0.2}, {{l, false, {0.5, 0.6}}}, {{0.0, 0.5, 0.1}}};
+  const auto eps = std::numeric_limits<double>::epsilon();
+  Engine engine(Operator::coulomb, 2, l, 0, eps,
+                libint2::default_params(Operator::coulomb), BraKet::xs_xx);
+  engine.set(BraKet::xx_xx);
+  Engine ref(Operator::coulomb, 2, l);
+  const auto &result = engine.compute(a, b, b, a);
+  const auto &result_ref = ref.compute(a, b, b, a);
+  REQUIRE(result[0] != nullptr);
+  const auto n = a.size() * b.size() * b.size() * a.size();
+  for (size_t i = 0; i != n; ++i)
+    REQUIRE(result[0][i] == Approx(result_ref[0][i]).margin(1e-14));
 #endif
 }
 

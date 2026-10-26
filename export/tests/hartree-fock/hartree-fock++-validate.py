@@ -44,6 +44,21 @@ else:
 if LIBINT_ERI_MAX_AM<2:
     sys.exit(0)
 
+# the max AM of the basis (aug-cc-pVDZ for H2O)
+OBS_MAX_L = 2
+
+def skip_ok(label, deriv_order, textline):
+    """a quantity that needs the ERI derivatives of order deriv_order may only
+    be skipped if their kernels do not support the AM of the basis"""
+    expected = LIBINT_ERI_MAX_AM_DERIVS[deriv_order] < OBS_MAX_L
+    if expected:
+        print(textline, end="")
+    else:
+        print(label, "check: failed\nskipped although the library supports l <=",
+              LIBINT_ERI_MAX_AM_DERIVS[deriv_order], "for derivative order",
+              deriv_order, "\nactual:", textline)
+    return expected
+
 eref = [-76.003354058439]
 etol = 5e-12
 
@@ -175,17 +190,13 @@ for line in instr:
     elif match15:
         sQok = validate("spherical electric quadrupole moment", match15.groups(), sQref, sQtol, line)
     elif match16:
-        F2ok = True
-        print(line,end="")
+        F2ok = skip_ok("2-body force", 1, line)
     elif match17:
-        Fok = True
-        print(line,end="")
+        Fok = skip_ok("HF force", 1, line)
     elif match18:
-        H2ok = True
-        print(line,end="")
+        H2ok = skip_ok("2-body hessian", 2, line)
     elif match19:
-        Hok = True
-        print(line,end="")
+        Hok = skip_ok("HF hessian", 2, line)
     else:
         print(line,end="")
 

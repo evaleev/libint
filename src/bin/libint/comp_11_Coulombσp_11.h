@@ -25,10 +25,9 @@
 #include <entity.h>
 #include <gaussoper.h>
 #include <generic_rr.h>
+#include <rkb_fold_codegen.h>
 #include <task.h>
 #include <twoprep_11_11.h>
-
-#include <rkb_fold_codegen.h>
 
 #include <stdexcept>
 
@@ -63,6 +62,14 @@ class CR_11_Coulombσp_11 : public GenericRecurrenceRelation<
   using ParentType::Instance;
 
   static bool directional() { return false; }
+
+  /// each Cartesian component is a single derivative integral with unit
+  /// coefficient, hence the target is the child (see fold_terms())
+  bool is_alias() const override {
+    if (this->num_children() != 1) return false;
+    const auto terms = fold_terms(target_->oper()->descr().cartesian_index());
+    return terms.size() == 1 && terms[0].coef == 1;
+  }
 
  private:
   using ParentType::is_simple;

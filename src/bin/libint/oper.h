@@ -30,6 +30,7 @@
 #include <vectorn.h>
 
 #include <boost/preprocessor/list/for_each.hpp>
+#include <stdexcept>
 #include <string>
 
 namespace libint2 {
@@ -304,7 +305,8 @@ struct σpVσp_Descr : public Contractable<σpVσp_Descr> {
 
   σpVσp_Descr() : quaternion_index_(0) {}
   σpVσp_Descr(int quaternion_index) : quaternion_index_(quaternion_index) {
-    assert(quaternion_index <= 3);
+    if (quaternion_index < 0 || quaternion_index > 3)
+      throw std::invalid_argument("quaternion_index out of range");
   }
 
   static const unsigned int max_key = 4;
@@ -345,7 +347,8 @@ struct σpeμσp_Descr : public Contractable<σpeμσp_Descr> {
 
   σpeμσp_Descr() : composite_index_(0) {}
   σpeμσp_Descr(int composite_index) : composite_index_(composite_index) {
-    assert(composite_index >= 0 && composite_index < 12);
+    if (composite_index < 0 || composite_index > 11)
+      throw std::invalid_argument("composite_index out of range");
   }
 
   static const unsigned int max_key = 12;
@@ -472,7 +475,8 @@ struct Coulombσpσp_Descr : public Contractable<Coulombσpσp_Descr> {
   Coulombσpσp_Descr() : quaternion_index_(0) {}
   Coulombσpσp_Descr(int quaternion_index)
       : quaternion_index_(quaternion_index) {
-    assert(quaternion_index <= 3);
+    if (quaternion_index < 0 || quaternion_index > 3)
+      throw std::invalid_argument("quaternion_index out of range");
   }
 
   static const unsigned int max_key = 4;
@@ -528,7 +532,8 @@ struct Coulombσp_Descr : public Contractable<Coulombσp_Descr> {
 
   Coulombσp_Descr() : cartesian_index_(0) {}
   Coulombσp_Descr(int cartesian_index) : cartesian_index_(cartesian_index) {
-    assert(cartesian_index >= 0 && cartesian_index <= 2);
+    if (cartesian_index < 0 || cartesian_index > 2)
+      throw std::invalid_argument("cartesian_index out of range");
   }
 
   static const unsigned int max_key = 3;
@@ -572,7 +577,8 @@ struct σpσpCoulombσpσp_Descr : public Contractable<σpσpCoulombσpσp_Descr
   σpσpCoulombσpσp_Descr() : component_index_(0) {}
   σpσpCoulombσpσp_Descr(int component_index)
       : component_index_(component_index) {
-    assert(component_index >= 0 && component_index <= 15);
+    if (component_index < 0 || component_index > 15)
+      throw std::invalid_argument("component_index out of range");
   }
 
   /// 16 components from tensor product of two independent spin spaces:
@@ -591,7 +597,7 @@ struct σpσpCoulombσpσp_Descr : public Contractable<σpσpCoulombσpσp_Descr
     };
     // clang-format on
     const auto qi = component_index();
-    if (qi > 15) abort();
+    if (qi < 0 || qi > 15) abort();
     return std::string("opop_coulomb_opop[") + labels[qi] + "]";
   }
   std::string label() const { return description(); }
@@ -642,7 +648,8 @@ struct σpCoulombσp_Descr : public Contractable<σpCoulombσp_Descr> {
 
   σpCoulombσp_Descr() : component_index_(0) {}
   σpCoulombσp_Descr(int component_index) : component_index_(component_index) {
-    assert(component_index >= 0 && component_index <= 8);
+    if (component_index < 0 || component_index > 8)
+      throw std::invalid_argument("component_index out of range");
   }
 
   static const unsigned int max_key = 9;
@@ -654,7 +661,7 @@ struct σpCoulombσp_Descr : public Contractable<σpCoulombσp_Descr> {
         "symtl_off_xy", "symtl_off_xz", "symtl_off_yz",
     };
     const auto ci = component_index();
-    if (ci > 8) abort();
+    if (ci < 0 || ci > 8) abort();
     return std::string("op_coulomb_op[") + labels[ci] + "]";
   }
   std::string label() const { return description(); }

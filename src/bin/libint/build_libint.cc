@@ -31,9 +31,7 @@
   */
 
 #include <boost/preprocessor.hpp>
-#include <chrono>
 #include <fstream>
-#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <vector>
@@ -95,7 +93,6 @@ struct ShellQuartetSetPredicate<ShellSetType_Standard> {
       case PairSwap::coupled:
         // the ket is sorted and the bra follows; when the totals tie the
         // engine swaps bra and ket such that max(la,lb) <= lc
-        assert(p1p2_swappable);
         return lc >= ld && (la + lb < lc + ld ||
                             (la + lb == lc + ld && std::max(la, lb) <= lc));
       case PairSwap::none:
@@ -113,7 +110,6 @@ struct ShellQuartetSetPredicate<ShellSetType_ORCA> {
         return la <= lb && lc <= ld &&
                (!p1p2_swappable || (la < lc || (la == lc && lb <= ld)));
       case PairSwap::coupled:
-        assert(p1p2_swappable);
         return lc <= ld && (la + lb > lc + ld ||
                             (la + lb == lc + ld && std::min(la, lb) >= lc));
       case PairSwap::none:
@@ -1312,6 +1308,10 @@ static void build_TwoPRep_2b_2k(
   // (see the descriptor's p1p2_swappable and pair_swap)
   constexpr bool p1p2_swappable = OperDescrType::p1p2_swappable;
   constexpr PairSwap pair_swap = OperDescrType::pair_swap;
+  // the shell-set predicates assume that coupled pair swaps come with a
+  // particle swap (the engine swaps the pairs together with bra and ket)
+  static_assert(pair_swap != PairSwap::coupled || p1p2_swappable,
+                "PairSwap::coupled requires a p1p2-swappable operator");
 
   // Note: la, lb, lc, ld generate code for chemist notation (ab|O|cd), where O
   // is a two-body operator.
@@ -1377,7 +1377,7 @@ static void build_TwoPRep_2b_2k(
           ////////////
           // loop over unique derivative index combinations
           ////////////
-          // NB translational invariance is now handled by CR_DerivGauss
+          // NB translational invariance is handled by DerivGaussV2
           CartesianDerivIterator<4> diter(deriv_level);
 
           bool last_deriv = false;
@@ -1609,7 +1609,7 @@ static void build_TwoPRep_1b_2k(
         ////////////
         // loop over unique derivative index combinations
         ////////////
-        // NB translational invariance is now handled by CR_DerivGauss
+        // NB translational invariance is handled by DerivGaussV2
         CartesianDerivIterator<3> diter(deriv_level);
         std::vector<std::shared_ptr<TwoBody_sh_11_11>> targets;
         bool last_deriv = false;
@@ -1832,7 +1832,7 @@ void build_TwoPRep_1b_1k(std::ostream& os,
       ////////////
       // loop over unique derivative index combinations
       ////////////
-      // NB translational invariance is now handled by CR_DerivGauss
+      // NB translational invariance is handled by DerivGaussV2
       CartesianDerivIterator<2> diter(deriv_level);
       std::vector<std::shared_ptr<TwoPRep_sh_11_11>> targets;
       bool last_deriv = false;
@@ -1909,7 +1909,6 @@ void build_TwoPRep_1b_1k(std::ostream& os,
 
       g_progress.current_task = label;
       g_progress.print();
-      std::cout.flush();
 
       std::string prefix(cparams->source_directory());
       std::deque<std::string> decl_filenames;
