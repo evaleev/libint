@@ -45,15 +45,18 @@ jobs:
             build_shared_libs: ON
             os: macos-15
             do_fortran: ON
-          # exercise a center-dependent AM table for the 3-center RKB ERIs and
-          # 2nd geometric derivatives of the 4-center ERIs in one lane only
+          # exercise a center-dependent AM table for the 3-center RKB ERIs,
+          # per-derivative AM lists, and 2nd geometric derivatives of the
+          # 4-center ERIs in one lane only; the 2nd-derivative ERIs must cover
+          # the d shells of the basis of hartree-fock++, else its hessian is
+          # skipped
           - build_type: Release
             os: macos-15
             subproject: OFF
             rkb_eri3_max_am: 3
             eri_deriv_order: 2
             max_am: '2;2;1'
-            eri_max_am: '2;2;1'
+            eri_max_am: '2;2;2'
 
     name: "Repo • ${{ matrix.os }}: ${{ matrix.cxx }} ${{ matrix.build_type }} shared=${{ matrix.build_shared_libs }} fetch=${{ matrix.subproject }}"
     runs-on: ${{ matrix.os }}

@@ -2589,8 +2589,14 @@ void api_basic_compile_test(const BasisSet& obs,
   }
 
 #if LIBINT2_DERIV_ERI_ORDER
-  // skipped if the derivative kernels do not support the AM of the basis
-  if (obs.max_l() <= LIBINT2_MAX_AM_eri1) {  // test deriv 2-index ints
+  // skipped if the derivative kernels do not support the AM of the basis; this
+  // needs the 4-center (eri1) and the 2-center (2eri1) kernels
+#if defined(LIBINT2_MAX_AM_2eri1)
+  const int lmax_d1 = std::min(LIBINT2_MAX_AM_eri1, LIBINT2_MAX_AM_2eri1);
+#else
+  const int lmax_d1 = LIBINT2_MAX_AM_eri1;
+#endif
+  if (obs.max_l() <= lmax_d1) {  // test deriv 2-index ints
     Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), 1);
     Engine eri2_engine = eri4_engine;
     eri2_engine.set(BraKet::xs_xs);
@@ -2625,7 +2631,12 @@ void api_basic_compile_test(const BasisSet& obs,
 #endif
 
 #if LIBINT2_DERIV_ERI_ORDER > 1
-  if (obs.max_l() <= LIBINT2_MAX_AM_eri2) {  // test 2nd deriv 2-index ints
+#if defined(LIBINT2_MAX_AM_2eri2)
+  const int lmax_d2 = std::min(LIBINT2_MAX_AM_eri2, LIBINT2_MAX_AM_2eri2);
+#else
+  const int lmax_d2 = LIBINT2_MAX_AM_eri2;
+#endif
+  if (obs.max_l() <= lmax_d2) {  // test 2nd deriv 2-index ints
     Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), 2);
     Engine eri2_engine = eri4_engine;
     eri2_engine.set(BraKet::xs_xs);
