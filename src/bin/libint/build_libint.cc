@@ -378,7 +378,8 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
   const auto property_operator =
       !(std::is_same<_OperType, OverlapOper>::value ||
         std::is_same<_OperType, KineticOper>::value ||
-        std::is_same<_OperType, ElecPotOper>::value);
+        std::is_same<_OperType, ElecPotOper>::value ||
+        std::is_same<_OperType, σpVσpOper>::value);
   if (property_operator && deriv_level > 0) return;
 #endif
   // derivatives of spherical multipole integrals are not implemented
