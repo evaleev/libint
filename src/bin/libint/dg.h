@@ -71,7 +71,12 @@ class DirectedGraph : public std::enable_shared_from_this<DirectedGraph> {
   typedef std::shared_ptr<DGVertex> ver_ptr;
   typedef std::shared_ptr<DGArc> arc_ptr;
   typedef DGVertexKey key_type;
-  typedef std::multimap<key_type, ver_ptr> VPtrAssociativeContainer;
+  /// the vertices are kept in the order in which they were added (the key is
+  /// the sequence number), so that iterating over them, e.g. when applying
+  /// strategies, traversing, or allocating memory, does not depend on the
+  /// instance ids of the singletons, which depend on what was generated
+  /// before this graph; vertex_is_on() uses index_
+  typedef std::map<std::size_t, ver_ptr> VPtrAssociativeContainer;
   typedef std::list<ver_ptr> VPtrSequenceContainer;
 
   typedef VPtrSequenceContainer targets;
@@ -473,17 +478,21 @@ class DirectedGraph : public std::enable_shared_from_this<DirectedGraph> {
       const std::shared_ptr<DGVertex>& vertex) const;
 
 #if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
-  /// the vertices with instance id 0 (the vertices that are not singletons,
-  /// e.g. operators, and the first instance of each singleton type) all have
-  /// the same key, hence finding one on stack_ is a linear search; unkeyed_
-  /// indexes them by DGVertex::structural_hash(), in the order in which they
-  /// were added (so that vertex_is_on() finds the same vertex as the search)
-  std::unordered_map<std::size_t, std::vector<ver_ptr>> unkeyed_;
-  void index_unkeyed(const ver_ptr& v);
+  /// sequence number of the next vertex added to stack_
+  std::size_t next_seq_ = 0;
+  /// indexes the vertices on stack_ by lookup_hash(), in the order in which
+  /// they were added (so that vertex_is_on() finds the same vertex as the
+  /// search of stack_)
+  std::unordered_map<std::size_t, std::vector<ver_ptr>> index_;
+  /// singletons are hashed by their type and instance ids, the vertices with
+  /// instance id 0 (the vertices that are not singletons, e.g. operators, and
+  /// the first instance of each singleton type) by DGVertex::structural_hash()
+  static std::size_t lookup_hash(const DGVertex& v);
+  void index_vertex(const ver_ptr& v);
   /// throws ProgrammingError if v is not indexed under its current hash
-  void unindex_unkeyed(const ver_ptr& v);
-  /// finds vertex (which has instance id 0) or its equivalent in unkeyed_
-  const std::shared_ptr<DGVertex>& find_unkeyed(
+  void unindex_vertex(const ver_ptr& v);
+  /// finds vertex or its equivalent in index_
+  const std::shared_ptr<DGVertex>& find_indexed(
       const std::shared_ptr<DGVertex>& vertex) const;
 #endif
 
