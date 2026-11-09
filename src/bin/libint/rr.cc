@@ -181,6 +181,11 @@ void RecurrenceRelation::generate_code(
     const std::shared_ptr<TaskExternSymbols> tsymbols = t->symbols();
     if (tsymbols->find(myid)) {
       // update max stack size
+      // N.B. this calls the const getter max_vector_stack_size(am) (the
+      // setter takes (am, size)), hence does nothing, and
+      // LIBINT2_MAX_VECTOR_STACK_SIZE_<am> is always 0. If this is made a
+      // setter, the generator must also receive the value from the workers
+      // that generate the RRs (see ShellSetJournal and CodegenJobs).
       t->params()->max_vector_stack_size(memman->max_memory_used());
       // add external symbols
       tsymbols->add(externsymbols);

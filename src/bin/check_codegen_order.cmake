@@ -51,11 +51,23 @@ foreach(ORDER IN LISTS ORDERS)
     message(FATAL_ERROR "generator failed with order ${ORDER} (${_result}), see ${WORK_DIR}-${_order_tag}.log")
   endif()
 
-  # every file must be identical to the regular output (which may contain stale
-  # files from earlier generator runs, hence compare in this direction only)
+  # every file must be identical to the regular output
   file(GLOB _files RELATIVE "${WORK_DIR}" "${WORK_DIR}/*")
   list(LENGTH _files _nfiles)
   set(_ndiffer 0)
+  # ... which must not contain more files (e.g. left behind by the workers
+  # that generated it), except stale ones from the runs of earlier generators
+  # (older than this one)
+  file(GLOB _reference_files LIST_DIRECTORIES true RELATIVE "${REFERENCE_DIR}"
+       "${REFERENCE_DIR}/*" "${REFERENCE_DIR}/.libint*")
+  list(REMOVE_DUPLICATES _reference_files)
+  foreach(_f IN LISTS _reference_files)
+    if (NOT EXISTS "${WORK_DIR}/${_f}" AND
+        "${REFERENCE_DIR}/${_f}" IS_NEWER_THAN "${BUILD_LIBINT}")
+      message(SEND_ERROR "${_f}: generated in the regular output only")
+      math(EXPR _ndiffer "${_ndiffer} + 1")
+    endif()
+  endforeach()
   foreach(_f IN LISTS _files)
     if (NOT EXISTS "${REFERENCE_DIR}/${_f}")
       message(SEND_ERROR "${_f}: generated with order ${ORDER} only")

@@ -83,8 +83,13 @@ struct CodeGenProgress {
                 << done << " functions generated]  " << current_task
                 << "                    " << std::flush;
     } else if (current_task != last_printed_task) {
-      std::cerr << "  " << tag << elapsed() << "  [" << done << "] "
-                << current_task << std::endl;
+      // std::cerr is unbuffered: compose the line first, so that it is
+      // written at once and the lines of the worker processes (see
+      // CodegenJobs) do not interleave
+      std::ostringstream line;
+      line << "  " << tag << elapsed() << "  [" << done << "] " << current_task
+           << '\n';
+      std::cerr << line.str() << std::flush;
       last_printed_task = current_task;
     }
   }

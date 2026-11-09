@@ -36,6 +36,30 @@ if (BUILD_TESTING)
       FIXTURES_REQUIRED LIBINT2_COMPILER_GENERATED
     )
 
+  # the disambiguation of the file names that differ only in case
+  add_executable(
+    libint-compiler-test-codegen-files
+    EXCLUDE_FROM_ALL
+    test_codegen_files.cc
+    )
+  target_link_libraries(libint-compiler-test-codegen-files libint-libcompiler)
+  add_dependencies(check-libint2compiler libint-compiler-test-codegen-files)
+  add_test(
+    NAME libint2/compiler/codegen_files
+    COMMAND $<TARGET_FILE:libint-compiler-test-codegen-files>
+    )
+
+  # the handling of failed worker processes (LIBINT2_GENERATOR_JOBS > 1)
+  if (NOT WIN32)
+    add_test(
+      NAME libint2/compiler/codegen_failure
+      COMMAND ${CMAKE_COMMAND}
+        -DBUILD_LIBINT=$<TARGET_FILE:build_libint>
+        -DWORK_DIR=${PROJECT_BINARY_DIR}/generated-codegen-failure
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/check_codegen_failure.cmake
+      )
+  endif()
+
   add_subdirectory(test_eri)
   # borrows main libint/test.cc from libtool layout
   add_subdirectory(profile)

@@ -31,6 +31,7 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -41,17 +42,38 @@
 
 #if defined(__unix__) || defined(__APPLE__)
 #define LIBINT_GENERATOR_CAN_FORK 1
+#include <poll.h>
 #include <signal.h>
 #include <sys/mman.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#if defined(__linux__)
+#include <sched.h>
+#endif
 #else
 #define LIBINT_GENERATOR_CAN_FORK 0
 #endif
 
 namespace libint2 {
+
+namespace {
+
+/// @return the number of hardware threads that this process may use (on Linux
+/// this respects the CPU affinity, e.g. taskset or the cpuset of a container)
+std::size_t available_hardware_threads() {
+#if defined(__linux__)
+  cpu_set_t set;
+  CPU_ZERO(&set);
+  if (sched_getaffinity(0, sizeof(set), &set) == 0) {
+    const int n = CPU_COUNT(&set);
+    if (n > 0) return static_cast<std::size_t>(n);
+  }
+#endif
+  return std::max(1u, std::thread::hardware_concurrency());
+}
+
+}  // namespace
 
 std::size_t generator_jobs() {
   const char* env = std::getenv("LIBINT_GENERATOR_JOBS");
@@ -68,7 +90,8 @@ std::size_t generator_jobs() {
   if (njobs < 0)
     throw std::invalid_argument("LIBINT_GENERATOR_JOBS=" + value +
                                 ": expected a non-negative integer");
-  if (njobs == 0) njobs = std::max(1u, std::thread::hardware_concurrency());
+  if (njobs == 0)
+    return std::min(available_hardware_threads(), max_automatic_generator_jobs);
   return static_cast<std::size_t>(njobs);
 }
 
@@ -81,24 +104,8 @@ void CodegenJobs::add(const std::string& task, double cost, Job job) {
   jobs_.push_back(Entry{task, cost, std::move(job)});
 }
 
-namespace {
+namespace detail {
 
-using NameMap = std::map<std::string, std::string>;  // name -> file name
-
-/// @return the file names of the names in the registry
-NameMap registry_filenames() {
-  NameMap result;
-  for (auto& folded_names : filename_registry()) {
-    const auto& names = folded_names.second;
-    for (std::size_t i = 0; i != names.size(); ++i)
-      result[names[i]] = disambiguated_filename(names[i], i);
-  }
-  return result;
-}
-
-/// @return the file names that disambiguate names that differ only in case in
-/// the lexicographic order of the names, rather than in the order in which a
-/// process saw them
 NameMap final_filenames(const std::set<std::string>& names) {
   std::map<std::string, std::vector<std::string> > folded;
   for (auto& name : names) folded[fold_case(name)].push_back(name);  // sorted
@@ -109,77 +116,47 @@ NameMap final_filenames(const std::set<std::string>& names) {
   return result;
 }
 
-/// maps the file names used by one process (local) to the final ones
-struct FilenameMapper {
-  /// the directory into which the process wrote its files
-  std::string dir;
-  /// local file name -> final file name, for the names written or referenced
-  std::map<std::string, std::string> local_to_final;
-  /// true if some local file name differs from the final one
-  bool renames = false;
-
-  FilenameMapper(const std::string& d, const NameMap& local,
-                 const NameMap& final)
-      : dir(d) {
-    for (auto& nf : local) {
-      const auto& f = final.at(nf.first);
-      local_to_final[nf.second] = f;
-      if (f != nf.second) renames = true;
-    }
+FilenameMapper::FilenameMapper(const std::string& d, const NameMap& local,
+                               const NameMap& final)
+    : dir(d) {
+  for (auto& nf : local) {
+    const auto& f = final.at(nf.first);
+    local_to_final[nf.second] = f;
+    if (f != nf.second) renames = true;
   }
-
-  /// maps "#include <[dir]local.h>" to "#include <[prefix]final.h>"
-  std::string map_include(const std::string& line,
-                          const std::string& prefix) const {
-    static const std::string open("#include <");
-    if (line.compare(0, open.size(), open) != 0) return line;
-    const auto close = line.find('>', open.size());
-    if (close == std::string::npos) return line;
-    std::string path = line.substr(open.size(), close - open.size());
-    std::string head;  // directory part of the path
-    if (!dir.empty() && path.compare(0, dir.size(), dir) == 0) {
-      path = path.substr(dir.size());
-      head = prefix;
-    } else {
-      const auto slash = path.rfind('/');
-      if (slash != std::string::npos) {
-        head = path.substr(0, slash + 1);
-        path = path.substr(slash + 1);
-      }
-    }
-    const auto dot = path.rfind('.');
-    if (dot == std::string::npos) return line;
-    const auto it = local_to_final.find(path.substr(0, dot));
-    if (it == local_to_final.end()) {
-      if (head == prefix || head.empty()) return line;
-      return open + head + path + line.substr(close);
-    }
-    return open + head + it->second + path.substr(dot) + line.substr(close);
-  }
-};
-
-void apply_journal(const ShellSetJournal& journal, const std::string& task,
-                   Libint2Iface& iface, const FilenameMapper& mapper,
-                   const std::string& prefix) {
-  for (auto& s : journal.static_init) iface.to_static_init(s);
-  for (auto& s : journal.int_iface) {
-    // each line ends with a newline
-    std::string line = s;
-    std::string eol;
-    while (!line.empty() && line.back() == '\n') {
-      line.pop_back();
-      eol += '\n';
-    }
-    iface.to_int_iface(mapper.map_include(line, prefix) + eol);
-  }
-  auto params = LibraryTaskManager::Instance().find(task)->params();
-  for (auto& am_size : journal.max_stack_size)
-    params->max_stack_size(am_size.first, am_size.second);
-  for (auto n : journal.max_ntarget) params->max_ntarget(n);
 }
 
-/// renames the files of the names in @p names written into @p mapper.dir to
-/// their final names in @p prefix, and maps their include directives
+std::string FilenameMapper::map_include(const std::string& line,
+                                        const std::string& prefix) const {
+  static const std::string open("#include <");
+  if (line.compare(0, open.size(), open) != 0) return line;
+  const auto close = line.find('>', open.size());
+  if (close == std::string::npos) return line;
+  std::string path = line.substr(open.size(), close - open.size());
+  std::string head;  // directory part of the path
+  const bool in_dir = !dir.empty() && path.compare(0, dir.size(), dir) == 0;
+  if (in_dir) {
+    path = path.substr(dir.size());
+    head = prefix;
+  } else {
+    const auto slash = path.rfind('/');
+    if (slash != std::string::npos) {
+      head = path.substr(0, slash + 1);
+      path = path.substr(slash + 1);
+    }
+  }
+  const auto dot = path.rfind('.');
+  const auto it = (dot == std::string::npos)
+                      ? local_to_final.end()
+                      : local_to_final.find(path.substr(0, dot));
+  if (it == local_to_final.end()) {
+    // not a file of this process: only the directory is mapped
+    if (!in_dir) return line;
+    return open + head + path + line.substr(close);
+  }
+  return open + head + it->second + path.substr(dot) + line.substr(close);
+}
+
 void finalize_files(const FilenameMapper& mapper, const NameMap& names,
                     const std::string& prefix) {
   const bool in_place = (mapper.dir == prefix);
@@ -233,6 +210,44 @@ void finalize_files(const FilenameMapper& mapper, const NameMap& names,
                                m.second);
 }
 
+}  // namespace detail
+
+namespace {
+
+using detail::FilenameMapper;
+using detail::NameMap;
+
+/// @return the file names of the names in the registry
+NameMap registry_filenames() {
+  NameMap result;
+  for (auto& folded_names : filename_registry()) {
+    const auto& names = folded_names.second;
+    for (std::size_t i = 0; i != names.size(); ++i)
+      result[names[i]] = disambiguated_filename(names[i], i);
+  }
+  return result;
+}
+
+void apply_journal(const ShellSetJournal& journal, const std::string& task,
+                   Libint2Iface& iface, const FilenameMapper& mapper,
+                   const std::string& prefix) {
+  for (auto& s : journal.static_init) iface.to_static_init(s);
+  for (auto& s : journal.int_iface) {
+    // each line ends with a newline
+    std::string line = s;
+    std::string eol;
+    while (!line.empty() && line.back() == '\n') {
+      line.pop_back();
+      eol += '\n';
+    }
+    iface.to_int_iface(mapper.map_include(line, prefix) + eol);
+  }
+  auto params = LibraryTaskManager::Instance().find(task)->params();
+  for (auto& am_size : journal.max_stack_size)
+    params->max_stack_size(am_size.first, am_size.second);
+  for (auto n : journal.max_ntarget) params->max_ntarget(n);
+}
+
 //
 // serialization of the reports of the workers: strings are written as
 // <length> <characters>
@@ -242,11 +257,19 @@ void write_string(std::ostream& os, const std::string& s) {
 }
 std::string read_string(std::istream& is) {
   std::size_t n = 0;
-  is >> n;
+  if (!(is >> n)) throw std::runtime_error("failed to read a worker report");
   is.get();  // the separator
-  std::string s(n, '\0');
-  if (n) is.read(&s[0], n);
-  if (!is) throw std::runtime_error("failed to read a worker report");
+  // read in chunks, so that a corrupt length cannot allocate more memory than
+  // the report holds
+  constexpr std::size_t chunk = 1 << 16;
+  std::string s;
+  while (s.size() < n) {
+    const auto offset = s.size();
+    const auto m = std::min(chunk, n - offset);
+    s.resize(offset + m);
+    if (!is.read(&s[offset], m))
+      throw std::runtime_error("failed to read a worker report");
+  }
   return s;
 }
 template <typename T>
@@ -263,8 +286,7 @@ void write_strings(std::ostream& os, const std::vector<std::string>& v) {
 }
 std::vector<std::string> read_strings(std::istream& is) {
   const auto n = read_value<std::size_t>(is);
-  std::vector<std::string> v;
-  v.reserve(n);
+  std::vector<std::string> v;  // not reserved: n may be corrupt
   for (std::size_t i = 0; i != n; ++i) v.push_back(read_string(is));
   return v;
 }
@@ -379,10 +401,10 @@ void CodegenJobs::run_serially(
   const auto local = registry_filenames();
   std::set<std::string> names;
   for (auto& nf : local) names.insert(nf.first);
-  const FilenameMapper mapper(prefix, local, final_filenames(names));
+  const FilenameMapper mapper(prefix, local, detail::final_filenames(names));
   for (std::size_t i = 0; i != jobs_.size(); ++i)
     apply_journal(journals[i], jobs_[i].task, iface, mapper, prefix);
-  finalize_files(mapper, local, prefix);
+  detail::finalize_files(mapper, local, prefix);
 }
 
 #if LIBINT_GENERATOR_CAN_FORK
@@ -406,6 +428,64 @@ char receive_byte(int fd) {
   return n == 1 ? c : 0;
 }
 
+/// the wait status of a process that could not be waited for
+constexpr int unknown_wait_status = -1;
+
+/// @return how a worker process ended, given its wait status
+std::string describe_exit(int status) {
+  std::ostringstream oss;
+  if (status == unknown_wait_status)
+    oss << "ended, but its exit status is unknown";
+  else if (WIFEXITED(status)) {
+    oss << "exited with status " << WEXITSTATUS(status);
+    if (WEXITSTATUS(status) != 0) oss << " (see its error message above)";
+  } else if (WIFSIGNALED(status)) {
+    const int sig = WTERMSIG(status);
+    oss << "was killed by signal " << sig;
+    if (const char* name = strsignal(sig)) oss << " (" << name << ")";
+    if (sig == SIGKILL)
+      oss << ", possibly because the system ran out of memory; set "
+             "LIBINT2_GENERATOR_JOBS (CMake) or LIBINT_GENERATOR_JOBS "
+             "(environment) to fewer processes";
+  } else
+    oss << "ended with wait status " << status;
+  return oss.str();
+}
+
+/// ignores SIGPIPE while it exists (and in the processes forked meanwhile), so
+/// that writing to the pipe of a worker that died fails with EPIPE, which the
+/// generator reports, rather than killing the generator
+class IgnoreSIGPIPE {
+ public:
+  IgnoreSIGPIPE() {
+    struct sigaction ignore;
+    std::memset(&ignore, 0, sizeof(ignore));
+    ignore.sa_handler = SIG_IGN;
+    sigemptyset(&ignore.sa_mask);
+    restore_ = (sigaction(SIGPIPE, &ignore, &old_) == 0);
+  }
+  ~IgnoreSIGPIPE() {
+    if (restore_) sigaction(SIGPIPE, &old_, nullptr);
+  }
+  IgnoreSIGPIPE(const IgnoreSIGPIPE&) = delete;
+  IgnoreSIGPIPE& operator=(const IgnoreSIGPIPE&) = delete;
+
+ private:
+  struct sigaction old_;
+  bool restore_ = false;
+};
+
+/// For testing the handling of failed workers (see
+/// src/bin/check_codegen_failure.cmake): LIBINT_GENERATOR_TEST_KILL_WORKER=
+/// <k>:<point> makes worker k kill itself with SIGKILL (like the out-of-memory
+/// killer) at <point>: shellsets (before generating its first shell set) or
+/// reported (after reporting its shell sets, before generating the RRs)
+bool test_kill_worker(std::size_t k, const char* point) {
+  const char* env = std::getenv("LIBINT_GENERATOR_TEST_KILL_WORKER");
+  if (env == nullptr) return false;
+  return std::string(env) == std::to_string(k) + ":" + point;
+}
+
 }  // namespace
 #endif
 
@@ -414,6 +494,7 @@ void CodegenJobs::run_in_parallel(
     Libint2Iface& iface, std::size_t njobs,
     const std::function<void(std::size_t)>& on_worker_start) {
 #if LIBINT_GENERATOR_CAN_FORK
+  namespace fs = std::filesystem;
   auto& taskmgr = LibraryTaskManager::Instance();
   const std::string prefix = cparams->source_directory();
   const std::string tag = ".libint_worker." + std::to_string(getpid()) + ".";
@@ -444,180 +525,244 @@ void CodegenJobs::run_in_parallel(
                              std::strerror(errno));
   counter_type* next = new (shm) counter_type(0);
 
-  // pipes: worker -> generator ("phase 1 done"), generator -> worker ("go")
-  std::vector<std::array<int, 2> > to_parent(njobs), to_worker(njobs);
-  for (std::size_t k = 0; k != njobs; ++k) {
-    if (pipe(to_parent[k].data()) != 0 || pipe(to_worker[k].data()) != 0)
-      throw std::runtime_error(std::string("CodegenJobs: pipe failed: ") +
-                               std::strerror(errno));
-    if (mkdir(worker_dir(k).c_str(), 0755) != 0 && errno != EEXIST)
-      throw std::runtime_error("CodegenJobs: failed to create " +
-                               worker_dir(k));
-  }
+  // pipes: worker -> generator ("phase 1 done"), generator -> worker ("go");
+  // -1 = not open
+  std::vector<std::array<int, 2> > to_parent(njobs, {-1, -1}),
+      to_worker(njobs, {-1, -1});
+  auto close_fd = [](int& fd) {
+    if (fd >= 0) close(fd);
+    fd = -1;
+  };
 
-  os << "generating the code for " << jobs_.size() << " shell sets in " << njobs
-     << " processes" << std::endl;
-  os.flush();
-  std::cout.flush();
-  std::cerr.flush();
+  const IgnoreSIGPIPE ignore_sigpipe;
 
-  std::vector<pid_t> workers;
-  int fork_errno = 0;
-  for (std::size_t k = 0; k != njobs; ++k) {
-    const pid_t pid = fork();
-    if (pid < 0) {
-      fork_errno = errno;
-      break;
+  std::vector<pid_t> workers;  // the process ids of the workers
+  std::vector<int> wait_status;
+  std::vector<bool> reaped;
+  /// waits for worker k to end; @return its wait status
+  auto reap = [&](std::size_t k) {
+    if (!reaped[k]) {
+      int status = 0;
+      pid_t result;
+      do {
+        result = waitpid(workers[k], &status, 0);
+      } while (result < 0 && errno == EINTR);
+      wait_status[k] = (result == workers[k]) ? status : unknown_wait_status;
+      reaped[k] = true;
     }
-    if (pid > 0) {
-      workers.push_back(pid);
-      continue;
+    return wait_status[k];
+  };
+  /// @return true if worker k succeeded
+  auto succeeded = [&](std::size_t k) {
+    const auto status = reap(k);
+    return status != unknown_wait_status && WIFEXITED(status) &&
+           WEXITSTATUS(status) == 0;
+  };
+  /// removes the files of the workers (on failure also their directories,
+  /// which then hold partial output)
+  auto cleanup = [&](bool remove_worker_dirs) {
+    munmap(shm, sizeof(counter_type));
+    std::error_code ec;
+    for (std::size_t k = 0; k != njobs; ++k) {
+      close_fd(to_parent[k][0]);
+      close_fd(to_parent[k][1]);
+      close_fd(to_worker[k][0]);
+      close_fd(to_worker[k][1]);
+      for (const char* what : {"shellsets", "assignment", "rrs"})
+        fs::remove(report_file(k, what), ec);
+      if (remove_worker_dirs) fs::remove_all(worker_dir(k), ec);
+    }
+  };
+
+  std::string failure;  // why the generation failed
+  try {
+    for (std::size_t k = 0; k != njobs; ++k) {
+      if (pipe(to_parent[k].data()) != 0 || pipe(to_worker[k].data()) != 0)
+        throw std::runtime_error(std::string("pipe failed: ") +
+                                 std::strerror(errno));
+      // an earlier generator with the same process id (e.g. in a container)
+      // may have left a directory behind if it was killed
+      std::error_code ec;
+      fs::remove_all(worker_dir(k), ec);
+      if (!fs::create_directory(worker_dir(k), ec) || ec)
+        throw std::runtime_error("failed to create " + worker_dir(k) + ": " +
+                                 ec.message());
     }
 
-    //
-    // worker k
-    //
-    int status = 0;
-    try {
-      for (std::size_t l = 0; l != njobs; ++l) {
-        close(to_parent[l][0]);
-        close(to_worker[l][1]);
-        if (l != k) {
-          close(to_parent[l][1]);
-          close(to_worker[l][0]);
-        }
-      }
-      cparams->source_directory(worker_dir(k));
-      if (on_worker_start) on_worker_start(k);
-
-      // phase 1: shell sets
-      std::vector<std::pair<std::size_t, ShellSetJournal> > done;
-      for (std::size_t i; (i = next->fetch_add(1)) < schedule.size();) {
-        const auto j = schedule[i];
-        taskmgr.current(jobs_[j].task);
-        ImplicitDimensions::set_default_dims(cparams);
-        done.emplace_back(j, ShellSetJournal{});
-        jobs_[j].job(done.back().second);
-      }
-      {
-        std::ofstream report(report_file(k, "shellsets"));
-        report << done.size() << ' ';
-        for (auto& d : done) {
-          report << d.first << ' ';
-          write_journal(report, d.second);
-        }
-        write_task_symbols(report);
-        // the RRs that each task needs, with their cost
-        auto rrstack = RRStack::Instance();
-        std::map<RRStack::InstanceID, std::shared_ptr<RecurrenceRelation> >
-            id_to_rr;
-        for (auto it = rrstack->begin(); it != rrstack->end(); ++it)
-          id_to_rr[it->second.first] = it->second.second;
-        report << taskmgr.ntask() << ' ';
-        for (auto t = taskmgr.first(); t != taskmgr.plast(); ++t) {
-          write_string(report, t->label());
-          const auto rrlist = t->symbols()->rrlist();
-          report << rrlist.size() << ' ';
-          for (auto& id : rrlist) {
-            const auto& rr = id_to_rr.at(id);
-            write_string(report, rr->label());
-            report << rr->rr_target()->size() << ' ';
-          }
-        }
-        report.close();
-        if (!report) throw std::runtime_error("failed to write the report");
-      }
-      if (!send_byte(to_parent[k][1], 'd'))
-        throw std::runtime_error("lost the generator");
-      if (receive_byte(to_worker[k][0]) != 'g')
-        throw std::runtime_error("the generator stopped the worker");
-
-      // phase 2: the RRs assigned to this worker
-      {
-        std::ifstream assignment(report_file(k, "assignment"));
-        auto rrstack = RRStack::Instance();
-        std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
-        ImplicitDimensions::set_default_dims(cparams);
-        const auto nrrs = read_value<std::size_t>(assignment);
-        for (std::size_t r = 0; r != nrrs; ++r) {
-          const auto label = read_string(assignment);
-          const auto tasks = read_strings(assignment);
-          const auto& id_rr = rrstack->find(label);
-          if (!id_rr.second)
-            throw std::runtime_error("RR " + label + " not found");
-          // the tasks that use the RR get its external symbols
-          for (auto& task : tasks)
-            taskmgr.find(task)->symbols()->add(
-                TaskExternSymbols::RRList{id_rr.first});
-          generate_rr(os, context, worker_dir(k), id_rr.second);
-        }
-      }
-      {
-        std::ofstream report(report_file(k, "rrs"));
-        write_task_symbols(report);
-        write_names(report, registry_filenames());
-        report.close();
-        if (!report) throw std::runtime_error("failed to write the report");
-      }
-    } catch (std::exception& e) {
-      std::cerr << "code generator worker " << k << ": " << e.what()
-                << std::endl;
-      status = 1;
-    } catch (...) {
-      std::cerr << "code generator worker " << k << ": unknown exception"
-                << std::endl;
-      status = 1;
-    }
+    os << "generating the code for " << jobs_.size() << " shell sets in "
+       << njobs << " processes" << std::endl;
     os.flush();
     std::cout.flush();
     std::cerr.flush();
-    _exit(status);  // skip the destructors of the singletons and the iface
-  }
 
-  //
-  // the generator
-  //
-  for (std::size_t k = 0; k != njobs; ++k) {
-    close(to_parent[k][1]);
-    close(to_worker[k][0]);
-  }
-  auto cleanup = [&]() {
-    munmap(shm, sizeof(counter_type));
+    int fork_errno = 0;
     for (std::size_t k = 0; k != njobs; ++k) {
-      close(to_parent[k][0]);
-      close(to_worker[k][1]);
-      for (const char* what : {"shellsets", "assignment", "rrs"})
-        std::remove(report_file(k, what).c_str());
-    }
-  };
-  auto abort_workers = [&](const std::string& why) {
-    for (auto pid : workers) kill(pid, SIGTERM);
-    for (auto pid : workers) {
-      int status;
-      while (waitpid(pid, &status, 0) < 0 && errno == EINTR)
-        ;
-    }
-    cleanup();
-    throw std::runtime_error("CodegenJobs: " + why);
-  };
-  if (workers.size() != njobs)
-    abort_workers(std::string("fork failed (") + std::strerror(fork_errno) +
-                  "); set LIBINT_GENERATOR_JOBS to fewer processes, or to 1");
+      const pid_t pid = fork();
+      if (pid < 0) {
+        fork_errno = errno;
+        break;
+      }
+      if (pid > 0) {
+        workers.push_back(pid);
+        continue;
+      }
 
-  // phase 1: collect the journals, the symbols, and the RRs
-  for (std::size_t k = 0; k != njobs; ++k)
-    if (receive_byte(to_parent[k][0]) != 'd')
-      abort_workers("a process generating the shell sets failed");
+      //
+      // worker k
+      //
+      int status = 0;
+      try {
+        for (std::size_t l = 0; l != njobs; ++l) {
+          close_fd(to_parent[l][0]);
+          close_fd(to_worker[l][1]);
+          if (l != k) {
+            close_fd(to_parent[l][1]);
+            close_fd(to_worker[l][0]);
+          }
+        }
+        cparams->source_directory(worker_dir(k));
+        if (on_worker_start) on_worker_start(k);
 
-  std::vector<ShellSetJournal> journals(jobs_.size());
-  std::vector<std::size_t> journal_worker(jobs_.size(), njobs);
-  struct RRInfo {
-    std::size_t cost = 0;
-    std::set<std::size_t> workers;
-    std::vector<std::string> tasks;
-  };
-  std::map<std::string, RRInfo> rrs;
-  try {
+        // phase 1: shell sets
+        if (test_kill_worker(k, "shellsets")) raise(SIGKILL);
+        std::vector<std::pair<std::size_t, ShellSetJournal> > done;
+        for (std::size_t i; (i = next->fetch_add(1)) < schedule.size();) {
+          const auto j = schedule[i];
+          taskmgr.current(jobs_[j].task);
+          ImplicitDimensions::set_default_dims(cparams);
+          done.emplace_back(j, ShellSetJournal{});
+          jobs_[j].job(done.back().second);
+        }
+        {
+          std::ofstream report(report_file(k, "shellsets"));
+          report << done.size() << ' ';
+          for (auto& d : done) {
+            report << d.first << ' ';
+            write_journal(report, d.second);
+          }
+          write_task_symbols(report);
+          // the RRs that each task needs, with their cost
+          auto rrstack = RRStack::Instance();
+          std::map<RRStack::InstanceID, std::shared_ptr<RecurrenceRelation> >
+              id_to_rr;
+          for (auto it = rrstack->begin(); it != rrstack->end(); ++it)
+            id_to_rr[it->second.first] = it->second.second;
+          report << taskmgr.ntask() << ' ';
+          for (auto t = taskmgr.first(); t != taskmgr.plast(); ++t) {
+            write_string(report, t->label());
+            const auto rrlist = t->symbols()->rrlist();
+            report << rrlist.size() << ' ';
+            for (auto& id : rrlist) {
+              const auto& rr = id_to_rr.at(id);
+              write_string(report, rr->label());
+              report << rr->rr_target()->size() << ' ';
+            }
+          }
+          report.close();
+          if (!report) throw std::runtime_error("failed to write the report");
+        }
+        if (!send_byte(to_parent[k][1], 'd'))
+          throw std::runtime_error("lost the generator");
+        if (test_kill_worker(k, "reported")) raise(SIGKILL);
+        if (receive_byte(to_worker[k][0]) != 'g')
+          throw std::runtime_error("the generator stopped the worker");
+
+        // phase 2: the RRs assigned to this worker
+        {
+          std::ifstream assignment(report_file(k, "assignment"));
+          auto rrstack = RRStack::Instance();
+          std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
+          ImplicitDimensions::set_default_dims(cparams);
+          const auto nrrs = read_value<std::size_t>(assignment);
+          for (std::size_t r = 0; r != nrrs; ++r) {
+            const auto label = read_string(assignment);
+            const auto tasks = read_strings(assignment);
+            const auto& id_rr = rrstack->find(label);
+            if (!id_rr.second)
+              throw std::runtime_error("RR " + label + " not found");
+            // the tasks that use the RR get its external symbols
+            for (auto& task : tasks)
+              taskmgr.find(task)->symbols()->add(
+                  TaskExternSymbols::RRList{id_rr.first});
+            generate_rr(os, context, worker_dir(k), id_rr.second);
+          }
+        }
+        {
+          std::ofstream report(report_file(k, "rrs"));
+          write_task_symbols(report);
+          write_names(report, registry_filenames());
+          report.close();
+          if (!report) throw std::runtime_error("failed to write the report");
+        }
+      } catch (std::exception& e) {
+        std::cerr << "code generator worker " << k << ": " << e.what()
+                  << std::endl;
+        status = 1;
+      } catch (...) {
+        std::cerr << "code generator worker " << k << ": unknown exception"
+                  << std::endl;
+        status = 1;
+      }
+      os.flush();
+      std::cout.flush();
+      std::cerr.flush();
+      _exit(status);  // skip the destructors of the singletons and the iface
+    }
+
+    //
+    // the generator
+    //
+    wait_status.assign(workers.size(), unknown_wait_status);
+    reaped.assign(workers.size(), false);
+    for (std::size_t k = 0; k != njobs; ++k) {
+      close_fd(to_parent[k][1]);
+      close_fd(to_worker[k][0]);
+    }
+    if (workers.size() != njobs)
+      throw std::runtime_error(
+          std::string("fork failed (") + std::strerror(fork_errno) +
+          "); set LIBINT_GENERATOR_JOBS to fewer processes, or to 1");
+
+    // phase 1: wait until all workers have reported their shell sets; a worker
+    // that ends without reporting fails the generation at once
+    {
+      std::vector<bool> reported(njobs, false);
+      std::size_t nreported = 0;
+      while (nreported != njobs) {
+        std::vector<pollfd> fds;
+        std::vector<std::size_t> fd_worker;
+        for (std::size_t k = 0; k != njobs; ++k)
+          if (!reported[k]) {
+            fds.push_back(pollfd{to_parent[k][0], POLLIN, 0});
+            fd_worker.push_back(k);
+          }
+        if (poll(fds.data(), fds.size(), -1) < 0) {
+          if (errno == EINTR) continue;
+          throw std::runtime_error(std::string("poll failed: ") +
+                                   std::strerror(errno));
+        }
+        for (std::size_t i = 0; i != fds.size(); ++i) {
+          if (fds[i].revents == 0) continue;
+          const auto k = fd_worker[i];
+          if (receive_byte(to_parent[k][0]) != 'd')
+            throw std::runtime_error("process " + std::to_string(k) +
+                                     " generating the shell sets " +
+                                     describe_exit(reap(k)));
+          reported[k] = true;
+          ++nreported;
+        }
+      }
+    }
+
+    // collect the journals, the symbols, and the RRs
+    std::vector<ShellSetJournal> journals(jobs_.size());
+    std::vector<std::size_t> journal_worker(jobs_.size(), njobs);
+    struct RRInfo {
+      std::size_t cost = 0;
+      std::set<std::size_t> workers;
+      std::vector<std::string> tasks;
+    };
+    std::map<std::string, RRInfo> rrs;
     for (std::size_t k = 0; k != njobs; ++k) {
       std::ifstream report(report_file(k, "shellsets"));
       const auto ndone = read_value<std::size_t>(report);
@@ -642,90 +787,102 @@ void CodegenJobs::run_in_parallel(
         }
       }
     }
-  } catch (std::exception& e) {
-    abort_workers(e.what());
-  }
-  for (auto k : journal_worker)
-    if (k == njobs) abort_workers("a shell set was not generated");
+    for (auto k : journal_worker)
+      if (k == njobs) throw std::runtime_error("a shell set was not generated");
 
-  // phase 2: assign each RR to the least loaded worker that has it, largest
-  // first
-  std::vector<std::pair<std::string, const RRInfo*> > by_cost;
-  for (auto& r : rrs) by_cost.emplace_back(r.first, &r.second);
-  std::stable_sort(by_cost.begin(), by_cost.end(),
-                   [](const auto& a, const auto& b) {
-                     return a.second->cost > b.second->cost;
-                   });
-  std::vector<std::size_t> load(njobs, 0);
-  std::vector<std::ostringstream> assignments(njobs);
-  std::vector<std::size_t> nassigned(njobs, 0);
-  for (auto& r : by_cost) {
-    std::size_t best = njobs;
-    for (auto k : r.second->workers)
-      if (best == njobs || load[k] < load[best]) best = k;
-    load[best] += r.second->cost + 1;
-    ++nassigned[best];
-    write_string(assignments[best], r.first);
-    write_strings(assignments[best], r.second->tasks);
-  }
-  os << "generating the code for " << rrs.size() << " RRs in " << njobs
-     << " processes" << std::endl;
-  for (std::size_t k = 0; k != njobs; ++k) {
-    std::ofstream assignment(report_file(k, "assignment"));
-    assignment << nassigned[k] << ' ' << assignments[k].str();
-    assignment.close();
-    if (!assignment || !send_byte(to_worker[k][1], 'g'))
-      abort_workers("failed to assign the RRs to the processes");
-  }
+    // phase 2: assign each RR to the least loaded worker that has it, largest
+    // first
+    std::vector<std::pair<std::string, const RRInfo*> > by_cost;
+    for (auto& r : rrs) by_cost.emplace_back(r.first, &r.second);
+    std::stable_sort(by_cost.begin(), by_cost.end(),
+                     [](const auto& a, const auto& b) {
+                       return a.second->cost > b.second->cost;
+                     });
+    std::vector<std::size_t> load(njobs, 0);
+    std::vector<std::ostringstream> assignments(njobs);
+    std::vector<std::size_t> nassigned(njobs, 0);
+    for (auto& r : by_cost) {
+      std::size_t best = njobs;
+      for (auto k : r.second->workers)
+        if (best == njobs || load[k] < load[best]) best = k;
+      load[best] += r.second->cost + 1;
+      ++nassigned[best];
+      write_string(assignments[best], r.first);
+      write_strings(assignments[best], r.second->tasks);
+    }
+    os << "generating the code for " << rrs.size() << " RRs in " << njobs
+       << " processes" << std::endl;
+    for (std::size_t k = 0; k != njobs; ++k) {
+      std::ofstream assignment(report_file(k, "assignment"));
+      assignment << nassigned[k] << ' ' << assignments[k].str();
+      assignment.close();
+      if (!assignment)
+        throw std::runtime_error("failed to write " +
+                                 report_file(k, "assignment"));
+      // fails with EPIPE (SIGPIPE is ignored) if the worker died
+      if (!send_byte(to_worker[k][1], 'g'))
+        throw std::runtime_error("process " + std::to_string(k) +
+                                 " generating the RRs " +
+                                 describe_exit(reap(k)));
+    }
 
-  bool failed = false;
-  for (auto pid : workers) {
-    int status = 0;
-    pid_t result;
-    do {
-      result = waitpid(pid, &status, 0);
-    } while (result < 0 && errno == EINTR);
-    if (result < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0)
-      failed = true;
-  }
-  workers.clear();
-  if (failed) {
-    cleanup();
-    throw std::runtime_error(
-        "CodegenJobs: a process generating the RRs failed");
-  }
+    for (std::size_t k = 0; k != njobs; ++k)
+      if (!succeeded(k))
+        throw std::runtime_error("process " + std::to_string(k) +
+                                 " generating the RRs " +
+                                 describe_exit(reap(k)));
 
-  // the external symbols and the file names of each worker
-  std::vector<NameMap> local(njobs);
-  try {
+    // the external symbols and the file names of each worker
+    std::vector<NameMap> local(njobs);
     for (std::size_t k = 0; k != njobs; ++k) {
       std::ifstream report(report_file(k, "rrs"));
       merge_task_symbols(report);
       local[k] = read_names(report);
     }
-  } catch (...) {
-    cleanup();
-    throw;
+
+    // file names that differ only in case get suffixes in the lexicographic
+    // order of the names
+    std::set<std::string> names;
+    for (auto& l : local)
+      for (auto& nf : l) names.insert(nf.first);
+    const auto final = detail::final_filenames(names);
+    std::vector<FilenameMapper> mappers;
+    for (std::size_t k = 0; k != njobs; ++k)
+      mappers.emplace_back(worker_dir(k), local[k], final);
+
+    for (std::size_t j = 0; j != jobs_.size(); ++j)
+      apply_journal(journals[j], jobs_[j].task, iface,
+                    mappers[journal_worker[j]], prefix);
+    for (std::size_t k = 0; k != njobs; ++k) {
+      detail::finalize_files(mappers[k], local[k], prefix);
+      // every file that a worker wrote must have been moved into the source
+      // directory, else the library would silently lack it
+      std::error_code ec;
+      std::vector<std::string> left;
+      for (auto& entry : fs::directory_iterator(worker_dir(k), ec))
+        left.push_back(entry.path().filename().string());
+      if (!left.empty()) {
+        std::sort(left.begin(), left.end());
+        std::string list;
+        for (auto& f : left) list += " " + f;
+        throw std::runtime_error("files written by process " +
+                                 std::to_string(k) +
+                                 " are not known to the generator:" + list);
+      }
+    }
+  } catch (std::exception& e) {
+    failure = e.what();
   }
 
-  // file names that differ only in case get suffixes in the lexicographic
-  // order of the names
-  std::set<std::string> names;
-  for (auto& l : local)
-    for (auto& nf : l) names.insert(nf.first);
-  const auto final = final_filenames(names);
-  std::vector<FilenameMapper> mappers;
-  for (std::size_t k = 0; k != njobs; ++k)
-    mappers.emplace_back(worker_dir(k), local[k], final);
-
-  for (std::size_t j = 0; j != jobs_.size(); ++j)
-    apply_journal(journals[j], jobs_[j].task, iface, mappers[journal_worker[j]],
-                  prefix);
-  for (std::size_t k = 0; k != njobs; ++k) {
-    finalize_files(mappers[k], local[k], prefix);
-    rmdir(worker_dir(k).c_str());
+  if (!failure.empty()) {
+    // stop the workers that still run, and remove their partial output
+    for (std::size_t k = 0; k != workers.size(); ++k)
+      if (!reaped[k]) kill(workers[k], SIGTERM);
+    for (std::size_t k = 0; k != workers.size(); ++k) reap(k);
+    cleanup(true);
+    throw std::runtime_error("CodegenJobs: " + failure);
   }
-  cleanup();
+  cleanup(true);  // the worker directories are empty now
 #else
   run_serially(os, cparams, iface);
 #endif
