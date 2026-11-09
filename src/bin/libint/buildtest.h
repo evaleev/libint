@@ -91,9 +91,10 @@ struct CodeGenProgress {
 
   void finish() {
     if (!started) return;
-    std::cerr << (interactive ? "\r" : "") << "  done  " << elapsed() << "  ["
-              << done << " functions generated]"
-              << (interactive ? "                                        " : "")
+    // with LIBINT_GENERATOR_JOBS > 1 the worker processes count the functions
+    std::cerr << (interactive ? "\r" : "") << "  done  " << elapsed();
+    if (done > 0) std::cerr << "  [" << done << " functions generated]";
+    std::cerr << (interactive ? "                                        " : "")
               << std::endl;
     started = false;
   }

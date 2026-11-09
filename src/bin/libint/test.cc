@@ -512,8 +512,7 @@ void test7() {
   std::shared_ptr<RRStack> rrstack = RRStack::Instance();
   rrstack->find(rr);
 
-  std::deque<std::string> decl_filenames, def_filenames;
-  generate_rr_code(std::cout, cparams, decl_filenames, def_filenames);
+  generate_rr_code(std::cout, cparams);
 
   cparams->contracted_targets(contracted_targets_old_value);
 }
