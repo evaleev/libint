@@ -284,7 +284,16 @@ void RecurrenceRelation::assign_symbols_(
     ostringstream oss;
     oss << "src" << c;
     string symb = oss.str();
-    rr_child(c)->set_symbol(symb);
+    // a precomputed runtime scalar (e.g. a 1-d overlap) is read from the
+    // evaluator, not from its argument: precomputed vertices are not unique on
+    // a graph (see DirectedGraph::add_vertex), hence the child may or may not
+    // be the very object the computation uses, depending on which RRs were
+    // generated before and purged the prefactor singletons; the argument
+    // symbol, which is a pointer, must not leak into the computation
+    const auto rtime_child =
+        std::dynamic_pointer_cast<RTimeEntity<double>, DGVertex>(rr_child(c));
+    if (!(rtime_child && rtime_child->precomputed()))
+      rr_child(c)->set_symbol(symb);
     symbols->append_symbol(symb);
   }
 }

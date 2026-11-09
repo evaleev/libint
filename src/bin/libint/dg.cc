@@ -1681,8 +1681,17 @@ void DirectedGraph::assign_symbols(
 
   }  // done with everything BUT operators
 
-  // finally, process all operators (start with most recently added vertices
-  // since those are much more likely to be on the bottom of the graph).
+  // finally, process all operators: first in the order in which they are
+  // computed, so that the names of the automatic variables do not depend on
+  // the order of the vertices on the stack (it is ordered by instance ids,
+  // which depend on the history of the singleton stacks, e.g. on which RRs
+  // were generated before this graph)
+  for (auto v = first_to_compute_; v; v = v->postcalc()) {
+    if (v->symbol_set()) continue;
+    assign_oper_symbol(context, v);
+  }
+  // then the rest (start with most recently added vertices since those are
+  // much more likely to be on the bottom of the graph).
   typedef vertices::reverse_iterator riter;
   for (riter v = stack_.rbegin(); v != stack_.rend(); ++v) {
     ver_ptr& vptr = vertex_ptr(*v);

@@ -23,10 +23,16 @@
 #include <rr.h>
 #include <task.h>
 
+#include <algorithm>
+#include <cstdlib>
 #include <deque>
 #include <fstream>
 #include <iostream>
+#include <random>
 #include <set>
+#include <stdexcept>
+#include <utility>
+#include <vector>
 
 using namespace std;
 using namespace libint2;
@@ -66,9 +72,43 @@ void generate_rr_code(std::ostream& os,
     aggregate_rrlist.insert(rrlist.begin(), rrlist.end());
   }
 
-  for (auto& rrid : aggregate_rrlist) {
-    auto rr = rrstack->find_hashed(rrid).second;
-    assert(rr);
+  // resolve the RR ids in one pass over the stack (find_hashed is a linear
+  // search, hence calling it per RR is O(N^2) in the number of RRs), in the
+  // order in which the RRs were created
+  std::vector<
+      std::pair<TaskExternSymbols::RRid, std::shared_ptr<RecurrenceRelation> > >
+      id_rrs;
+  id_rrs.reserve(aggregate_rrlist.size());
+  for (auto it = rrstack->begin(); it != rrstack->end(); ++it)
+    if (aggregate_rrlist.count(it->second.first))
+      id_rrs.emplace_back(it->second.first, it->second.second);
+  assert(id_rrs.size() == aggregate_rrlist.size());
+  std::sort(id_rrs.begin(), id_rrs.end(),
+            [](const auto& a, const auto& b) { return a.first < b.first; });
+  std::vector<std::shared_ptr<RecurrenceRelation> > rrs;
+  rrs.reserve(id_rrs.size());
+  for (auto& id_rr : id_rrs) rrs.push_back(id_rr.second);
+  // the generated code must not depend on the order in which the RRs are
+  // generated; LIBINT_RR_ORDER={reverse,label,shuffle[:<seed>]} changes the
+  // order to test this (see src/bin/check_rr_order.cmake)
+  if (const char* order = std::getenv("LIBINT_RR_ORDER")) {
+    const std::string o(order);
+    if (o == "reverse")
+      std::reverse(rrs.begin(), rrs.end());
+    else if (o == "label")
+      std::sort(rrs.begin(), rrs.end(), [](const auto& a, const auto& b) {
+        return a->label() < b->label();
+      });
+    else if (o.rfind("shuffle", 0) == 0) {  // shuffle or shuffle:<seed>
+      const auto seed = o.size() > 8 ? std::stoul(o.substr(8)) : 0ul;
+      std::mt19937 rng(seed);
+      std::shuffle(rrs.begin(), rrs.end(), rng);
+    } else if (!o.empty())
+      throw std::invalid_argument("LIBINT_RR_ORDER=" + o +
+                                  ": expected reverse, label, or "
+                                  "shuffle[:<seed>]");
+  }
+  for (auto& rr : rrs) {
 #endif
     os << "generating code for " << context->label_to_name(rr->label())
        << " target=" << rr->rr_target()->label() << endl;
