@@ -6,8 +6,13 @@
 #              -DWORK_DIR=<scratch dir> [-DORDERS=<order>[,<order>...]]
 #              -P check_rr_order.cmake
 # where <order> is a value of LIBINT_RR_ORDER (reverse, label, shuffle[:<seed>]).
-# Each order exposes different defects (e.g. label and shuffle:2 each exposed
-# one that the other orders did not), hence the default checks two.
+# Each order exposes different defects, hence the default checks two: in a
+# broad configuration (1-body derivatives with multipoles, ERI, ERI3, ERI2, RKB,
+# G12; MAX_AM=2) label exposed a precomputed RR argument leaking into the code
+# and shuffle:5 the numbering of automatic variables in stack order, which
+# reverse and shuffle:1..4 did not expose. The shuffle is the same on every
+# platform (see reorder_rrs() in src/bin/libint/buildtest.cc), hence so is
+# the order it checks.
 
 foreach(_var BUILD_LIBINT REFERENCE_DIR WORK_DIR)
   if (NOT DEFINED ${_var})
@@ -15,22 +20,24 @@ foreach(_var BUILD_LIBINT REFERENCE_DIR WORK_DIR)
   endif()
 endforeach()
 if (NOT DEFINED ORDERS)
-  set(ORDERS "label,shuffle:2")
+  set(ORDERS "label,shuffle:5")
 endif()
 string(REPLACE "," ";" ORDERS "${ORDERS}")
 
 set(_failed_orders)
 foreach(ORDER IN LISTS ORDERS)
+  # ':' is not valid in Windows file names
+  string(REPLACE ":" "-" _order_tag "${ORDER}")
   file(REMOVE_RECURSE "${WORK_DIR}")
   file(MAKE_DIRECTORY "${WORK_DIR}")
   execute_process(
     COMMAND ${CMAKE_COMMAND} -E env LIBINT_RR_ORDER=${ORDER} "${BUILD_LIBINT}"
     WORKING_DIRECTORY "${WORK_DIR}"
-    OUTPUT_FILE "${WORK_DIR}-${ORDER}.log"
-    ERROR_FILE "${WORK_DIR}-${ORDER}.log"
+    OUTPUT_FILE "${WORK_DIR}-${_order_tag}.log"
+    ERROR_FILE "${WORK_DIR}-${_order_tag}.log"
     RESULT_VARIABLE _result)
   if (NOT _result EQUAL 0)
-    message(FATAL_ERROR "generator failed with LIBINT_RR_ORDER=${ORDER} (${_result}), see ${WORK_DIR}-${ORDER}.log")
+    message(FATAL_ERROR "generator failed with LIBINT_RR_ORDER=${ORDER} (${_result}), see ${WORK_DIR}-${_order_tag}.log")
   endif()
 
   # every file must be identical to the regular output (which may contain stale
@@ -52,10 +59,10 @@ foreach(ORDER IN LISTS ORDERS)
     endif()
   endforeach()
   if (_ndiffer GREATER 0)
-    message(SEND_ERROR "${_ndiffer} of ${_nfiles} generated files depend on the order of the RRs (LIBINT_RR_ORDER=${ORDER}); the output is kept in ${WORK_DIR}-${ORDER}")
+    message(SEND_ERROR "${_ndiffer} of ${_nfiles} generated files depend on the order of the RRs (LIBINT_RR_ORDER=${ORDER}); the output is kept in ${WORK_DIR}-${_order_tag}")
     list(APPEND _failed_orders "${ORDER}")
-    file(REMOVE_RECURSE "${WORK_DIR}-${ORDER}")
-    file(RENAME "${WORK_DIR}" "${WORK_DIR}-${ORDER}")
+    file(REMOVE_RECURSE "${WORK_DIR}-${_order_tag}")
+    file(RENAME "${WORK_DIR}" "${WORK_DIR}-${_order_tag}")
   else()
     message(STATUS "all ${_nfiles} generated files are independent of the order of the RRs (LIBINT_RR_ORDER=${ORDER})")
     file(REMOVE_RECURSE "${WORK_DIR}")

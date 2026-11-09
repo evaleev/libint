@@ -34,6 +34,7 @@
 #include <boost/bind.hpp>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -57,6 +58,7 @@ void test7();
 void test8();
 void test9();
 void test10();
+void test11();
 void test_cgshell_iter(const CGShell& sh);
 
 template <class Callback>
@@ -158,6 +160,9 @@ int try_main(int argc, char* argv[]) {
 #endif
 #if 1
   RunTest(test10, "graph vertex index");
+#endif
+#if 1
+  RunTest(test11, "precomputed child of an RR");
 #endif
 
   return 0;
@@ -733,6 +738,40 @@ void test10() {
   check(dg->append_vertex(a2_copy) == a2_copy,
         "the copy of a2 must be added after reset");
   dg->reset();
+}
+
+// the code generated for an RR whose child is a precomputed runtime scalar
+// reads the scalar from the evaluator, not from the child's argument (a
+// pointer): when the RR is generated right after it is created, its child is
+// the very prefactor object that the computation uses
+void test11() {
+  typedef CGShell1d<CartesianAxis_X> Shell;
+  typedef GenIntegralSet_1_1<Shell, OverlapOper, EmptySet> IType;
+  typedef CR_XYZ_1_1<Shell, OverlapOper, EmptySet> RRType;
+  auto check = [](bool ok, const std::string& what) {
+    if (!ok) throw ProgrammingError("precomputed child test: " + what);
+  };
+
+  Shell s(0u);
+  s.uncontract();
+  const auto target = IType::Instance(s, s);
+  const auto rr = RRType::Instance(target, 0);
+  check(rr != nullptr && rr->num_children() == 1,
+        "(s|s)_x CR must have one child");
+  check(rr->rr_child(0)->precomputed(), "(s|s)_x CR child must be precomputed");
+
+  std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
+  std::ostringstream decl, def;
+  rr->generate_code(context, ImplicitDimensions::default_dims(),
+                    context->label_to_name(rr->label()), decl, def);
+  const std::string code = def.str();
+  check(code.find("inteval->_0_Overlap_0_x") != std::string::npos,
+        "the overlap must be read from the evaluator:\n" + code);
+  // src0 must appear only in the signature
+  const auto first = code.find("src0");
+  check(first != std::string::npos &&
+            code.find("src0", first + 1) == std::string::npos,
+        "the argument symbol src0 leaked into the code:\n" + code);
 }
 
 };  // namespace

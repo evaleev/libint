@@ -40,6 +40,7 @@
 #include <functional>
 #include <set>
 #include <utility>
+#include <vector>
 
 using namespace std;
 using namespace libint2;
@@ -1607,6 +1608,8 @@ void DirectedGraph::assign_symbols(
 
   // then process all other symbols, EXCEPT operators
   hoisted_precomputed_.clear();
+  // basic integrals that become automatic variables; named after this loop
+  std::vector<ver_ptr> auto_integrals;
   std::set<std::string> hoisted_names;
   for (iter v = stack_.begin(); v != stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
@@ -1672,7 +1675,7 @@ void DirectedGraph::assign_symbols(
         std::shared_ptr<intset> ptr_cast =
             std::dynamic_pointer_cast<intset, DGVertex>((vptr));
         if (ptr_cast) {
-          (vptr)->set_symbol(context->unique_name<EntityTypes::FP>());
+          auto_integrals.push_back(vptr);
           continue;
         }
       }
@@ -1681,11 +1684,24 @@ void DirectedGraph::assign_symbols(
 
   }  // done with everything BUT operators
 
-  // finally, process all operators: first in the order in which they are
-  // computed, so that the names of the automatic variables do not depend on
-  // the order of the vertices on the stack (it is ordered by instance ids,
-  // which depend on the history of the singleton stacks, e.g. on which RRs
-  // were generated before this graph)
+  // the names of the automatic variables must not depend on the order of the
+  // vertices on the stack: it is ordered by instance ids, which depend on the
+  // history of the singleton stacks (e.g. on which RRs were generated before
+  // this graph). Hence name them in the order in which the vertices are
+  // computed, then the rest in the order of the stack.
+  // First the basic integrals ...
+  if (!auto_integrals.empty()) {
+    const auto assign_fp = [&context](const ver_ptr& v) {
+      if (!v->symbol_set())
+        v->set_symbol(context->unique_name<EntityTypes::FP>());
+    };
+    const std::set<ver_ptr> auto_integrals_set(auto_integrals.begin(),
+                                               auto_integrals.end());
+    for (auto v = first_to_compute_; v; v = v->postcalc())
+      if (auto_integrals_set.count(v)) assign_fp(v);
+    for (const auto& v : auto_integrals) assign_fp(v);
+  }
+  // ... then the operators
   for (auto v = first_to_compute_; v; v = v->postcalc()) {
     if (v->symbol_set()) continue;
     assign_oper_symbol(context, v);

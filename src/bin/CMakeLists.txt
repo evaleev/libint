@@ -14,7 +14,7 @@ if (BUILD_TESTING)
   # in parallel); the library generation target is defined in src/lib/libint
   add_test(
     NAME libint2/compiler/generate
-    COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR} --target libint-library-generate
+    COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR} --config $<CONFIG> --target libint-library-generate
     )
   set_tests_properties(
     libint2/compiler/generate

@@ -37,6 +37,58 @@
 using namespace std;
 using namespace libint2;
 
+namespace {
+
+/// The generated code must not depend on the order in which the RRs are
+/// generated. To test this, the environment variable LIBINT_RR_ORDER (for
+/// testing only, see src/bin/check_rr_order.cmake) reorders @p rrs:
+/// - `reverse`: reverse creation order
+/// - `label`: lexicographic order of the labels
+/// - `shuffle[:<seed>]`: random permutation (seed 0 by default) that is the
+///   same on every platform (std::shuffle is not: the standard does not
+///   specify how it uses the random number engine)
+/// Unset or empty keeps the creation order.
+void reorder_rrs(std::vector<std::shared_ptr<RecurrenceRelation> >& rrs,
+                 std::ostream& os) {
+  const char* order = std::getenv("LIBINT_RR_ORDER");
+  if (order == nullptr || *order == '\0') return;
+  const std::string o(order);
+  const auto invalid = [&o]() {
+    return std::invalid_argument("LIBINT_RR_ORDER=" + o +
+                                 ": expected reverse, label, or "
+                                 "shuffle[:<seed>] with an unsigned "
+                                 "integer <seed>");
+  };
+  if (o == "reverse")
+    std::reverse(rrs.begin(), rrs.end());
+  else if (o == "label")
+    std::sort(rrs.begin(), rrs.end(), [](const auto& a, const auto& b) {
+      return a->label() < b->label();
+    });
+  else if (o == "shuffle" || o.compare(0, 8, "shuffle:") == 0) {
+    unsigned long seed = 0;
+    if (o.size() > 7) {  // shuffle:<seed>
+      const std::string s = o.substr(8);
+      if (s.empty() || s.find_first_not_of("0123456789") != std::string::npos)
+        throw invalid();
+      try {
+        seed = std::stoul(s);
+      } catch (const std::out_of_range&) {
+        throw invalid();
+      }
+    }
+    // Fisher-Yates on the raw output of mt19937, which the standard specifies
+    std::mt19937 rng(static_cast<std::mt19937::result_type>(seed));
+    for (auto i = rrs.size(); i > 1; --i) std::swap(rrs[i - 1], rrs[rng() % i]);
+  } else
+    throw invalid();
+  os << "LIBINT_RR_ORDER=" << o
+     << ": generating the RRs in a non-default order (for testing only)"
+     << endl;
+}
+
+}  // namespace
+
 namespace libint2 {
 
 void generate_rr_code(std::ostream& os,
@@ -82,32 +134,17 @@ void generate_rr_code(std::ostream& os,
   for (auto it = rrstack->begin(); it != rrstack->end(); ++it)
     if (aggregate_rrlist.count(it->second.first))
       id_rrs.emplace_back(it->second.first, it->second.second);
-  assert(id_rrs.size() == aggregate_rrlist.size());
+  if (id_rrs.size() != aggregate_rrlist.size())
+    throw std::logic_error(
+        "generate_rr_code: " +
+        std::to_string(aggregate_rrlist.size() - id_rrs.size()) +
+        " of the RRs used by the tasks are not on the RRStack");
   std::sort(id_rrs.begin(), id_rrs.end(),
             [](const auto& a, const auto& b) { return a.first < b.first; });
   std::vector<std::shared_ptr<RecurrenceRelation> > rrs;
   rrs.reserve(id_rrs.size());
   for (auto& id_rr : id_rrs) rrs.push_back(id_rr.second);
-  // the generated code must not depend on the order in which the RRs are
-  // generated; LIBINT_RR_ORDER={reverse,label,shuffle[:<seed>]} changes the
-  // order to test this (see src/bin/check_rr_order.cmake)
-  if (const char* order = std::getenv("LIBINT_RR_ORDER")) {
-    const std::string o(order);
-    if (o == "reverse")
-      std::reverse(rrs.begin(), rrs.end());
-    else if (o == "label")
-      std::sort(rrs.begin(), rrs.end(), [](const auto& a, const auto& b) {
-        return a->label() < b->label();
-      });
-    else if (o.rfind("shuffle", 0) == 0) {  // shuffle or shuffle:<seed>
-      const auto seed = o.size() > 8 ? std::stoul(o.substr(8)) : 0ul;
-      std::mt19937 rng(seed);
-      std::shuffle(rrs.begin(), rrs.end(), rng);
-    } else if (!o.empty())
-      throw std::invalid_argument("LIBINT_RR_ORDER=" + o +
-                                  ": expected reverse, label, or "
-                                  "shuffle[:<seed>]");
-  }
+  reorder_rrs(rrs, os);
   for (auto& rr : rrs) {
 #endif
     os << "generating code for " << context->label_to_name(rr->label())
