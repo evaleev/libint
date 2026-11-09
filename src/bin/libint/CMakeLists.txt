@@ -6,6 +6,7 @@ add_library(
     class_registry.cc
     code.cc
     codeblock.cc
+    codegen_jobs.cc
     comp_deriv_gauss.cc
     comp_xyz.cc
     context.cc

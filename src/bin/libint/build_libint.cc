@@ -407,11 +407,6 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
   // 3) at the end, for each unresolved recurrence relation generate
   //    explicit source code
   //
-  std::shared_ptr<DirectedGraph> dg(new DirectedGraph);
-  std::shared_ptr<Strategy> strat(new Strategy());
-  std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
-  std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
-
   for (unsigned int la = 0; la <= lmax; la++) {
     for (unsigned int lb = 0; lb <= lmax; lb++) {
       // skip s|s overlap and elecpot integrals -- no need to involve LIBINT
@@ -421,189 +416,193 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
            std::is_same<_OperType, ElecPotOper>::value))
         continue;
 
-      std::shared_ptr<Tactic> tactic(new TwoCenter_OS_Tactic(la, lb));
+      // the cost of the job: the number of integrals in the shell pair
+      const double cost = l_to_cgshellsize(la) * l_to_cgshellsize(lb);
+      CodegenJobs::instance().add(task, cost, [=](ShellSetJournal& journal) {
+        std::shared_ptr<DirectedGraph> dg(new DirectedGraph);
+        std::shared_ptr<Strategy> strat(new Strategy());
+        std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
+        std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
+        std::shared_ptr<Tactic> tactic(new TwoCenter_OS_Tactic(la, lb));
 
-      // this will hold all target shell sets
-      std::vector<std::shared_ptr<Onebody_sh_1_1>> targets;
+        // this will hold all target shell sets
+        std::vector<std::shared_ptr<Onebody_sh_1_1>> targets;
 
-      /////////////////////////////////
-      // loop over operator components
-      /////////////////////////////////
-      // most important operators have 1 component ...
-      std::vector<OperDescrType> descrs(1);  // operator descriptors
-      // important EXCEPTION: multipole moments
-      if (std::is_same<_OperType, CartesianMultipoleOper<3u>>::value) {
-        // reset descriptors array
-        descrs.resize(0);
+        /////////////////////////////////
+        // loop over operator components
+        /////////////////////////////////
+        // most important operators have 1 component ...
+        std::vector<OperDescrType> descrs(1);  // operator descriptors
+        // important EXCEPTION: multipole moments
+        if (std::is_same<_OperType, CartesianMultipoleOper<3u>>::value) {
+          // reset descriptors array
+          descrs.resize(0);
 
-        // parse the label ... 1emultipole means include multipoles of order 0
-        // (overlap) and 1 (dipole)
-        unsigned int max_multipole_order = 0;
-        assert(label != "overlap");
-        auto key_pos = label.find("emultipole");
-        assert(key_pos != std::string::npos);
-        std::string tmp = label;
-        tmp.erase(key_pos, std::string::npos);
-        istringstream iss(tmp);
-        iss >> max_multipole_order;
-        assert(max_multipole_order > 0);
+          // parse the label ... 1emultipole means include multipoles of order 0
+          // (overlap) and 1 (dipole)
+          unsigned int max_multipole_order = 0;
+          assert(label != "overlap");
+          auto key_pos = label.find("emultipole");
+          assert(key_pos != std::string::npos);
+          std::string tmp = label;
+          tmp.erase(key_pos, std::string::npos);
+          istringstream iss(tmp);
+          iss >> max_multipole_order;
+          assert(max_multipole_order > 0);
 
-        // iterate over operators and construct their descriptors
-        for (int multipole_order = 0; multipole_order <= max_multipole_order;
-             ++multipole_order) {
-          // we iterate over them same way as over cartesian Gaussian shells
-          int x, y, z;
-          LIBINT2_FOR_CART(x, y, z, multipole_order)
-          descrs.push_back(make_descr<OperDescrType>(x, y, z));
-          LIBINT2_END_FOR_CART
+          // iterate over operators and construct their descriptors
+          for (int multipole_order = 0; multipole_order <= max_multipole_order;
+               ++multipole_order) {
+            // we iterate over them same way as over cartesian Gaussian shells
+            int x, y, z;
+            LIBINT2_FOR_CART(x, y, z, multipole_order)
+            descrs.push_back(make_descr<OperDescrType>(x, y, z));
+            LIBINT2_END_FOR_CART
+          }
         }
-      }
-      if (std::is_same<_OperType, SphericalMultipoleOper>::value) {
-        // reset descriptors array
-        descrs.resize(0);
-        // iterate over operators and construct their descriptors
-        for (int l = 0; l <= LIBINT_MULTIPOLE_MAX_ORDER; ++l) {
-          // we iterate over them using the *standard* solid harmonic Gaussian
-          // ordering
-          int m;
-          LIBINT2_FOR_SOLIDHARM_STANDARD(l, m)
-          descrs.push_back(make_descr<OperDescrType>(l, m));
-          LIBINT2_END_FOR_SOLIDHARM
+        if (std::is_same<_OperType, SphericalMultipoleOper>::value) {
+          // reset descriptors array
+          descrs.resize(0);
+          // iterate over operators and construct their descriptors
+          for (int l = 0; l <= LIBINT_MULTIPOLE_MAX_ORDER; ++l) {
+            // we iterate over them using the *standard* solid harmonic Gaussian
+            // ordering
+            int m;
+            LIBINT2_FOR_SOLIDHARM_STANDARD(l, m)
+            descrs.push_back(make_descr<OperDescrType>(l, m));
+            LIBINT2_END_FOR_SOLIDHARM
+          }
         }
-      }
-      if (std::is_same<_OperType, σpVσpOper>::value) {
-        // reset descriptors array
-        descrs.resize(0);
-        // iterate over pauli components
-        for (int p = 0; p != 4; ++p) {
-          descrs.emplace_back(make_descr<OperDescrType>(p));
+        if (std::is_same<_OperType, σpVσpOper>::value) {
+          // reset descriptors array
+          descrs.resize(0);
+          // iterate over pauli components
+          for (int p = 0; p != 4; ++p) {
+            descrs.emplace_back(make_descr<OperDescrType>(p));
+          }
         }
-      }
-      if (std::is_same<_OperType, σpeμσpOper>::value) {
-        // reset descriptors array
-        descrs.resize(0);
-        // iterate over 12 = 3 dipole directions × 4 Pauli components
-        for (int p = 0; p != 12; ++p) {
-          descrs.emplace_back(make_descr<OperDescrType>(p));
-        }
-      }
-
-      // derivative index is the outermost (slowest running)
-      // operator component is second slowest
-
-      ////////////
-      // loop over unique derivative index combinations
-      ////////////
-      // NB translational invariance is now handled by CR_DerivGauss
-      CartesianDerivIterator<2> diter(deriv_level);
-      bool last_deriv = false;
-      do {
-        BFType a(la);
-        BFType b(lb);
-
-        for (unsigned int c = 0; c != 2; ++c) {
-          const unsigned int ndir =
-              std::is_same<BFType, CGShell>::value ? 3 : 1;
-          for (unsigned int xyz = 0; xyz < ndir; ++xyz) {
-            if (c == 0) a.deriv().inc(xyz, (*diter).at(xyz));
-            if (c == 1) b.deriv().inc(xyz, (*diter).at(3 + xyz));
+        if (std::is_same<_OperType, σpeμσpOper>::value) {
+          // reset descriptors array
+          descrs.resize(0);
+          // iterate over 12 = 3 dipole directions × 4 Pauli components
+          for (int p = 0; p != 12; ++p) {
+            descrs.emplace_back(make_descr<OperDescrType>(p));
           }
         }
 
-        // operator component loop
-        for (unsigned int op = 0; op != descrs.size(); ++op) {
-          OperType oper(descrs[op]);
+        // derivative index is the outermost (slowest running)
+        // operator component is second slowest
 
-          std::shared_ptr<Onebody_sh_1_1> target =
-              Onebody_sh_1_1::Instance(a, b, nullaux, oper);
-          targets.push_back(target);
-        }  // loop over operator components
+        ////////////
+        // loop over unique derivative index combinations
+        ////////////
+        // NB translational invariance is now handled by CR_DerivGauss
+        CartesianDerivIterator<2> diter(deriv_level);
+        bool last_deriv = false;
+        do {
+          BFType a(la);
+          BFType b(lb);
 
-        last_deriv = diter.last();
-        if (!last_deriv) diter.next();
-      } while (!last_deriv);  // loop over derivatives
+          for (unsigned int c = 0; c != 2; ++c) {
+            const unsigned int ndir =
+                std::is_same<BFType, CGShell>::value ? 3 : 1;
+            for (unsigned int xyz = 0; xyz < ndir; ++xyz) {
+              if (c == 0) a.deriv().inc(xyz, (*diter).at(xyz));
+              if (c == 1) b.deriv().inc(xyz, (*diter).at(3 + xyz));
+            }
+          }
 
-      // unroll only if max_am <= cparams->max_am_opt(task)
-      using std::max;
-      const unsigned int max_am = max(la, lb);
-      const auto nopers = descrs.size();
-      const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-      // decide whether to unroll based on the aggregate size of
-      // undifferentiated quartets
-      const bool need_to_unroll =
-          nopers * l_to_cgshellsize(la) * l_to_cgshellsize(lb) <=
-          cparams->unroll_threshold();
-      const unsigned int unroll_threshold =
-          need_to_optimize && need_to_unroll
-              ? std::numeric_limits<unsigned int>::max()
-              : 0;
+          // operator component loop
+          for (unsigned int op = 0; op != descrs.size(); ++op) {
+            OperType oper(descrs[op]);
 
-      dg->registry()->unroll_threshold(unroll_threshold);
-      dg->registry()->do_cse(need_to_optimize);
-      dg->registry()->condense_expr(condense_expr(
-          cparams->unroll_threshold(), cparams->max_vector_length() > 1));
-      // Need to accumulate integrals?
-      dg->registry()->accumulate_targets(cparams->accumulate_targets());
+            std::shared_ptr<Onebody_sh_1_1> target =
+                Onebody_sh_1_1::Instance(a, b, nullaux, oper);
+            targets.push_back(target);
+          }  // loop over operator components
 
-      // shove all targets on the graph, IN ORDER
-      for (auto t = targets.begin(); t != targets.end(); ++t) {
-        std::shared_ptr<DGVertex> t_ptr =
-            std::dynamic_pointer_cast<DGVertex, Onebody_sh_1_1>(*t);
-        dg->append_target(t_ptr);
-      }
+          last_deriv = diter.last();
+          if (!last_deriv) diter.next();
+        } while (!last_deriv);  // loop over derivatives
 
-      // make label that characterizes this set of targets
-      std::string eval_label;
-      {
-        std::ostringstream oss;
-        oss << "_" << label;
-        if (deriv_level > 0) oss << "deriv" << deriv_level;
-        BFType a(la);
-        BFType b(lb);
-        oss << "_" << a.label() << "_" << b.label();
-        eval_label = oss.str();
-      }
+        // unroll only if max_am <= cparams->max_am_opt(task)
+        using std::max;
+        const unsigned int max_am = max(la, lb);
+        const auto nopers = descrs.size();
+        const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
+        // decide whether to unroll based on the aggregate size of
+        // undifferentiated quartets
+        const bool need_to_unroll =
+            nopers * l_to_cgshellsize(la) * l_to_cgshellsize(lb) <=
+            cparams->unroll_threshold();
+        const unsigned int unroll_threshold =
+            need_to_optimize && need_to_unroll
+                ? std::numeric_limits<unsigned int>::max()
+                : 0;
 
-      g_progress.current_task = eval_label;
-      g_progress.print();
+        dg->registry()->unroll_threshold(unroll_threshold);
+        dg->registry()->do_cse(need_to_optimize);
+        dg->registry()->condense_expr(condense_expr(
+            cparams->unroll_threshold(), cparams->max_vector_length() > 1));
+        // Need to accumulate integrals?
+        dg->registry()->accumulate_targets(cparams->accumulate_targets());
 
-      std::string prefix(cparams->source_directory());
-      std::deque<std::string> decl_filenames;
-      std::deque<std::string> def_filenames;
+        // shove all targets on the graph, IN ORDER
+        for (auto t = targets.begin(); t != targets.end(); ++t) {
+          std::shared_ptr<DGVertex> t_ptr =
+              std::dynamic_pointer_cast<DGVertex, Onebody_sh_1_1>(*t);
+          dg->append_target(t_ptr);
+        }
 
-      // this will generate code for this targets, and potentially generate code
-      // for its prerequisites
-      GenerateCode(dg, context, cparams, strat, tactic, memman, decl_filenames,
-                   def_filenames, prefix, eval_label, false);
+        // make label that characterizes this set of targets
+        std::string eval_label;
+        {
+          std::ostringstream oss;
+          oss << "_" << label;
+          if (deriv_level > 0) oss << "deriv" << deriv_level;
+          BFType a(la);
+          BFType b(lb);
+          oss << "_" << a.label() << "_" << b.label();
+          eval_label = oss.str();
+        }
 
-      // update max stack size and # of targets
-      const std::shared_ptr<TaskParameters>& tparams =
-          taskmgr.current().params();
-      tparams->max_stack_size(max_am, memman->max_memory_used());
-      tparams->max_ntarget(targets.size());
-      // os << " Max memory used = " << memman->max_memory_used() << std::endl;
+        g_progress.current_task = eval_label;
+        g_progress.print();
 
-      // set pointer to the top-level evaluator function
-      ostringstream oss;
-      oss << context->label_to_function_name("libint2_build_" + task) << "["
-          << la << "][" << lb
-          << "] = " << context->label_to_function_name(eval_label)
-          << context->end_of_stat() << endl;
-      iface->to_static_init(oss.str());
+        std::string prefix(cparams->source_directory());
+        std::deque<std::string> decl_filenames;
+        std::deque<std::string> def_filenames;
 
-      // need to declare this function internally
-      for (std::deque<std::string>::const_iterator i = decl_filenames.begin();
-           i != decl_filenames.end(); ++i) {
-        oss.str("");
-        oss << "#include <" << *i << ">" << endl;
-        iface->to_int_iface(oss.str());
-      }
+        // this will generate code for this targets, and potentially generate
+        // code for its prerequisites
+        GenerateCode(dg, context, cparams, strat, tactic, memman,
+                     decl_filenames, def_filenames, prefix, eval_label, false);
 
-#if DEBUG
-      os << "Max memory used = " << memman->max_memory_used() << endl;
-#endif
-      dg->reset();
-      memman->reset();
+        // update max stack size and # of targets
+        journal.max_stack_size.emplace_back(max_am, memman->max_memory_used());
+        journal.max_ntarget.push_back(targets.size());
+        // os << " Max memory used = " << memman->max_memory_used() <<
+        // std::endl;
+
+        // set pointer to the top-level evaluator function
+        ostringstream oss;
+        oss << context->label_to_function_name("libint2_build_" + task) << "["
+            << la << "][" << lb
+            << "] = " << context->label_to_function_name(eval_label)
+            << context->end_of_stat() << endl;
+        journal.static_init.push_back(oss.str());
+
+        // need to declare this function internally
+        for (std::deque<std::string>::const_iterator i = decl_filenames.begin();
+             i != decl_filenames.end(); ++i) {
+          oss.str("");
+          oss << "#include <" << *i << ">" << endl;
+          journal.int_iface.push_back(oss.str());
+        }
+
+        dg->reset();
+        memman->reset();
+      });
 
     }  // end of b loop
   }    // end of a loop
@@ -1186,11 +1185,16 @@ void try_main(int argc, char* argv[]) {
   build_G12DKH_2b_2k(os, cparams, iface);
 #endif
 
+  // the builders above added a job for each shell set; generate their code,
+  // then the code for the set-level RRs they need, in LIBINT_GENERATOR_JOBS
+  // processes (see CodegenJobs)
+  CodegenJobs::instance().run(
+      os, cparams, *iface, generator_jobs(), [](std::size_t worker) {
+        // the workers print one line per kernel
+        g_progress.interactive = false;
+        g_progress.tag = "w" + std::to_string(worker) + " ";
+      });
   g_progress.finish();
-
-  // Generate code for the set-level RRs
-  std::deque<std::string> decl_filenames, def_filenames;
-  generate_rr_code(os, cparams, decl_filenames, def_filenames);
 
 #if DEBUG
   // print out the external symbols found for each task
@@ -1306,10 +1310,6 @@ static void build_TwoPRep_2b_2k(
   // 3) at the end, for each unresolved recurrence relation generate
   //    explicit source code
   //
-  std::shared_ptr<DirectedGraph> dg_xxxx(new DirectedGraph);
-  std::shared_ptr<Strategy> strat(new Strategy());
-  std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
-  std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
 
   // the shell sets to generate code for are those that are canonical with
   // respect to the permutations the engine performs for this operator
@@ -1332,173 +1332,186 @@ static void build_TwoPRep_2b_2k(
                                             pair_swap))
             continue;
 
-          // std::shared_ptr<Tactic> tactic(new ParticleDirectionTactic(la+lb >
-          // lc+ld ? false : true));
-          std::shared_ptr<Tactic> tactic(
-              new FourCenter_OS_Tactic(la, lb, lc, ld));
-
 #if STUDY_MEMORY_USAGE
           const int lim = 1;
           if (!(la == lim && lb == lim && lc == lim && ld == lim)) continue;
 #endif
-          // this will hold all target shell sets
-          std::vector<std::shared_ptr<TwoBody_sh_11_11>> targets;
 
-          /////////////////////////////////
-          // loop over operator components
-          /////////////////////////////////
-          // one target per operator component
-          std::vector<OperDescrType> descrs;
-          for (unsigned int p = 0; p != OperDescrType::max_key; ++p)
-            descrs.emplace_back(make_descr<OperDescrType>(p));
+          // the cost of the job: the number of integrals in the shell quartet
+          const double cost = static_cast<double>(OperDescrType::max_key) *
+                              l_to_cgshellsize(la) * l_to_cgshellsize(lb) *
+                              l_to_cgshellsize(lc) * l_to_cgshellsize(ld);
+          CodegenJobs::instance().add(
+              task, cost, [=](ShellSetJournal& journal) {
+                std::shared_ptr<DirectedGraph> dg_xxxx(new DirectedGraph);
+                std::shared_ptr<Strategy> strat(new Strategy());
+                std::shared_ptr<CodeContext> context(
+                    new CppCodeContext(cparams));
+                std::shared_ptr<MemoryManager> memman(
+                    new WorstFitMemoryManager());
+                // std::shared_ptr<Tactic> tactic(new
+                // ParticleDirectionTactic(la+lb > lc+ld ? false : true));
+                std::shared_ptr<Tactic> tactic(
+                    new FourCenter_OS_Tactic(la, lb, lc, ld));
+                // this will hold all target shell sets
+                std::vector<std::shared_ptr<TwoBody_sh_11_11>> targets;
 
-          // unroll only if max_am <= cparams->max_am_opt(task)
-          using std::max;
-          const unsigned int max_am = max(max(la, lb), max(lc, ld));
-          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          const auto nopers = descrs.size();
-          const bool need_to_unroll =
-              nopers * l_to_cgshellsize(la) * l_to_cgshellsize(lb) *
-                  l_to_cgshellsize(lc) * l_to_cgshellsize(ld) <=
-              cparams->unroll_threshold();
-          const unsigned int unroll_threshold =
-              need_to_optimize && need_to_unroll
-                  ? std::numeric_limits<unsigned int>::max()
-                  : 0;
-          dg_xxxx->registry()->unroll_threshold(unroll_threshold);
-          // CSE and condense_expr act on the unrolled (CGF-level) expressions
-          // only; the integral-set DAG is deduplicated by instance regardless.
-          // Multi-component (RKB) operators rarely unroll (nopers multiplies
-          // the unroll cost above), but LIBINT_<class>_OPT_AM is honored for
-          // them exactly as for every other class.
-          dg_xxxx->registry()->do_cse(need_to_optimize);
-          dg_xxxx->registry()->condense_expr(condense_expr(
-              cparams->unroll_threshold(), cparams->max_vector_length() > 1));
-          //  Need to accumulate integrals?
-          dg_xxxx->registry()->accumulate_targets(
-              cparams->accumulate_targets());
-          // need to profile?
-          if (cparams->profile()) {
-            dg_xxxx->registry()->current_timer(0);
-          }
+                /////////////////////////////////
+                // loop over operator components
+                /////////////////////////////////
+                // one target per operator component
+                std::vector<OperDescrType> descrs;
+                for (unsigned int p = 0; p != OperDescrType::max_key; ++p)
+                  descrs.emplace_back(make_descr<OperDescrType>(p));
 
-          ////////////
-          // loop over unique derivative index combinations
-          ////////////
-          // NB translational invariance is handled by DerivGaussV2
-          CartesianDerivIterator<4> diter(deriv_level);
+                // unroll only if max_am <= cparams->max_am_opt(task)
+                using std::max;
+                const unsigned int max_am = max(max(la, lb), max(lc, ld));
+                const bool need_to_optimize =
+                    (max_am <= cparams->max_am_opt(task));
+                const auto nopers = descrs.size();
+                const bool need_to_unroll =
+                    nopers * l_to_cgshellsize(la) * l_to_cgshellsize(lb) *
+                        l_to_cgshellsize(lc) * l_to_cgshellsize(ld) <=
+                    cparams->unroll_threshold();
+                const unsigned int unroll_threshold =
+                    need_to_optimize && need_to_unroll
+                        ? std::numeric_limits<unsigned int>::max()
+                        : 0;
+                dg_xxxx->registry()->unroll_threshold(unroll_threshold);
+                // CSE and condense_expr act on the unrolled (CGF-level)
+                // expressions only; the integral-set DAG is deduplicated by
+                // instance regardless. Multi-component (RKB) operators rarely
+                // unroll (nopers multiplies the unroll cost above), but
+                // LIBINT_<class>_OPT_AM is honored for them exactly as for
+                // every other class.
+                dg_xxxx->registry()->do_cse(need_to_optimize);
+                dg_xxxx->registry()->condense_expr(
+                    condense_expr(cparams->unroll_threshold(),
+                                  cparams->max_vector_length() > 1));
+                //  Need to accumulate integrals?
+                dg_xxxx->registry()->accumulate_targets(
+                    cparams->accumulate_targets());
+                // need to profile?
+                if (cparams->profile()) {
+                  dg_xxxx->registry()->current_timer(0);
+                }
 
-          bool last_deriv = false;
-          do {
-            CGShell a(la);
-            CGShell b(lb);
-            CGShell c(lc);
-            CGShell d(ld);
+                ////////////
+                // loop over unique derivative index combinations
+                ////////////
+                // NB translational invariance is handled by DerivGaussV2
+                CartesianDerivIterator<4> diter(deriv_level);
 
-            for (unsigned int i = 0; i < 4; ++i) {
-              for (unsigned int xyz = 0; xyz < 3; ++xyz) {
-                if (i == 0) a.deriv().inc(xyz, (*diter).at(3 * i + xyz));
-                if (i == 1) b.deriv().inc(xyz, (*diter).at(3 * i + xyz));
-                if (i == 2) c.deriv().inc(xyz, (*diter).at(3 * i + xyz));
-                if (i == 3) d.deriv().inc(xyz, (*diter).at(3 * i + xyz));
-              }
-            }
+                bool last_deriv = false;
+                do {
+                  CGShell a(la);
+                  CGShell b(lb);
+                  CGShell c(lc);
+                  CGShell d(ld);
 
-            // operator component loop
-            for (unsigned int op = 0; op != descrs.size(); ++op) {
-              OperType oper(descrs[op]);
+                  for (unsigned int i = 0; i < 4; ++i) {
+                    for (unsigned int xyz = 0; xyz < 3; ++xyz) {
+                      if (i == 0) a.deriv().inc(xyz, (*diter).at(3 * i + xyz));
+                      if (i == 1) b.deriv().inc(xyz, (*diter).at(3 * i + xyz));
+                      if (i == 2) c.deriv().inc(xyz, (*diter).at(3 * i + xyz));
+                      if (i == 3) d.deriv().inc(xyz, (*diter).at(3 * i + xyz));
+                    }
+                  }
 
-              std::shared_ptr<TwoBody_sh_11_11> abcd =
-                  TwoBody_sh_11_11::Instance(a, b, c, d, nullaux, oper);
-              targets.push_back(abcd);
-            }
+                  // operator component loop
+                  for (unsigned int op = 0; op != descrs.size(); ++op) {
+                    OperType oper(descrs[op]);
 
-            last_deriv = diter.last();
-            if (!last_deriv) diter.next();
-          } while (!last_deriv);
-          // make label that characterizes this set of targets
-          // use the label of the nondifferentiated integral as a base
-          std::string abcd_label;
-          {
-            CGShell a(la);
-            CGShell b(lb);
-            CGShell c(lc);
-            CGShell d(ld);
+                    std::shared_ptr<TwoBody_sh_11_11> abcd =
+                        TwoBody_sh_11_11::Instance(a, b, c, d, nullaux, oper);
+                    targets.push_back(abcd);
+                  }
 
-            if constexpr (std::is_same<OperType, TwoPRep>::value) {
-              OperType oper;
-              oper = OperType(descrs[0]);
-              std::shared_ptr<TwoBody_sh_11_11> abcd =
-                  TwoBody_sh_11_11::Instance(a, b, c, d, nullaux, oper);
-              abcd_label = abcd->label();
-            } else {
-              std::ostringstream oss;
-              oss << "_" << a.label() << "_" << b.label();
-              oss << "_" << label;
-              oss << "_" << c.label() << "_" << d.label();
-              abcd_label = oss.str();
-            }
-          }
-          // + derivative level (if deriv_level > 0)
-          std::string eval_label;
-          {
-            eval_label = "";
-            if (deriv_level != 0) {
-              std::ostringstream oss;
-              oss << "deriv" << deriv_level;
-              eval_label += oss.str();
-            }
-            eval_label += abcd_label;
-          }
+                  last_deriv = diter.last();
+                  if (!last_deriv) diter.next();
+                } while (!last_deriv);
+                // make label that characterizes this set of targets
+                // use the label of the nondifferentiated integral as a base
+                std::string abcd_label;
+                {
+                  CGShell a(la);
+                  CGShell b(lb);
+                  CGShell c(lc);
+                  CGShell d(ld);
 
-          g_progress.current_task = eval_label;
-          g_progress.print();
+                  if constexpr (std::is_same<OperType, TwoPRep>::value) {
+                    OperType oper;
+                    oper = OperType(descrs[0]);
+                    std::shared_ptr<TwoBody_sh_11_11> abcd =
+                        TwoBody_sh_11_11::Instance(a, b, c, d, nullaux, oper);
+                    abcd_label = abcd->label();
+                  } else {
+                    std::ostringstream oss;
+                    oss << "_" << a.label() << "_" << b.label();
+                    oss << "_" << label;
+                    oss << "_" << c.label() << "_" << d.label();
+                    abcd_label = oss.str();
+                  }
+                }
+                // + derivative level (if deriv_level > 0)
+                std::string eval_label;
+                {
+                  eval_label = "";
+                  if (deriv_level != 0) {
+                    std::ostringstream oss;
+                    oss << "deriv" << deriv_level;
+                    eval_label += oss.str();
+                  }
+                  eval_label += abcd_label;
+                }
 
-          std::string prefix(cparams->source_directory());
-          std::deque<std::string> decl_filenames;
-          std::deque<std::string> def_filenames;
+                g_progress.current_task = eval_label;
+                g_progress.print();
 
-          // append all targets to the graph
-          for (auto it = targets.begin(); it != targets.end(); ++it) {
-            std::shared_ptr<DGVertex> t_ptr =
-                std::dynamic_pointer_cast<DGVertex, TwoBody_sh_11_11>(*it);
-            dg_xxxx->append_target(t_ptr);
-          }
+                std::string prefix(cparams->source_directory());
+                std::deque<std::string> decl_filenames;
+                std::deque<std::string> def_filenames;
 
-          // this will generate code for these targets, and potentially
-          // generate code for its prerequisites
-          GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
-                       decl_filenames, def_filenames, prefix, eval_label,
-                       false);
+                // append all targets to the graph
+                for (auto it = targets.begin(); it != targets.end(); ++it) {
+                  std::shared_ptr<DGVertex> t_ptr =
+                      std::dynamic_pointer_cast<DGVertex, TwoBody_sh_11_11>(
+                          *it);
+                  dg_xxxx->append_target(t_ptr);
+                }
 
-          // update max stack size and # of targets
-          const std::shared_ptr<TaskParameters>& tparams =
-              taskmgr.current().params();
-          tparams->max_stack_size(max_am, memman->max_memory_used());
-          tparams->max_ntarget(targets.size());
-          // os << " Max memory used = " << memman->max_memory_used() <<
-          // std::endl;
+                // this will generate code for these targets, and potentially
+                // generate code for its prerequisites
+                GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
+                             decl_filenames, def_filenames, prefix, eval_label,
+                             false);
 
-          // set pointer to the top-level evaluator function
-          ostringstream oss;
-          oss << context->label_to_function_name("libint2_build_" + task) << "["
-              << la << "][" << lb << "][" << lc << "][" << ld
-              << "] = " << context->label_to_function_name(eval_label)
-              << context->end_of_stat() << endl;
-          iface->to_static_init(oss.str());
+                // update max stack size and # of targets
+                journal.max_stack_size.emplace_back(max_am,
+                                                    memman->max_memory_used());
+                journal.max_ntarget.push_back(targets.size());
+                // os << " Max memory used = " << memman->max_memory_used() <<
+                // std::endl;
 
-          // need to declare this function internally
-          for (auto& decl_filename : decl_filenames) {
-            oss.str("");
-            oss << "#include <" << decl_filename << ">" << endl;
-            iface->to_int_iface(oss.str());
-          }
+                // set pointer to the top-level evaluator function
+                ostringstream oss;
+                oss << context->label_to_function_name("libint2_build_" + task)
+                    << "[" << la << "][" << lb << "][" << lc << "][" << ld
+                    << "] = " << context->label_to_function_name(eval_label)
+                    << context->end_of_stat() << endl;
+                journal.static_init.push_back(oss.str());
 
-#if DEBUG
-          os << "Max memory used = " << memman->max_memory_used() << endl;
-#endif
-          dg_xxxx->reset();
-          memman->reset();
+                // need to declare this function internally
+                for (auto& decl_filename : decl_filenames) {
+                  oss.str("");
+                  oss << "#include <" << decl_filename << ">" << endl;
+                  journal.int_iface.push_back(oss.str());
+                }
+
+                dg_xxxx->reset();
+                memman->reset();
+              });
 
         }  // end of d loop
       }    // end of c loop
@@ -1550,10 +1563,6 @@ static void build_TwoPRep_1b_2k(
   // 3) at the end, for each unresolved recurrence relation generate
   //    explicit source code
   //
-  std::shared_ptr<DirectedGraph> dg_xxx(new DirectedGraph);
-  std::shared_ptr<Strategy> strat(new Strategy());
-  std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
-  std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
 
   const auto nullaux = typename TwoBody_sh_11_11::AuxIndexType(0u);
 
@@ -1570,194 +1579,202 @@ static void build_TwoPRep_1b_2k(
             continue;
         }
 
-        // I will use 4-center recurrence relations and integrals, and have one
-        // center carry an s function unfortunately, depending on the direction
-        // in which the build goes it must be A(0) or B(1)
-        const unsigned int dummy_center =
-            (LIBINT_SHELL_SET == LIBINT_SHELL_SET_ORCA) ? 0 : 1;
-
-        // std::shared_ptr<Tactic> tactic(new ParticleDirectionTactic(lbra >
-        // lc+ld ? false : true));
-        std::shared_ptr<Tactic> tactic(
-            new FourCenter_OS_Tactic(dummy_center == 0 ? 0 : lbra,
-                                     dummy_center == 1 ? 0 : lbra, lc, ld));
-
 #if STUDY_MEMORY_USAGE
         const int lim = 1;
         if (!(lbra == lim && lc == lim && ld == lim)) continue;
 #endif
 
-        // one target per operator component
-        std::vector<OperDescrType> descrs;
-        for (unsigned int p = 0; p != OperDescrType::max_key; ++p)
-          descrs.emplace_back(make_descr<OperDescrType>(p));
-        const auto nopers = descrs.size();
+        // the cost of the job: the number of integrals in the shell triplet
+        const double cost = static_cast<double>(OperDescrType::max_key) *
+                            l_to_cgshellsize(lbra) * l_to_cgshellsize(lc) *
+                            l_to_cgshellsize(ld);
+        CodegenJobs::instance().add(task, cost, [=](ShellSetJournal& journal) {
+          std::shared_ptr<DirectedGraph> dg_xxx(new DirectedGraph);
+          std::shared_ptr<Strategy> strat(new Strategy());
+          std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
+          std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
 
-        // unroll only if max_am <= cparams->max_am_opt(task)
-        using std::max;
-        const unsigned int max_am = max(max(lc, ld), lbra);
-        const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-        const bool need_to_unroll = nopers * l_to_cgshellsize(lbra) *
-                                        l_to_cgshellsize(lc) *
-                                        l_to_cgshellsize(ld) <=
-                                    cparams->unroll_threshold();
-        const unsigned int unroll_threshold =
-            need_to_optimize && need_to_unroll
-                ? std::numeric_limits<unsigned int>::max()
-                : 0;
-        dg_xxx->registry()->unroll_threshold(unroll_threshold);
-        // see build_TwoPRep_2b_2k: LIBINT_<class>_OPT_AM is honored for
-        // multi-component operators as for every other class
-        dg_xxx->registry()->do_cse(need_to_optimize);
-        dg_xxx->registry()->condense_expr(condense_expr(
-            cparams->unroll_threshold(), cparams->max_vector_length() > 1));
-        //  Need to accumulate integrals?
-        dg_xxx->registry()->accumulate_targets(cparams->accumulate_targets());
+          // I will use 4-center recurrence relations and integrals, and have
+          // one center carry an s function unfortunately, depending on the
+          // direction in which the build goes it must be A(0) or B(1)
+          const unsigned int dummy_center =
+              (LIBINT_SHELL_SET == LIBINT_SHELL_SET_ORCA) ? 0 : 1;
 
-        ////////////
-        // loop over unique derivative index combinations
-        ////////////
-        // NB translational invariance is handled by DerivGaussV2
-        CartesianDerivIterator<3> diter(deriv_level);
-        std::vector<std::shared_ptr<TwoBody_sh_11_11>> targets;
-        bool last_deriv = false;
-        do {
-          CGShell a = (dummy_center == 0) ? CGShell::unit() : CGShell(lbra);
-          CGShell b = (dummy_center == 1) ? CGShell::unit() : CGShell(lbra);
-          CGShell c(lc);
-          CGShell d(ld);
+          // std::shared_ptr<Tactic> tactic(new ParticleDirectionTactic(lbra >
+          // lc+ld ? false : true));
+          std::shared_ptr<Tactic> tactic(
+              new FourCenter_OS_Tactic(dummy_center == 0 ? 0 : lbra,
+                                       dummy_center == 1 ? 0 : lbra, lc, ld));
+
+          // one target per operator component
+          std::vector<OperDescrType> descrs;
+          for (unsigned int p = 0; p != OperDescrType::max_key; ++p)
+            descrs.emplace_back(make_descr<OperDescrType>(p));
+          const auto nopers = descrs.size();
+
+          // unroll only if max_am <= cparams->max_am_opt(task)
+          using std::max;
+          const unsigned int max_am = max(max(lc, ld), lbra);
+          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
+          const bool need_to_unroll = nopers * l_to_cgshellsize(lbra) *
+                                          l_to_cgshellsize(lc) *
+                                          l_to_cgshellsize(ld) <=
+                                      cparams->unroll_threshold();
+          const unsigned int unroll_threshold =
+              need_to_optimize && need_to_unroll
+                  ? std::numeric_limits<unsigned int>::max()
+                  : 0;
+          dg_xxx->registry()->unroll_threshold(unroll_threshold);
+          // see build_TwoPRep_2b_2k: LIBINT_<class>_OPT_AM is honored for
+          // multi-component operators as for every other class
+          dg_xxx->registry()->do_cse(need_to_optimize);
+          dg_xxx->registry()->condense_expr(condense_expr(
+              cparams->unroll_threshold(), cparams->max_vector_length() > 1));
+          //  Need to accumulate integrals?
+          dg_xxx->registry()->accumulate_targets(cparams->accumulate_targets());
+
+          ////////////
+          // loop over unique derivative index combinations
+          ////////////
+          // NB translational invariance is handled by DerivGaussV2
+          CartesianDerivIterator<3> diter(deriv_level);
+          std::vector<std::shared_ptr<TwoBody_sh_11_11>> targets;
+          bool last_deriv = false;
+          do {
+            CGShell a = (dummy_center == 0) ? CGShell::unit() : CGShell(lbra);
+            CGShell b = (dummy_center == 1) ? CGShell::unit() : CGShell(lbra);
+            CGShell c(lc);
+            CGShell d(ld);
 #if LIBINT_ERI3_PURE_SH
-          // pure-SH on the fitting center of plain ERI3 only. The RKB
-          // operators cannot use it: pure_sh() enables the Ahlrichs
-          // simplification in the VRR, which is only valid if the shell's
-          // cartesian components are projected to solid harmonics as is. The
-          // RKB kernels are built from derivative TwoPRep children, and
-          // translational invariance routes a derivative onto the fitting
-          // shell; the derivative of a (pure) shell needs exactly the
-          // components the simplification drops. The same reason restricts
-          // pure_sh to deriv_level == 0 for plain ERI3.
-          if constexpr (std::is_same<OperType, TwoPRep>::value) {
-            if (dummy_center == 1 && deriv_level == 0) a.pure_sh(true);
-            if (dummy_center == 0 && deriv_level == 0) b.pure_sh(true);
-          }
-#endif
-
-          unsigned int center = 0;
-          for (unsigned int i = 0; i < 4; ++i) {
-            if (i == dummy_center) continue;
-            for (unsigned int xyz = 0; xyz < 3; ++xyz) {
-              if (i == 0) a.deriv().inc(xyz, (*diter).at(3 * center + xyz));
-              if (i == 1) b.deriv().inc(xyz, (*diter).at(3 * center + xyz));
-              if (i == 2) c.deriv().inc(xyz, (*diter).at(3 * center + xyz));
-              if (i == 3) d.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+            // pure-SH on the fitting center of plain ERI3 only. The RKB
+            // operators cannot use it: pure_sh() enables the Ahlrichs
+            // simplification in the VRR, which is only valid if the shell's
+            // cartesian components are projected to solid harmonics as is. The
+            // RKB kernels are built from derivative TwoPRep children, and
+            // translational invariance routes a derivative onto the fitting
+            // shell; the derivative of a (pure) shell needs exactly the
+            // components the simplification drops. The same reason restricts
+            // pure_sh to deriv_level == 0 for plain ERI3.
+            if constexpr (std::is_same<OperType, TwoPRep>::value) {
+              if (dummy_center == 1 && deriv_level == 0) a.pure_sh(true);
+              if (dummy_center == 0 && deriv_level == 0) b.pure_sh(true);
             }
-            ++center;
+#endif
+
+            unsigned int center = 0;
+            for (unsigned int i = 0; i < 4; ++i) {
+              if (i == dummy_center) continue;
+              for (unsigned int xyz = 0; xyz < 3; ++xyz) {
+                if (i == 0) a.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+                if (i == 1) b.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+                if (i == 2) c.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+                if (i == 3) d.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+              }
+              ++center;
+            }
+
+            // emit one target per operator component (1 for plain ERI3, 4 for
+            // RKB CoulombσpσpOper)
+            for (unsigned int op = 0; op != descrs.size(); ++op) {
+              OperType oper(descrs[op]);
+              std::shared_ptr<TwoBody_sh_11_11> abcd =
+                  TwoBody_sh_11_11::Instance(a, b, c, d, nullaux, oper);
+              targets.push_back(abcd);
+            }
+            last_deriv = diter.last();
+            if (!last_deriv) diter.next();
+          } while (!last_deriv);
+          // append all derivatives as targets to the graph
+          for (auto t = targets.begin(); t != targets.end(); ++t) {
+            std::shared_ptr<DGVertex> t_ptr =
+                std::dynamic_pointer_cast<DGVertex, TwoBody_sh_11_11>(*t);
+            dg_xxx->append_target(t_ptr);
           }
 
-          // emit one target per operator component (1 for plain ERI3, 4 for
-          // RKB CoulombσpσpOper)
-          for (unsigned int op = 0; op != descrs.size(); ++op) {
-            OperType oper(descrs[op]);
-            std::shared_ptr<TwoBody_sh_11_11> abcd =
-                TwoBody_sh_11_11::Instance(a, b, c, d, nullaux, oper);
-            targets.push_back(abcd);
-          }
-          last_deriv = diter.last();
-          if (!last_deriv) diter.next();
-        } while (!last_deriv);
-        // append all derivatives as targets to the graph
-        for (auto t = targets.begin(); t != targets.end(); ++t) {
-          std::shared_ptr<DGVertex> t_ptr =
-              std::dynamic_pointer_cast<DGVertex, TwoBody_sh_11_11>(*t);
-          dg_xxx->append_target(t_ptr);
-        }
-
-        // make label that characterizes this set of targets
-        // use the label of the nondifferentiated integral as a base
-        std::string abcd_label;
-        {
-          CGShell a = (dummy_center == 0) ? CGShell::unit() : CGShell(lbra);
-          CGShell b = (dummy_center == 1) ? CGShell::unit() : CGShell(lbra);
-          CGShell c(lc);
-          CGShell d(ld);
+          // make label that characterizes this set of targets
+          // use the label of the nondifferentiated integral as a base
+          std::string abcd_label;
+          {
+            CGShell a = (dummy_center == 0) ? CGShell::unit() : CGShell(lbra);
+            CGShell b = (dummy_center == 1) ? CGShell::unit() : CGShell(lbra);
+            CGShell c(lc);
+            CGShell d(ld);
 #if LIBINT_ERI3_PURE_SH
-          if constexpr (std::is_same<OperType, TwoPRep>::value) {
-            if (dummy_center == 1 && deriv_level == 0) a.pure_sh(true);
-            if (dummy_center == 0 && deriv_level == 0) b.pure_sh(true);
-          }
+            if constexpr (std::is_same<OperType, TwoPRep>::value) {
+              if (dummy_center == 1 && deriv_level == 0) a.pure_sh(true);
+              if (dummy_center == 0 && deriv_level == 0) b.pure_sh(true);
+            }
 #endif
-          if constexpr (std::is_same<OperType, TwoPRep>::value) {
-            OperType oper(descrs[0]);
-            std::shared_ptr<TwoBody_sh_11_11> abcd =
-                TwoBody_sh_11_11::Instance(a, b, c, d, nullaux, oper);
-            abcd_label = abcd->label();
-          } else {
-            // For RKB operators, build the label by hand (matches the
-            // build_TwoPRep_2b_2k convention) so that the operator name is
-            // embedded in the source-file name without depending on the
-            // TwoPRep label format.
-            std::ostringstream oss;
-            oss << "_" << a.label() << "_" << b.label();
-            oss << "_" << label;
-            oss << "_" << c.label() << "_" << d.label();
-            abcd_label = oss.str();
+            if constexpr (std::is_same<OperType, TwoPRep>::value) {
+              OperType oper(descrs[0]);
+              std::shared_ptr<TwoBody_sh_11_11> abcd =
+                  TwoBody_sh_11_11::Instance(a, b, c, d, nullaux, oper);
+              abcd_label = abcd->label();
+            } else {
+              // For RKB operators, build the label by hand (matches the
+              // build_TwoPRep_2b_2k convention) so that the operator name is
+              // embedded in the source-file name without depending on the
+              // TwoPRep label format.
+              std::ostringstream oss;
+              oss << "_" << a.label() << "_" << b.label();
+              oss << "_" << label;
+              oss << "_" << c.label() << "_" << d.label();
+              abcd_label = oss.str();
+            }
           }
-        }
-        // + derivative level (if deriv_level > 0)
-        std::string eval_label;
-        {
-          eval_label = "";
-          if (deriv_level != 0) {
-            std::ostringstream oss;
-            oss << "deriv" << deriv_level;
-            eval_label += oss.str();
+          // + derivative level (if deriv_level > 0)
+          std::string eval_label;
+          {
+            eval_label = "";
+            if (deriv_level != 0) {
+              std::ostringstream oss;
+              oss << "deriv" << deriv_level;
+              eval_label += oss.str();
+            }
+            if constexpr (std::is_same<OperType, TwoPRep>::value) {
+              eval_label += "eri3";
+            }
+            eval_label += abcd_label;
           }
-          if constexpr (std::is_same<OperType, TwoPRep>::value) {
-            eval_label += "eri3";
+
+          g_progress.current_task = eval_label;
+          g_progress.print();
+
+          std::string prefix(cparams->source_directory());
+          std::deque<std::string> decl_filenames;
+          std::deque<std::string> def_filenames;
+
+          // this will generate code for this targets, and potentially generate
+          // code for its prerequisites
+          GenerateCode(dg_xxx, context, cparams, strat, tactic, memman,
+                       decl_filenames, def_filenames, prefix, eval_label,
+                       false);
+
+          // update max stack size and # of targets
+          journal.max_stack_size.emplace_back(max_am,
+                                              memman->max_memory_used());
+          journal.max_ntarget.push_back(targets.size());
+          // os << " Max memory used = " << memman->max_memory_used() <<
+          // std::endl;
+
+          // set pointer to the top-level evaluator function
+          ostringstream oss;
+          oss << context->label_to_function_name("libint2_build_" + task) << "["
+              << lbra << "][" << lc << "][" << ld
+              << "] = " << context->label_to_function_name(eval_label)
+              << context->end_of_stat() << endl;
+          journal.static_init.push_back(oss.str());
+
+          // need to declare this function internally
+          for (auto& decl_filename : decl_filenames) {
+            oss.str("");
+            oss << "#include <" << decl_filename << ">" << endl;
+            journal.int_iface.push_back(oss.str());
           }
-          eval_label += abcd_label;
-        }
 
-        g_progress.current_task = eval_label;
-        g_progress.print();
-
-        std::string prefix(cparams->source_directory());
-        std::deque<std::string> decl_filenames;
-        std::deque<std::string> def_filenames;
-
-        // this will generate code for this targets, and potentially generate
-        // code for its prerequisites
-        GenerateCode(dg_xxx, context, cparams, strat, tactic, memman,
-                     decl_filenames, def_filenames, prefix, eval_label, false);
-
-        // update max stack size and # of targets
-        const std::shared_ptr<TaskParameters>& tparams =
-            taskmgr.current().params();
-        tparams->max_stack_size(max_am, memman->max_memory_used());
-        tparams->max_ntarget(targets.size());
-        // os << " Max memory used = " << memman->max_memory_used() <<
-        // std::endl;
-
-        // set pointer to the top-level evaluator function
-        ostringstream oss;
-        oss << context->label_to_function_name("libint2_build_" + task) << "["
-            << lbra << "][" << lc << "][" << ld
-            << "] = " << context->label_to_function_name(eval_label)
-            << context->end_of_stat() << endl;
-        iface->to_static_init(oss.str());
-
-        // need to declare this function internally
-        for (auto& decl_filename : decl_filenames) {
-          oss.str("");
-          oss << "#include <" << decl_filename << ">" << endl;
-          iface->to_int_iface(oss.str());
-        }
-
-#if DEBUG
-        os << "Max memory used = " << memman->max_memory_used() << endl;
-#endif
-        dg_xxx->reset();
-        memman->reset();
+          dg_xxx->reset();
+          memman->reset();
+        });
       }  // end of d loop
     }    // end of c loop
   }      // end of bra loop
@@ -1793,168 +1810,167 @@ void build_TwoPRep_1b_1k(std::ostream& os,
   // 3) at the end, for each unresolved recurrence relation generate
   //    explicit source code
   //
-  std::shared_ptr<DirectedGraph> dg_xxx(new DirectedGraph);
-  std::shared_ptr<Strategy> strat(new Strategy());
-  std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
-  std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
 
   for (unsigned int lbra = 0; lbra <= lmax; lbra++) {
     for (unsigned int lket = 0; lket <= lmax; lket++) {
-      // I will use 4-center recurrence relations and integrals, and have two
-      // centers carry an s function unfortunately, depending on the direction
-      // in which the build goes it must be A(0) and C(2) or B(1) and D(3)
-      const unsigned int dummy_center1 =
-          (LIBINT_SHELL_SET == LIBINT_SHELL_SET_ORCA) ? 0 : 1;
-      const unsigned int dummy_center2 =
-          (LIBINT_SHELL_SET == LIBINT_SHELL_SET_ORCA) ? 2 : 3;
-
-      // std::shared_ptr<Tactic> tactic(new ParticleDirectionTactic(lbra > lket
-      // ? false : true));
-      std::shared_ptr<Tactic> tactic(new FourCenter_OS_Tactic(
-          dummy_center1 == 0 ? 0 : lbra, dummy_center1 == 1 ? 0 : lbra,
-          dummy_center2 == 2 ? 0 : lket, dummy_center2 == 3 ? 0 : lket));
-
 #if STUDY_MEMORY_USAGE
       const int lim = 1;
       if (!(lbra == lim && lket == lim)) continue;
 #endif
 
-      // unroll only if max_am <= cparams->max_am_opt(task)
-      using std::max;
-      const unsigned int max_am = max(lbra, lket);
-      const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-      const bool need_to_unroll =
-          l_to_cgshellsize(lbra) * l_to_cgshellsize(lket) <=
-          cparams->unroll_threshold();
-      const unsigned int unroll_threshold =
-          need_to_optimize && need_to_unroll
-              ? std::numeric_limits<unsigned int>::max()
-              : 0;
-      dg_xxx->registry()->unroll_threshold(unroll_threshold);
-      dg_xxx->registry()->do_cse(need_to_optimize);
-      dg_xxx->registry()->condense_expr(condense_expr(
-          cparams->unroll_threshold(), cparams->max_vector_length() > 1));
-      // Need to accumulate integrals?
-      dg_xxx->registry()->accumulate_targets(cparams->accumulate_targets());
+      // the cost of the job: the number of integrals in the shell pair
+      const double cost = l_to_cgshellsize(lbra) * l_to_cgshellsize(lket);
+      CodegenJobs::instance().add(task, cost, [=](ShellSetJournal& journal) {
+        std::shared_ptr<DirectedGraph> dg_xxx(new DirectedGraph);
+        std::shared_ptr<Strategy> strat(new Strategy());
+        std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
+        std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
+        // I will use 4-center recurrence relations and integrals, and have two
+        // centers carry an s function unfortunately, depending on the direction
+        // in which the build goes it must be A(0) and C(2) or B(1) and D(3)
+        const unsigned int dummy_center1 =
+            (LIBINT_SHELL_SET == LIBINT_SHELL_SET_ORCA) ? 0 : 1;
+        const unsigned int dummy_center2 =
+            (LIBINT_SHELL_SET == LIBINT_SHELL_SET_ORCA) ? 2 : 3;
 
-      ////////////
-      // loop over unique derivative index combinations
-      ////////////
-      // NB translational invariance is handled by DerivGaussV2
-      CartesianDerivIterator<2> diter(deriv_level);
-      std::vector<std::shared_ptr<TwoPRep_sh_11_11>> targets;
-      bool last_deriv = false;
-      do {
-        CGShell a = (dummy_center1 == 0) ? CGShell::unit() : CGShell(lbra);
-        CGShell b = (dummy_center1 == 1) ? CGShell::unit() : CGShell(lbra);
-        CGShell c = (dummy_center2 == 2) ? CGShell::unit() : CGShell(lket);
-        CGShell d = (dummy_center2 == 3) ? CGShell::unit() : CGShell(lket);
+        // std::shared_ptr<Tactic> tactic(new ParticleDirectionTactic(lbra >
+        // lket ? false : true));
+        std::shared_ptr<Tactic> tactic(new FourCenter_OS_Tactic(
+            dummy_center1 == 0 ? 0 : lbra, dummy_center1 == 1 ? 0 : lbra,
+            dummy_center2 == 2 ? 0 : lket, dummy_center2 == 3 ? 0 : lket));
+
+        // unroll only if max_am <= cparams->max_am_opt(task)
+        using std::max;
+        const unsigned int max_am = max(lbra, lket);
+        const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
+        const bool need_to_unroll =
+            l_to_cgshellsize(lbra) * l_to_cgshellsize(lket) <=
+            cparams->unroll_threshold();
+        const unsigned int unroll_threshold =
+            need_to_optimize && need_to_unroll
+                ? std::numeric_limits<unsigned int>::max()
+                : 0;
+        dg_xxx->registry()->unroll_threshold(unroll_threshold);
+        dg_xxx->registry()->do_cse(need_to_optimize);
+        dg_xxx->registry()->condense_expr(condense_expr(
+            cparams->unroll_threshold(), cparams->max_vector_length() > 1));
+        // Need to accumulate integrals?
+        dg_xxx->registry()->accumulate_targets(cparams->accumulate_targets());
+
+        ////////////
+        // loop over unique derivative index combinations
+        ////////////
+        // NB translational invariance is handled by DerivGaussV2
+        CartesianDerivIterator<2> diter(deriv_level);
+        std::vector<std::shared_ptr<TwoPRep_sh_11_11>> targets;
+        bool last_deriv = false;
+        do {
+          CGShell a = (dummy_center1 == 0) ? CGShell::unit() : CGShell(lbra);
+          CGShell b = (dummy_center1 == 1) ? CGShell::unit() : CGShell(lbra);
+          CGShell c = (dummy_center2 == 2) ? CGShell::unit() : CGShell(lket);
+          CGShell d = (dummy_center2 == 3) ? CGShell::unit() : CGShell(lket);
 #if LIBINT_ERI2_PURE_SH
-        if (dummy_center1 == 1 && deriv_level == 0) a.pure_sh(true);
-        if (dummy_center1 == 0 && deriv_level == 0) b.pure_sh(true);
-        if (dummy_center2 == 3 && deriv_level == 0) c.pure_sh(true);
-        if (dummy_center2 == 2 && deriv_level == 0) d.pure_sh(true);
+          if (dummy_center1 == 1 && deriv_level == 0) a.pure_sh(true);
+          if (dummy_center1 == 0 && deriv_level == 0) b.pure_sh(true);
+          if (dummy_center2 == 3 && deriv_level == 0) c.pure_sh(true);
+          if (dummy_center2 == 2 && deriv_level == 0) d.pure_sh(true);
 #endif
 
-        unsigned int center = 0;
-        for (unsigned int i = 0; i < 4; ++i) {
-          if (i == dummy_center1 || i == dummy_center2) continue;
-          for (unsigned int xyz = 0; xyz < 3; ++xyz) {
-            if (i == 0) a.deriv().inc(xyz, (*diter).at(3 * center + xyz));
-            if (i == 1) b.deriv().inc(xyz, (*diter).at(3 * center + xyz));
-            if (i == 2) c.deriv().inc(xyz, (*diter).at(3 * center + xyz));
-            if (i == 3) d.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+          unsigned int center = 0;
+          for (unsigned int i = 0; i < 4; ++i) {
+            if (i == dummy_center1 || i == dummy_center2) continue;
+            for (unsigned int xyz = 0; xyz < 3; ++xyz) {
+              if (i == 0) a.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+              if (i == 1) b.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+              if (i == 2) c.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+              if (i == 3) d.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+            }
+            ++center;
           }
-          ++center;
+
+          // use 4-center integrals
+          std::shared_ptr<TwoPRep_sh_11_11> abcd =
+              TwoPRep_sh_11_11::Instance(a, b, c, d, mType(0u));
+          targets.push_back(abcd);
+          last_deriv = diter.last();
+          if (!last_deriv) diter.next();
+        } while (!last_deriv);
+        // append all derivatives as targets to the graph
+        for (std::vector<std::shared_ptr<TwoPRep_sh_11_11>>::const_iterator t =
+                 targets.begin();
+             t != targets.end(); ++t) {
+          std::shared_ptr<DGVertex> t_ptr =
+              std::dynamic_pointer_cast<DGVertex, TwoPRep_sh_11_11>(*t);
+          dg_xxx->append_target(t_ptr);
         }
 
-        // use 4-center integrals
-        std::shared_ptr<TwoPRep_sh_11_11> abcd =
-            TwoPRep_sh_11_11::Instance(a, b, c, d, mType(0u));
-        targets.push_back(abcd);
-        last_deriv = diter.last();
-        if (!last_deriv) diter.next();
-      } while (!last_deriv);
-      // append all derivatives as targets to the graph
-      for (std::vector<std::shared_ptr<TwoPRep_sh_11_11>>::const_iterator t =
-               targets.begin();
-           t != targets.end(); ++t) {
-        std::shared_ptr<DGVertex> t_ptr =
-            std::dynamic_pointer_cast<DGVertex, TwoPRep_sh_11_11>(*t);
-        dg_xxx->append_target(t_ptr);
-      }
-
-      // make label that characterizes this set of targets
-      // use the label of the nondifferentiated integral as a base
-      std::string abcd_label;
-      {
-        CGShell a = (dummy_center1 == 0) ? CGShell::unit() : CGShell(lbra);
-        CGShell b = (dummy_center1 == 1) ? CGShell::unit() : CGShell(lbra);
-        CGShell c = (dummy_center2 == 2) ? CGShell::unit() : CGShell(lket);
-        CGShell d = (dummy_center2 == 3) ? CGShell::unit() : CGShell(lket);
+        // make label that characterizes this set of targets
+        // use the label of the nondifferentiated integral as a base
+        std::string abcd_label;
+        {
+          CGShell a = (dummy_center1 == 0) ? CGShell::unit() : CGShell(lbra);
+          CGShell b = (dummy_center1 == 1) ? CGShell::unit() : CGShell(lbra);
+          CGShell c = (dummy_center2 == 2) ? CGShell::unit() : CGShell(lket);
+          CGShell d = (dummy_center2 == 3) ? CGShell::unit() : CGShell(lket);
 #if LIBINT_ERI2_PURE_SH
-        if (dummy_center1 == 1 && deriv_level == 0) a.pure_sh(true);
-        if (dummy_center1 == 0 && deriv_level == 0) b.pure_sh(true);
-        if (dummy_center2 == 3 && deriv_level == 0) c.pure_sh(true);
-        if (dummy_center2 == 2 && deriv_level == 0) d.pure_sh(true);
+          if (dummy_center1 == 1 && deriv_level == 0) a.pure_sh(true);
+          if (dummy_center1 == 0 && deriv_level == 0) b.pure_sh(true);
+          if (dummy_center2 == 3 && deriv_level == 0) c.pure_sh(true);
+          if (dummy_center2 == 2 && deriv_level == 0) d.pure_sh(true);
 #endif
-        std::shared_ptr<TwoPRep_sh_11_11> abcd =
-            TwoPRep_sh_11_11::Instance(a, b, c, d, mType(0u));
-        abcd_label = abcd->label();
-      }
-      // + derivative level (if deriv_level > 0)
-      std::string label;
-      {
-        label = "";
-        if (deriv_level != 0) {
-          std::ostringstream oss;
-          oss << "deriv" << deriv_level;
-          label += oss.str();
+          std::shared_ptr<TwoPRep_sh_11_11> abcd =
+              TwoPRep_sh_11_11::Instance(a, b, c, d, mType(0u));
+          abcd_label = abcd->label();
         }
-        label += "eri2";
-        label += abcd_label;
-      }
+        // + derivative level (if deriv_level > 0)
+        std::string label;
+        {
+          label = "";
+          if (deriv_level != 0) {
+            std::ostringstream oss;
+            oss << "deriv" << deriv_level;
+            label += oss.str();
+          }
+          label += "eri2";
+          label += abcd_label;
+        }
 
-      g_progress.current_task = label;
-      g_progress.print();
+        g_progress.current_task = label;
+        g_progress.print();
 
-      std::string prefix(cparams->source_directory());
-      std::deque<std::string> decl_filenames;
-      std::deque<std::string> def_filenames;
+        std::string prefix(cparams->source_directory());
+        std::deque<std::string> decl_filenames;
+        std::deque<std::string> def_filenames;
 
-      // this will generate code for this targets, and potentially generate
-      // code for its prerequisites
-      GenerateCode(dg_xxx, context, cparams, strat, tactic, memman,
-                   decl_filenames, def_filenames, prefix, label, false);
+        // this will generate code for this targets, and potentially generate
+        // code for its prerequisites
+        GenerateCode(dg_xxx, context, cparams, strat, tactic, memman,
+                     decl_filenames, def_filenames, prefix, label, false);
 
-      // update max stack size and # of targets
-      const std::shared_ptr<TaskParameters>& tparams =
-          taskmgr.current().params();
-      tparams->max_stack_size(max_am, memman->max_memory_used());
-      tparams->max_ntarget(targets.size());
-      // os << " Max memory used = " << memman->max_memory_used() <<
-      // std::endl;
+        // update max stack size and # of targets
+        journal.max_stack_size.emplace_back(max_am, memman->max_memory_used());
+        journal.max_ntarget.push_back(targets.size());
+        // os << " Max memory used = " << memman->max_memory_used() <<
+        // std::endl;
 
-      // set pointer to the top-level evaluator function
-      ostringstream oss;
-      oss << context->label_to_function_name("libint2_build_" + task) << "["
-          << lbra << "][" << lket
-          << "] = " << context->label_to_function_name(label)
-          << context->end_of_stat() << endl;
-      iface->to_static_init(oss.str());
+        // set pointer to the top-level evaluator function
+        ostringstream oss;
+        oss << context->label_to_function_name("libint2_build_" + task) << "["
+            << lbra << "][" << lket
+            << "] = " << context->label_to_function_name(label)
+            << context->end_of_stat() << endl;
+        journal.static_init.push_back(oss.str());
 
-      // need to declare this function internally
-      for (auto& decl_filename : decl_filenames) {
-        oss.str("");
-        oss << "#include <" << decl_filename << ">" << endl;
-        iface->to_int_iface(oss.str());
-      }
+        // need to declare this function internally
+        for (auto& decl_filename : decl_filenames) {
+          oss.str("");
+          oss << "#include <" << decl_filename << ">" << endl;
+          journal.int_iface.push_back(oss.str());
+        }
 
-#if DEBUG
-      os << "Max memory used = " << memman->max_memory_used() << endl;
-#endif
-      dg_xxx->reset();
-      memman->reset();
+        dg_xxx->reset();
+        memman->reset();
+      });
     }  // end of ket loop
   }    // end of bra loop
 }
@@ -1990,13 +2006,6 @@ void build_R12kG12_2b_2k(std::ostream& os,
   // 3) at the end, for each unresolved recurrence relation generate
   //    explicit source code
   //
-  std::shared_ptr<DirectedGraph> dg_xxxx(new DirectedGraph);
-  std::shared_ptr<Strategy> strat(new Strategy);
-  std::shared_ptr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
-  // std::shared_ptr<Tactic> tactic(new RandomChoiceTactic());
-  // std::shared_ptr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
-  std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
-  std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
 
   for (unsigned int la = 0; la <= lmax; la++) {
     for (unsigned int lb = 0; lb <= lmax; lb++) {
@@ -2009,152 +2018,172 @@ void build_R12kG12_2b_2k(std::ostream& os,
           if (ssss) continue;
 #endif
 
-          // unroll only if max_am <= cparams->max_am_opt(task)
-          using std::max;
-          const unsigned int max_am = max(max(la, lb), max(lc, ld));
-          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          const unsigned int unroll_threshold =
-              need_to_optimize ? cparams->unroll_threshold() : 0;
-          dg_xxxx->registry()->unroll_threshold(unroll_threshold);
-          dg_xxxx->registry()->do_cse(need_to_optimize);
-          dg_xxxx->registry()->condense_expr(condense_expr(
-              cparams->unroll_threshold(), cparams->max_vector_length() > 1));
-          // Need to accumulate integrals?
-          dg_xxxx->registry()->accumulate_targets(
-              cparams->accumulate_targets());
+          // the cost of the job: the number of integrals in the shell quartet
+          const double cost = l_to_cgshellsize(la) * l_to_cgshellsize(lb) *
+                              l_to_cgshellsize(lc) * l_to_cgshellsize(ld);
+          CodegenJobs::instance().add(
+              task, cost, [=, &os](ShellSetJournal& journal) {
+                std::shared_ptr<DirectedGraph> dg_xxxx(new DirectedGraph);
+                std::shared_ptr<Strategy> strat(new Strategy);
+                std::shared_ptr<Tactic> tactic(
+                    new FirstChoiceTactic<DummyRandomizePolicy>);
+                std::shared_ptr<CodeContext> context(
+                    new CppCodeContext(cparams));
+                std::shared_ptr<MemoryManager> memman(
+                    new WorstFitMemoryManager());
 
-          typedef R12kG12_11_11_sq int_type;
-          typedef R12kG12 oper_type;
-          // k=0
-          if (!ssss) {
-            typedef oper_type::Descriptor oper_descr;
-            oper_type oper(oper_descr(0));
-#if LIBINT_CONTRACTED_INTS
-            oper.descr().contract();
-#endif
-            std::shared_ptr<int_type> abcd = int_type::Instance(
-                *shells[la], *shells[lb], *shells[lc], *shells[ld], 0u, oper);
-            os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr =
-                std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
+                // unroll only if max_am <= cparams->max_am_opt(task)
+                using std::max;
+                const unsigned int max_am = max(max(la, lb), max(lc, ld));
+                const bool need_to_optimize =
+                    (max_am <= cparams->max_am_opt(task));
+                const unsigned int unroll_threshold =
+                    need_to_optimize ? cparams->unroll_threshold() : 0;
+                dg_xxxx->registry()->unroll_threshold(unroll_threshold);
+                dg_xxxx->registry()->do_cse(need_to_optimize);
+                dg_xxxx->registry()->condense_expr(
+                    condense_expr(cparams->unroll_threshold(),
+                                  cparams->max_vector_length() > 1));
+                // Need to accumulate integrals?
+                dg_xxxx->registry()->accumulate_targets(
+                    cparams->accumulate_targets());
 
-          // k=-1
-          if (!ssss) {
-            typedef oper_type::Descriptor oper_descr;
-            oper_type oper(oper_descr(-1));
+                typedef R12kG12_11_11_sq int_type;
+                typedef R12kG12 oper_type;
+                // k=0
+                if (!ssss) {
+                  typedef oper_type::Descriptor oper_descr;
+                  oper_type oper(oper_descr(0));
 #if LIBINT_CONTRACTED_INTS
-            oper.descr().contract();
+                  oper.descr().contract();
 #endif
-            std::shared_ptr<int_type> abcd = int_type::Instance(
-                *shells[la], *shells[lb], *shells[lc], *shells[ld], 0u, oper);
-            os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr =
-                std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
+                  std::shared_ptr<int_type> abcd =
+                      int_type::Instance(*shells[la], *shells[lb], *shells[lc],
+                                         *shells[ld], 0u, oper);
+                  os << "building " << abcd->description() << endl;
+                  std::shared_ptr<DGVertex> abcd_ptr =
+                      std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
+                  dg_xxxx->append_target(abcd_ptr);
+                }
+
+                // k=-1
+                if (!ssss) {
+                  typedef oper_type::Descriptor oper_descr;
+                  oper_type oper(oper_descr(-1));
+#if LIBINT_CONTRACTED_INTS
+                  oper.descr().contract();
+#endif
+                  std::shared_ptr<int_type> abcd =
+                      int_type::Instance(*shells[la], *shells[lb], *shells[lc],
+                                         *shells[ld], 0u, oper);
+                  os << "building " << abcd->description() << endl;
+                  std::shared_ptr<DGVertex> abcd_ptr =
+                      std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
+                  dg_xxxx->append_target(abcd_ptr);
+                }
 
 #if LIBINT_SUPPORT_T1G12
-          // [T_1,G12]
-          if (true) {
-            typedef TiG12_11_11_sq int_type;
-            typedef int_type::OperType oper_type;
-            typedef oper_type::Descriptor oper_descr;
-            oper_type oper(oper_descr(0));
+                // [T_1,G12]
+                if (true) {
+                  typedef TiG12_11_11_sq int_type;
+                  typedef int_type::OperType oper_type;
+                  typedef oper_type::Descriptor oper_descr;
+                  oper_type oper(oper_descr(0));
 #if LIBINT_CONTRACTED_INTS
-            oper.descr().contract();
+                  oper.descr().contract();
 #endif
-            std::shared_ptr<int_type> abcd = int_type::Instance(
-                *shells[la], *shells[lb], *shells[lc], *shells[ld], 0u, oper);
-            os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr =
-                std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
+                  std::shared_ptr<int_type> abcd =
+                      int_type::Instance(*shells[la], *shells[lb], *shells[lc],
+                                         *shells[ld], 0u, oper);
+                  os << "building " << abcd->description() << endl;
+                  std::shared_ptr<DGVertex> abcd_ptr =
+                      std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
+                  dg_xxxx->append_target(abcd_ptr);
+                }
 
-          // [T_2,G12]
-          if (true) {
-            typedef TiG12_11_11_sq int_type;
-            typedef int_type::OperType oper_type;
-            typedef oper_type::Descriptor oper_descr;
-            oper_type oper(oper_descr(1));
+                // [T_2,G12]
+                if (true) {
+                  typedef TiG12_11_11_sq int_type;
+                  typedef int_type::OperType oper_type;
+                  typedef oper_type::Descriptor oper_descr;
+                  oper_type oper(oper_descr(1));
 #if LIBINT_CONTRACTED_INTS
-            oper.descr().contract();
+                  oper.descr().contract();
 #endif
-            std::shared_ptr<int_type> abcd = int_type::Instance(
-                *shells[la], *shells[lb], *shells[lc], *shells[ld], 0u, oper);
-            os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr =
-                std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
+                  std::shared_ptr<int_type> abcd =
+                      int_type::Instance(*shells[la], *shells[lb], *shells[lc],
+                                         *shells[ld], 0u, oper);
+                  os << "building " << abcd->description() << endl;
+                  std::shared_ptr<DGVertex> abcd_ptr =
+                      std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
+                  dg_xxxx->append_target(abcd_ptr);
+                }
 #endif
 
-          // [G12,[T1,G12]]
-          if (!ssss) {
-            typedef G12TiG12_11_11_sq int_type;
-            typedef int_type::OperType oper_type;
-            typedef oper_type::Descriptor oper_descr;
-            oper_type oper(
-                oper_descr(0));  // doesn't matter whether T1 or T2 here
+                // [G12,[T1,G12]]
+                if (!ssss) {
+                  typedef G12TiG12_11_11_sq int_type;
+                  typedef int_type::OperType oper_type;
+                  typedef oper_type::Descriptor oper_descr;
+                  oper_type oper(
+                      oper_descr(0));  // doesn't matter whether T1 or T2 here
 #if LIBINT_CONTRACTED_INTS
-            oper.descr().contract();
+                  oper.descr().contract();
 #endif
-            std::shared_ptr<int_type> abcd = int_type::Instance(
-                *shells[la], *shells[lb], *shells[lc], *shells[ld], 0u, oper);
-            os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr =
-                std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
+                  std::shared_ptr<int_type> abcd =
+                      int_type::Instance(*shells[la], *shells[lb], *shells[lc],
+                                         *shells[ld], 0u, oper);
+                  os << "building " << abcd->description() << endl;
+                  std::shared_ptr<DGVertex> abcd_ptr =
+                      std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
+                  dg_xxxx->append_target(abcd_ptr);
+                }
 
-          std::string _label;
-          {
-            ostringstream os;
-            os << "(" << shells[la]->label() << " " << shells[lb]->label()
-               << " | r_{12}^K * exp(-g*r_{12}^2) | " << shells[lc]->label()
-               << " " << shells[ld]->label() << ")";
-            _label = os.str();
-          }
+                std::string _label;
+                {
+                  ostringstream os;
+                  os << "(" << shells[la]->label() << " " << shells[lb]->label()
+                     << " | r_{12}^K * exp(-g*r_{12}^2) | "
+                     << shells[lc]->label() << " " << shells[ld]->label()
+                     << ")";
+                  _label = os.str();
+                }
 
-          std::string prefix(cparams->source_directory());
-          std::string label(_label);
-          std::deque<std::string> decl_filenames;
-          std::deque<std::string> def_filenames;
+                std::string prefix(cparams->source_directory());
+                std::string label(_label);
+                std::deque<std::string> decl_filenames;
+                std::deque<std::string> def_filenames;
 
-          // this will generate code for this targets, and potentially
-          // generate code for its prerequisites
-          GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
-                       decl_filenames, def_filenames, prefix, label, false);
+                // this will generate code for this targets, and potentially
+                // generate code for its prerequisites
+                GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
+                             decl_filenames, def_filenames, prefix, label,
+                             false);
 
-          // update max stack size
-          const std::shared_ptr<TaskParameters>& tparams =
-              taskmgr.current().params();
-          tparams->max_stack_size(max_am, memman->max_memory_used());
-          tparams->max_ntarget(5);
+                // update max stack size
+                journal.max_stack_size.emplace_back(max_am,
+                                                    memman->max_memory_used());
+                journal.max_ntarget.push_back(5);
 
-          ostringstream oss;
-          oss << context->label_to_function_name("libint2_build_r12kg12") << "["
-              << la << "][" << lb << "][" << lc << "][" << ld
-              << "] = " << context->label_to_function_name(label)
-              << context->end_of_stat() << endl;
-          iface->to_static_init(oss.str());
+                ostringstream oss;
+                oss << context->label_to_function_name("libint2_build_r12kg12")
+                    << "[" << la << "][" << lb << "][" << lc << "][" << ld
+                    << "] = " << context->label_to_function_name(label)
+                    << context->end_of_stat() << endl;
+                journal.static_init.push_back(oss.str());
 
-          // need to declare this function internally
-          for (std::deque<std::string>::const_iterator i =
-                   decl_filenames.begin();
-               i != decl_filenames.end(); ++i) {
-            oss.str("");
-            oss << "#include <" << *i << ">" << endl;
-            iface->to_int_iface(oss.str());
-          }
+                // need to declare this function internally
+                for (std::deque<std::string>::const_iterator i =
+                         decl_filenames.begin();
+                     i != decl_filenames.end(); ++i) {
+                  oss.str("");
+                  oss << "#include <" << *i << ">" << endl;
+                  journal.int_iface.push_back(oss.str());
+                }
 
-#if DEBUG
-          os << "Max memory used = " << memman->max_memory_used() << endl;
-#endif
-          dg_xxxx->reset();
-          memman->reset();
+                dg_xxxx->reset();
+                memman->reset();
+              });
         }  // end of d loop
       }    // end of c loop
     }      // end of b loop
@@ -2194,12 +2223,6 @@ void build_R12kG12_2b_2k_separate(
         iface->macro_define(std::string("MAX_AM_") + task_NAMES[task], lmax));
     iface->to_params(iface->macro_define("SUPPORT_T1G12", 0));
 
-    std::shared_ptr<DirectedGraph> dg_xxxx(new DirectedGraph);
-    std::shared_ptr<Strategy> strat(new Strategy);
-    std::shared_ptr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
-    std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
-    std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
-
     for (unsigned int la = 0; la <= lmax; la++) {
       for (unsigned int lb = 0; lb <= lmax; lb++) {
         for (unsigned int lc = 0; lc <= lmax; lc++) {
@@ -2210,96 +2233,111 @@ void build_R12kG12_2b_2k_separate(
                     LIBINT_SHELL_SET)>::value(la, lb, lc, ld))
               continue;
 
-            using std::max;
-            const unsigned int max_am = max(max(la, lb), max(lc, ld));
-            const bool need_to_optimize =
-                (max_am <= cparams->max_am_opt("r12kg12"));
-            const unsigned int unroll_threshold =
-                need_to_optimize ? cparams->unroll_threshold() : 0;
-            dg_xxxx->registry()->unroll_threshold(unroll_threshold);
-            dg_xxxx->registry()->do_cse(need_to_optimize);
-            dg_xxxx->registry()->condense_expr(condense_expr(
-                cparams->unroll_threshold(), cparams->max_vector_length() > 1));
-            // Need to accumulate integrals?
-            dg_xxxx->registry()->accumulate_targets(
-                cparams->accumulate_targets());
+            // the cost of the job: the number of integrals in the quartet
+            const double cost = l_to_cgshellsize(la) * l_to_cgshellsize(lb) *
+                                l_to_cgshellsize(lc) * l_to_cgshellsize(ld);
+            CodegenJobs::instance().add(
+                task_name, cost, [=, &os](ShellSetJournal& journal) {
+                  std::shared_ptr<DirectedGraph> dg_xxxx(new DirectedGraph);
+                  std::shared_ptr<Strategy> strat(new Strategy);
+                  std::shared_ptr<Tactic> tactic(
+                      new FirstChoiceTactic<DummyRandomizePolicy>);
+                  std::shared_ptr<CodeContext> context(
+                      new CppCodeContext(cparams));
+                  std::shared_ptr<MemoryManager> memman(
+                      new WorstFitMemoryManager());
 
-            std::string _label;
-            // k=0
-            if (task == 0) {
-              typedef R12kG12_11_11_sq int_type;
-              typedef R12kG12 oper_type;
-              typedef oper_type::Descriptor oper_descr;
-              oper_type oper(oper_descr(0));
+                  using std::max;
+                  const unsigned int max_am = max(max(la, lb), max(lc, ld));
+                  const bool need_to_optimize =
+                      (max_am <= cparams->max_am_opt("r12kg12"));
+                  const unsigned int unroll_threshold =
+                      need_to_optimize ? cparams->unroll_threshold() : 0;
+                  dg_xxxx->registry()->unroll_threshold(unroll_threshold);
+                  dg_xxxx->registry()->do_cse(need_to_optimize);
+                  dg_xxxx->registry()->condense_expr(
+                      condense_expr(cparams->unroll_threshold(),
+                                    cparams->max_vector_length() > 1));
+                  // Need to accumulate integrals?
+                  dg_xxxx->registry()->accumulate_targets(
+                      cparams->accumulate_targets());
+
+                  std::string _label;
+                  // k=0
+                  if (task == 0) {
+                    typedef R12kG12_11_11_sq int_type;
+                    typedef R12kG12 oper_type;
+                    typedef oper_type::Descriptor oper_descr;
+                    oper_type oper(oper_descr(0));
 #if LIBINT_CONTRACTED_INTS
-              oper.descr().contract();
+                    oper.descr().contract();
 #endif
-              std::shared_ptr<int_type> abcd = int_type::Instance(
-                  *shells[la], *shells[lb], *shells[lc], *shells[ld], 0u, oper);
-              os << "building " << abcd->description() << endl;
-              std::shared_ptr<DGVertex> abcd_ptr =
-                  std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
-              dg_xxxx->append_target(abcd_ptr);
-              _label = abcd_ptr->label();
-            }
+                    std::shared_ptr<int_type> abcd =
+                        int_type::Instance(*shells[la], *shells[lb],
+                                           *shells[lc], *shells[ld], 0u, oper);
+                    os << "building " << abcd->description() << endl;
+                    std::shared_ptr<DGVertex> abcd_ptr =
+                        std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
+                    dg_xxxx->append_target(abcd_ptr);
+                    _label = abcd_ptr->label();
+                  }
 
-            // [G12,[T1,G12]]
-            if (task == 1) {
-              typedef G12TiG12_11_11_sq int_type;
-              typedef int_type::OperType oper_type;
-              typedef oper_type::Descriptor oper_descr;
-              oper_type oper(
-                  oper_descr(0));  // doesn't matter whether T1 or T2 here
+                  // [G12,[T1,G12]]
+                  if (task == 1) {
+                    typedef G12TiG12_11_11_sq int_type;
+                    typedef int_type::OperType oper_type;
+                    typedef oper_type::Descriptor oper_descr;
+                    oper_type oper(
+                        oper_descr(0));  // doesn't matter whether T1 or T2 here
 #if LIBINT_CONTRACTED_INTS
-              oper.descr().contract();
+                    oper.descr().contract();
 #endif
-              std::shared_ptr<int_type> abcd = int_type::Instance(
-                  *shells[la], *shells[lb], *shells[lc], *shells[ld], 0u, oper);
-              os << "building " << abcd->description() << endl;
-              std::shared_ptr<DGVertex> abcd_ptr =
-                  std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
-              dg_xxxx->append_target(abcd_ptr);
-              _label = abcd_ptr->label();
-            }
+                    std::shared_ptr<int_type> abcd =
+                        int_type::Instance(*shells[la], *shells[lb],
+                                           *shells[lc], *shells[ld], 0u, oper);
+                    os << "building " << abcd->description() << endl;
+                    std::shared_ptr<DGVertex> abcd_ptr =
+                        std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
+                    dg_xxxx->append_target(abcd_ptr);
+                    _label = abcd_ptr->label();
+                  }
 
-            std::string prefix(cparams->source_directory());
-            std::string label(_label);
-            std::deque<std::string> decl_filenames;
-            std::deque<std::string> def_filenames;
+                  std::string prefix(cparams->source_directory());
+                  std::string label(_label);
+                  std::deque<std::string> decl_filenames;
+                  std::deque<std::string> def_filenames;
 
-            // this will generate code for this targets, and potentially
-            // generate code for its prerequisites
-            GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
-                         decl_filenames, def_filenames, prefix, label, false);
+                  // this will generate code for this targets, and potentially
+                  // generate code for its prerequisites
+                  GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
+                               decl_filenames, def_filenames, prefix, label,
+                               false);
 
-            // update max stack size
-            const std::shared_ptr<TaskParameters>& tparams =
-                taskmgr.current().params();
-            tparams->max_stack_size(max_am, memman->max_memory_used());
-            tparams->max_ntarget(1);
+                  // update max stack size
+                  journal.max_stack_size.emplace_back(
+                      max_am, memman->max_memory_used());
+                  journal.max_ntarget.push_back(1);
 
-            ostringstream oss;
-            oss << context->label_to_function_name(
-                       std::string("libint2_build_") + task_names[task])
-                << "[" << la << "][" << lb << "][" << lc << "][" << ld
-                << "] = " << context->label_to_function_name(label)
-                << context->end_of_stat() << endl;
-            iface->to_static_init(oss.str());
+                  ostringstream oss;
+                  oss << context->label_to_function_name(
+                             std::string("libint2_build_") + task_names[task])
+                      << "[" << la << "][" << lb << "][" << lc << "][" << ld
+                      << "] = " << context->label_to_function_name(label)
+                      << context->end_of_stat() << endl;
+                  journal.static_init.push_back(oss.str());
 
-            // need to declare this function internally
-            for (std::deque<std::string>::const_iterator i =
-                     decl_filenames.begin();
-                 i != decl_filenames.end(); ++i) {
-              oss.str("");
-              oss << "#include <" << *i << ">" << endl;
-              iface->to_int_iface(oss.str());
-            }
+                  // need to declare this function internally
+                  for (std::deque<std::string>::const_iterator i =
+                           decl_filenames.begin();
+                       i != decl_filenames.end(); ++i) {
+                    oss.str("");
+                    oss << "#include <" << *i << ">" << endl;
+                    journal.int_iface.push_back(oss.str());
+                  }
 
-#if DEBUG
-            os << "Max memory used = " << memman->max_memory_used() << endl;
-#endif
-            dg_xxxx->reset();
-            memman->reset();
+                  dg_xxxx->reset();
+                  memman->reset();
+                });
           }  // end of d loop
         }    // end of c loop
       }      // end of b loop
@@ -2334,9 +2372,6 @@ void build_G12DKH_2b_2k(std::ostream& os,
   // 3) at the end, for each unresolved recurrence relation generate
   //    explicit source code
   //
-  std::shared_ptr<DirectedGraph> dg_xxxx(new DirectedGraph);
-  std::shared_ptr<Strategy> strat(new Strategy);
-  std::shared_ptr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   for (int la = 0; la <= lmax; la++) {
     for (int lb = 0; lb <= lmax; lb++) {
       for (int lc = 0; lc <= lmax; lc++) {
@@ -2350,146 +2385,141 @@ void build_G12DKH_2b_2k(std::ostream& os,
           if (!(la == lim && lb == lim && lc == lim && ld == lim)) continue;
 #endif
 
-          // unroll only if max_am <= cparams->max_am_opt(task)
-          using std::max;
-          const unsigned int max_am = max(max(la, lb), max(lc, ld));
-          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          const unsigned int unroll_threshold =
-              need_to_optimize ? cparams->unroll_threshold() : 0;
-          dg_xxxx->registry()->unroll_threshold(unroll_threshold);
-          dg_xxxx->registry()->do_cse(need_to_optimize);
-          dg_xxxx->registry()->condense_expr(condense_expr(
-              cparams->unroll_threshold(), cparams->max_vector_length() > 1));
-          // Need to accumulate integrals?
-          dg_xxxx->registry()->accumulate_targets(
-              cparams->accumulate_targets());
+          // the cost of the job: the number of integrals in the shell quartet
+          const double cost = l_to_cgshellsize(la) * l_to_cgshellsize(lb) *
+                              l_to_cgshellsize(lc) * l_to_cgshellsize(ld);
+          CodegenJobs::instance().add(
+              task, cost, [=, &os](ShellSetJournal& journal) {
+                std::shared_ptr<DirectedGraph> dg_xxxx(new DirectedGraph);
+                std::shared_ptr<Strategy> strat(new Strategy);
+                std::shared_ptr<Tactic> tactic(
+                    new FirstChoiceTactic<DummyRandomizePolicy>);
 
-          // k=0
-          if (!ssss) {
-            typedef R12kG12_11_11_sq int_type;
-            typedef R12kG12 oper_type;
-            typedef oper_type::Descriptor oper_descr;
-            std::shared_ptr<int_type> abcd =
-                int_type::Instance(*shells[la], *shells[lb], *shells[lc],
-                                   *shells[ld], 0u, oper_type(oper_descr(0)));
-            os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr =
-                std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
-          // k=2
-          if (!ssss) {
-            typedef R12kG12_11_11_sq int_type;
-            typedef R12kG12 oper_type;
-            typedef oper_type::Descriptor oper_descr;
-            std::shared_ptr<int_type> abcd =
-                int_type::Instance(*shells[la], *shells[lb], *shells[lc],
-                                   *shells[ld], 0u, oper_type(oper_descr(2)));
-            os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr =
-                std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
-          // k=4
-          if (!ssss) {
-            typedef R12kG12_11_11_sq int_type;
-            typedef R12kG12 oper_type;
-            typedef oper_type::Descriptor oper_descr;
-            std::shared_ptr<int_type> abcd =
-                int_type::Instance(*shells[la], *shells[lb], *shells[lc],
-                                   *shells[ld], 0u, oper_type(oper_descr(4)));
-            os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr =
-                std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
-          // (G12prime.Div1)^2
-          if (true) {
-            typedef DivG12prime_xTx_11_11_sq int_type;
-            typedef int_type::OperType oper_type;
-            typedef oper_type::Descriptor oper_descr;
-            std::shared_ptr<int_type> abcd =
-                int_type::Instance(*shells[la], *shells[lb], *shells[lc],
-                                   *shells[ld], 0u, oper_type(oper_descr(0)));
-            os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr =
-                std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
-          // (G12prime.Div2)^2
-          if (true) {
-            typedef DivG12prime_xTx_11_11_sq int_type;
-            typedef int_type::OperType oper_type;
-            typedef oper_type::Descriptor oper_descr;
-            std::shared_ptr<int_type> abcd =
-                int_type::Instance(*shells[la], *shells[lb], *shells[lc],
-                                   *shells[ld], 0u, oper_type(oper_descr(1)));
-            os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr =
-                std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
+                // unroll only if max_am <= cparams->max_am_opt(task)
+                using std::max;
+                const unsigned int max_am = max(max(la, lb), max(lc, ld));
+                const bool need_to_optimize =
+                    (max_am <= cparams->max_am_opt(task));
+                const unsigned int unroll_threshold =
+                    need_to_optimize ? cparams->unroll_threshold() : 0;
+                dg_xxxx->registry()->unroll_threshold(unroll_threshold);
+                dg_xxxx->registry()->do_cse(need_to_optimize);
+                dg_xxxx->registry()->condense_expr(
+                    condense_expr(cparams->unroll_threshold(),
+                                  cparams->max_vector_length() > 1));
+                // Need to accumulate integrals?
+                dg_xxxx->registry()->accumulate_targets(
+                    cparams->accumulate_targets());
 
-          std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
-          std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
-          dg_xxxx->apply(strat, tactic);
-          dg_xxxx->optimize_rr_out(context);
-          dg_xxxx->traverse();
-#if DEBUG
-          os << "The number of vertices = " << dg_xxxx->num_vertices() << endl;
-#endif
+                // k=0
+                if (!ssss) {
+                  typedef R12kG12_11_11_sq int_type;
+                  typedef R12kG12 oper_type;
+                  typedef oper_type::Descriptor oper_descr;
+                  std::shared_ptr<int_type> abcd = int_type::Instance(
+                      *shells[la], *shells[lb], *shells[lc], *shells[ld], 0u,
+                      oper_type(oper_descr(0)));
+                  os << "building " << abcd->description() << endl;
+                  std::shared_ptr<DGVertex> abcd_ptr =
+                      std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
+                  dg_xxxx->append_target(abcd_ptr);
+                }
+                // k=2
+                if (!ssss) {
+                  typedef R12kG12_11_11_sq int_type;
+                  typedef R12kG12 oper_type;
+                  typedef oper_type::Descriptor oper_descr;
+                  std::shared_ptr<int_type> abcd = int_type::Instance(
+                      *shells[la], *shells[lb], *shells[lc], *shells[ld], 0u,
+                      oper_type(oper_descr(2)));
+                  os << "building " << abcd->description() << endl;
+                  std::shared_ptr<DGVertex> abcd_ptr =
+                      std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
+                  dg_xxxx->append_target(abcd_ptr);
+                }
+                // k=4
+                if (!ssss) {
+                  typedef R12kG12_11_11_sq int_type;
+                  typedef R12kG12 oper_type;
+                  typedef oper_type::Descriptor oper_descr;
+                  std::shared_ptr<int_type> abcd = int_type::Instance(
+                      *shells[la], *shells[lb], *shells[lc], *shells[ld], 0u,
+                      oper_type(oper_descr(4)));
+                  os << "building " << abcd->description() << endl;
+                  std::shared_ptr<DGVertex> abcd_ptr =
+                      std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
+                  dg_xxxx->append_target(abcd_ptr);
+                }
+                // (G12prime.Div1)^2
+                if (true) {
+                  typedef DivG12prime_xTx_11_11_sq int_type;
+                  typedef int_type::OperType oper_type;
+                  typedef oper_type::Descriptor oper_descr;
+                  std::shared_ptr<int_type> abcd = int_type::Instance(
+                      *shells[la], *shells[lb], *shells[lc], *shells[ld], 0u,
+                      oper_type(oper_descr(0)));
+                  os << "building " << abcd->description() << endl;
+                  std::shared_ptr<DGVertex> abcd_ptr =
+                      std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
+                  dg_xxxx->append_target(abcd_ptr);
+                }
+                // (G12prime.Div2)^2
+                if (true) {
+                  typedef DivG12prime_xTx_11_11_sq int_type;
+                  typedef int_type::OperType oper_type;
+                  typedef oper_type::Descriptor oper_descr;
+                  std::shared_ptr<int_type> abcd = int_type::Instance(
+                      *shells[la], *shells[lb], *shells[lc], *shells[ld], 0u,
+                      oper_type(oper_descr(1)));
+                  os << "building " << abcd->description() << endl;
+                  std::shared_ptr<DGVertex> abcd_ptr =
+                      std::dynamic_pointer_cast<DGVertex, int_type>(abcd);
+                  dg_xxxx->append_target(abcd_ptr);
+                }
 
-          std::string label;
-          {
-            ostringstream os;
-            os << "(" << shells[la]->label() << " " << shells[lb]->label()
-               << " | r_{12}^(0,2,4) * exp(-g*r_{12}^2) | "
-               << shells[lc]->label() << " " << shells[ld]->label() << ")";
-            label = os.str();
-          }
-          std::string prefix(cparams->source_directory());
-          std::string decl_filename(prefix + context->label_to_filename(label));
-          decl_filename += ".h";
-          std::string src_filename(prefix + context->label_to_filename(label));
-          src_filename += ".cc";
-          std::basic_ofstream<char> declfile(decl_filename.c_str());
-          std::basic_ofstream<char> srcfile(src_filename.c_str());
-          dg_xxxx->generate_code(context, memman,
-                                 ImplicitDimensions::default_dims(),
-                                 std::shared_ptr<CodeSymbols>(new CodeSymbols),
-                                 label, declfile, srcfile);
+                std::shared_ptr<CodeContext> context(
+                    new CppCodeContext(cparams));
+                std::shared_ptr<MemoryManager> memman(
+                    new WorstFitMemoryManager());
 
-          // update max stack size
-          const std::shared_ptr<TaskParameters>& tparams =
-              taskmgr.current().params();
-          tparams->max_stack_size(max_am, memman->max_memory_used());
-          tparams->max_ntarget(3);
+                std::string label;
+                {
+                  ostringstream os;
+                  os << "(" << shells[la]->label() << " " << shells[lb]->label()
+                     << " | r_{12}^(0,2,4) * exp(-g*r_{12}^2) | "
+                     << shells[lc]->label() << " " << shells[ld]->label()
+                     << ")";
+                  label = os.str();
+                }
+                std::string prefix(cparams->source_directory());
+                std::deque<std::string> decl_filenames;
+                std::deque<std::string> def_filenames;
 
-          ostringstream oss;
-          oss << context->label_to_function_name("libint2_build_g12dkh") << "["
-              << la << "][" << lb << "][" << lc << "][" << ld
-              << "] = " << context->label_to_function_name(label)
-              << context->end_of_stat() << endl;
-          iface->to_static_init(oss.str());
+                // this will generate code for this targets, and their
+                // prerequisites, and extract the external symbols and the RRs
+                GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
+                             decl_filenames, def_filenames, prefix, label,
+                             false);
 
-          oss.str("");
-          oss << "#include <" << decl_filename << ">" << endl;
-          iface->to_int_iface(oss.str());
+                // update max stack size
+                journal.max_stack_size.emplace_back(max_am,
+                                                    memman->max_memory_used());
+                journal.max_ntarget.push_back(3);
 
-          // For the most expensive (i.e. presumably complete) graph extract
-          // all precomputed quantities -- these will be members of the
-          // evaluator structure also extract all RRs -- need to keep track of
-          // these to figure out which external symbols appearing in RR code
-          // belong to this task also
-          if (la == lmax && lb == lmax && lc == lmax && ld == lmax)
-            extract_symbols(dg_xxxx);
+                ostringstream oss;
+                oss << context->label_to_function_name("libint2_build_g12dkh")
+                    << "[" << la << "][" << lb << "][" << lc << "][" << ld
+                    << "] = " << context->label_to_function_name(label)
+                    << context->end_of_stat() << endl;
+                journal.static_init.push_back(oss.str());
 
-#if DEBUG
-          os << "Max memory used = " << memman->max_memory_used() << endl;
-#endif
-          dg_xxxx->reset();
-          declfile.close();
-          srcfile.close();
+                // need to declare this function internally
+                for (auto& decl_filename : decl_filenames) {
+                  oss.str("");
+                  oss << "#include <" << decl_filename << ">" << endl;
+                  journal.int_iface.push_back(oss.str());
+                }
+              });
         }  // end of d loop
       }    // end of c loop
     }      // end of b loop
