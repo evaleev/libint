@@ -358,7 +358,7 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
   **N.B.** It is also possible to use real vector types of [Agner Fog's vectorclass library](http://www.agner.org/optimize/#vectorclass), e.g. `Vec4d` and `Vec8f` for AVX. To use this library you need to add this to CPPFLAGS or CXXFLAGS: `-Ipath_to_vectorclass -DLIBINT2_HAVE_AGNER_VECTORCLASS` . On macOS, we only succeeded in using this library with a recent GNU C++ compiler, not with Clang. Not tested after CMake rework.
 
 * `LIBINT_USER_DEFINED_REAL_INCLUDES` - L - Additional #includes necessary to use the real type. [Defaults=none]
-* `LIBINT2_CONTRACTED_INTS` - G - Turn on support for contracted integrals. [Default=ON]
+* `LIBINT2_CONTRACTED_INTS` - G - Turn on support for contracted integrals. [Default=ON] N.B. the C++ API requires `LIBINT2_CONTRACTED_INTS=ON`; with `LIBINT2_CONTRACTED_INTS=OFF` also set `LIBINT2_REQUIRE_CXX_API=OFF` and `LIBINT2_REQUIRE_CXX_API_COMPILED=OFF`.
 * `LIBINT2_ERI_STRATEGY` - G - Compute ERIs using the following strategy (experts only). (0 for OS, 1 for HGP, 2 for HL). [Default=1]
 * `LIBINT2_USE_COMPOSITE_EVALUATORS` - G - Libint will use composite evaluators (i.e. every evaluator will compute one integral type only). [Default=ON]
 * `LIBINT2_SINGLE_EVALTYPE` - G - Generate single evaluator type (i.e. all tasks use the same evaluator). OFF is NYI [Default=ON]

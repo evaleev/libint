@@ -38,6 +38,14 @@
     "C++11 API does not support with user-defined real types yet; omit --with-real-type when configuring"
 #endif
 
+// libint2::Engine hands all primitive combinations of a shell set to the
+// generated code at once (via Libint_t::contrdepth), hence it requires a
+// library generated with support for contracted integrals
+#if !defined(LIBINT2_CONTRACTED_INTS) || !LIBINT2_CONTRACTED_INTS
+#error \
+    "Libint2 C++ API requires a library generated with support for contracted integrals; reconfigure Libint2 with -DLIBINT2_CONTRACTED_INTS=ON, or with -DLIBINT2_REQUIRE_CXX_API=OFF if the C++ API is not needed"
+#endif
+
 #if !defined(LIBINT_INCLUDE_ONEBODY) ||                                  \
     !(defined(LIBINT_INCLUDE_ERI) || defined(LIBINT_INCLUDE_ERI3) ||     \
       defined(LIBINT_INCLUDE_ERI2) || defined(LIBINT_INCLUDE_RKB_ERI) || \

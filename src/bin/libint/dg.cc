@@ -2264,6 +2264,23 @@ target = oss.str();
     for (target_iter t = targets_.begin(); t != targets_.end();
          ++t, ++curr_target) {
       const ver_ptr& tptr = vertex_ptr(*t);
+      // a target that refers to a precomputed quantity (e.g. the (ss|ss)
+      // shell set in a library without contracted integrals) is not computed
+      // by this code, nor is it accumulated (by the prerequisites code) on the
+      // stack, hence return the location of the quantity in inteval
+      if (!registry()->accumulate_targets() &&
+          !context->cparams()->contracted_targets() && tptr->precomputed()) {
+        const DGVertex* v = tptr.get();
+        while (!v->this_precomputed() && v->num_exit_arcs() == 1)
+          v = (*(v->first_exit_arc()))->dest().get();
+        assert(v->this_precomputed());
+        // N.B. inteval is a pointer to const, but targets are not
+        os << "inteval->targets[" << curr_target << "] = (LIBINT2_REALTYPE*)"
+           << context->value_to_pointer(
+                  "inteval->" + context->label_to_name(v->label()) + "[vi]")
+           << context->end_of_stat() << endl;
+        continue;
+      }
       const std::string& symbol =
           (accumulate_targets_indirectly
                //                                                                    is this correct?         ???
