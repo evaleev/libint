@@ -31,7 +31,11 @@ foreach(ORDER IN LISTS ORDERS)
   file(REMOVE_RECURSE "${WORK_DIR}")
   file(MAKE_DIRECTORY "${WORK_DIR}")
   execute_process(
-    COMMAND ${CMAKE_COMMAND} -E env LIBINT_RR_ORDER=${ORDER} "${BUILD_LIBINT}"
+    # serially, in this order; the reference may have been generated in
+    # parallel (LIBINT2_GENERATOR_JOBS), hence this also checks that parallel
+    # generation does not change the generated code
+    COMMAND ${CMAKE_COMMAND} -E env LIBINT_RR_ORDER=${ORDER}
+            LIBINT_GENERATOR_JOBS=1 "${BUILD_LIBINT}"
     WORKING_DIRECTORY "${WORK_DIR}"
     OUTPUT_FILE "${WORK_DIR}-${_order_tag}.log"
     ERROR_FILE "${WORK_DIR}-${_order_tag}.log"
