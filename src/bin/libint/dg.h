@@ -36,6 +36,7 @@
 #include <map>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace libint2 {
@@ -466,6 +467,14 @@ class DirectedGraph : public std::enable_shared_from_this<DirectedGraph> {
    */
   bool remove_vertex_at(const std::shared_ptr<DGVertex>& v1,
                         const std::shared_ptr<DGVertex>& v2);
+
+  /// the vertices that are not singletons (instid_ == 0, e.g. operators) all
+  /// have the same key, hence finding one on stack_ is a linear search;
+  /// unkeyed_ indexes them by DGVertex::structural_hash(), in the order in
+  /// which they were added (so that vertex_is_on() finds the same vertex)
+  std::unordered_map<std::size_t, std::vector<ver_ptr>> unkeyed_;
+  void index_unkeyed(const ver_ptr& v);
+  void unindex_unkeyed(const ver_ptr& v);
 
   // Which vertex is the first to compute
   std::shared_ptr<DGVertex> first_to_compute_;

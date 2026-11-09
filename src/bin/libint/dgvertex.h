@@ -21,7 +21,10 @@
 #ifndef _libint2_src_bin_libint_dgvertex_h_
 #define _libint2_src_bin_libint_dgvertex_h_
 
+#include <cstddef>
+#include <functional>
 #include <list>
+#include <string>
 #include <vector>
 // #include <dg.h>
 #include <dgarc.h>
@@ -136,6 +139,11 @@ class DGVertex : public Hashable<KeyTypes::InstanceID, ComputeKey> {
       equivalent to *aVertex.
   */
   virtual bool equiv(const std::shared_ptr<DGVertex>&) const = 0;
+  /** structural_hash() is the same for equivalent vertices (see equiv()). It
+      is used to find vertices that are not singletons (hence have no instance
+      id, e.g. operators) on a DirectedGraph. The default combines the type
+      and the label. */
+  virtual std::size_t structural_hash() const;
 
   /** precomputed() returns whether this DGVertex is precomputed. See
   this_precomputed() for description.

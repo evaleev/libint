@@ -129,11 +129,26 @@ void DirectedGraph::add_new_vertex(const std::shared_ptr<DGVertex>& vertex) {
   vertex->dg(this);
 
   push(stack_, vertex);
+#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
+  if (vertex->instid_ == 0) index_unkeyed(vertex);
+#endif
 #if DEBUG
   cout << "add_new_vertex: added vertex " << vertex->description() << endl;
 #endif
 
   return;
+}
+
+void DirectedGraph::index_unkeyed(const ver_ptr& v) {
+  unkeyed_[v->structural_hash()].push_back(v);
+}
+
+void DirectedGraph::unindex_unkeyed(const ver_ptr& v) {
+  const auto bucket = unkeyed_.find(v->structural_hash());
+  if (bucket == unkeyed_.end()) return;
+  auto& vs = bucket->second;
+  vs.erase(std::remove(vs.begin(), vs.end(), v), vs.end());
+  if (vs.empty()) unkeyed_.erase(bucket);
 }
 
 const std::shared_ptr<DGVertex>& DirectedGraph::vertex_is_on(
@@ -142,6 +157,14 @@ const std::shared_ptr<DGVertex>& DirectedGraph::vertex_is_on(
 
   static std::shared_ptr<DGVertex> null_ptr;
 #if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
+  // vertices that are not singletons all have the same key, find them by hash
+  if (vertex->instid_ == 0) {
+    const auto bucket = unkeyed_.find(vertex->structural_hash());
+    if (bucket != unkeyed_.end())
+      for (const auto& v : bucket->second)
+        if (v->equiv(vertex)) return v;
+    return null_ptr;
+  }
   typedef vertices::const_iterator citer;
   key_type vkey = key(*vertex);
   // find the first elemnt with this key and iterate until vertex is found or
@@ -216,6 +239,9 @@ void DirectedGraph::del_vertex(vertices::iterator& v) {
     std::shared_ptr<DGVertex> vptr =
         vertex_ptr(*v);  // keep an instance of the pointer to avoid accidental
                          // automatic destruction of the DGVertex object
+#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
+    if (vptr->instid_ == 0) unindex_unkeyed(vptr);
+#endif
     stack_.erase(v);
     rv(vptr);
 #if DEBUG
@@ -425,6 +451,7 @@ void DirectedGraph::reset() {
 
   // if everything went OK then empty out stack_ and targets_
   stack_.clear();
+  unkeyed_.clear();
   targets_.clear();
   first_to_compute_.reset();
   func_names_.clear();

@@ -28,6 +28,9 @@
 #include <rr.h>
 #include <smart_ptr.h>
 
+#include <cstddef>
+#include <functional>
+
 namespace libint2 {
 
 namespace algebra {
@@ -180,6 +183,25 @@ class AlgebraicOperator : public DGVertex {
   /// Implements Hashable::key()
   typename DGVertex::KeyReturnType key() const override { return 0; }
 
+  /// Overrides DGVertex::structural_hash(): combines the operator type and
+  /// the hashes of the operands (equivalent operators have equivalent
+  /// operands, see operator==). The operands are only ever replaced by
+  /// equivalent vertices (see add_exit_arc()), hence the hash is computed once.
+  std::size_t structural_hash() const override {
+    if (!hash_computed_) {
+      auto combine = [](std::size_t h, std::size_t v) {
+        return h ^ (v + 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2));
+      };
+      std::size_t h = std::hash<unsigned int>{}(typeid_);
+      h = combine(h, static_cast<std::size_t>(OT_));
+      h = combine(h, left_->structural_hash());
+      h = combine(h, right_->structural_hash());
+      hash_ = h;
+      hash_computed_ = true;
+    }
+    return hash_;
+  }
+
   void print(std::ostream& os) const override {
     DGVertex::print(os);
     std::string prefix("AlgebraicOperator::print: ");
@@ -197,6 +219,8 @@ class AlgebraicOperator : public DGVertex {
   bool this_precomputed() const override { return false; }
 
   std::string label_;
+  mutable std::size_t hash_ = 0;
+  mutable bool hash_computed_ = false;
 };
 
 /*

@@ -422,6 +422,13 @@ bool DGVertex::need_to_compute() const {
     return need_to_compute_;
 }
 
+std::size_t DGVertex::structural_hash() const {
+  std::size_t h = std::hash<std::string>{}(label());
+  h ^= std::hash<ClassID>{}(typeid_) + 0x9e3779b97f4a7c15ull + (h << 6) +
+       (h >> 2);
+  return h;
+}
+
 bool DGVertex::precomputed() const {
   if (referred_vertex_)
     return referred_vertex_->precomputed();
