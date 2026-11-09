@@ -45,6 +45,8 @@ Following is a brief summary of changes made in each release of Libint.
              - libint2::INT_CARTINDEX for the IntV3 Cartesian ordering returned wrong indices
                (operator precedence)
              (the DATADIR macros were already prefixed with LIBINT_ in v2.12.0)
+  - PR #458: the export of the library stages the basis set aliases (6-31gs.g94 etc.) as real files
+             without staging symlinks first (fixes #393, the export failed on FreeBSD)
   - PR #451: LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS (ON by default) no longer disables the
              geometric derivatives of the σ·pVσ·p integrals (Operator::opVop and
              Operator::op_q_gau_op, which share the generated code), needed for X2C nuclear
