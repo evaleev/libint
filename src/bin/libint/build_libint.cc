@@ -272,27 +272,8 @@ static void build_G12DKH_2b_2k(
     std::shared_ptr<Libint2Iface>& iface);
 #endif
 
-#ifdef LIBINT_INCLUDE_ONEBODY
-
-#if LIBINT_SUPPORT_ONEBODYINTS == 0
-#error \
-    "change LIBINT_SUPPORT_ONEBODYINTS in global_macros.h to 1 if need 1-body ints"
-#endif
-
-namespace {
-template <typename OperType>
-struct AuxQuantaType;
-template <>
-struct AuxQuantaType<ElecPotOper> {
-  typedef mType type;
-};
-template <typename OperType>
-struct AuxQuantaType {
-  typedef EmptySet type;
-};
-
-}  // namespace
-
+// descriptors of the operator components; used by the 1-body and the
+// (RKB) 2-body builders, hence not guarded by LIBINT_INCLUDE_ONEBODY
 template <typename OperDescrType>
 OperDescrType make_descr(int, int = 0, int = 0) {
   return OperDescrType();
@@ -343,6 +324,27 @@ template <>
 Coulombσp_Descr make_descr<Coulombσp_Descr>(int p, int, int) {
   return Coulombσp_Descr(p);
 }
+
+#ifdef LIBINT_INCLUDE_ONEBODY
+
+#if LIBINT_SUPPORT_ONEBODYINTS == 0
+#error \
+    "change LIBINT_SUPPORT_ONEBODYINTS in global_macros.h to 1 if need 1-body ints"
+#endif
+
+namespace {
+template <typename OperType>
+struct AuxQuantaType;
+template <>
+struct AuxQuantaType<ElecPotOper> {
+  typedef mType type;
+};
+template <typename OperType>
+struct AuxQuantaType {
+  typedef EmptySet type;
+};
+
+}  // namespace
 
 template <typename _OperType>
 void build_onebody_1b_1k(std::ostream& os, std::string label,
