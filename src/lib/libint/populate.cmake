@@ -62,33 +62,47 @@ file(
 
 # ====  /lib/basis  =============================================================
 
+# export/lib/basis/{6-31gs,6-31gss,6-311gss}.g94 are symlinks to the files with
+#   stars in their names. file(INSTALL) preserves symlinks, and tar -xf fails on
+#   them on Windows (either the symlink extracted before the target file or
+#   problems with the stars in filenames themselves). To make export tarballs
+#   broadly usable, the symlinks are not staged; instead their targets are
+#   copied into real files, which is what libtool effectively did. Copying from
+#   the targets also does not rely on the source tree having kept the symlinks.
+set(_basis_aliases
+  "6-31gs.g94=6-31g*.g94"
+  "6-31gss.g94=6-31g**.g94"
+  "6-311gss.g94=6-311g**.g94"
+  )
+set(_basis_alias_excludes)
+foreach(_alias_spec ${_basis_aliases})
+  string(REPLACE "=" ";" _alias_spec "${_alias_spec}")
+  list(GET _alias_spec 0 _alias)
+  list(APPEND _basis_alias_excludes PATTERN "${_alias}" EXCLUDE)
+endforeach()
+
 file(
   INSTALL
     "${PROJECT_SOURCE_DIR}/export/lib/basis/"
   DESTINATION "${EXPORT_STAGE_DIR}/lib/basis"
   FILES_MATCHING
     PATTERN "*.g94"
+    ${_basis_alias_excludes}
   )
 
-# file(INSTALL) preserves symlinks, and tar -xf fails on them on Windows (either
-#   the symlink extracted before the target file or problems with the stars in
-#   filenames themselves). To make export tarballs broadly usable, we'll copy
-#   the symlinked files into real files, which is what libtool effectively did.
-file(
-  COPY_FILE
-    "${PROJECT_SOURCE_DIR}/export/lib/basis/6-31gs.g94"
-    "${EXPORT_STAGE_DIR}/lib/basis/6-31gs.g94"
-  )
-file(
-  COPY_FILE
-    "${PROJECT_SOURCE_DIR}/export/lib/basis/6-31gss.g94"
-    "${EXPORT_STAGE_DIR}/lib/basis/6-31gss.g94"
-  )
-file(
-  COPY_FILE
-    "${PROJECT_SOURCE_DIR}/export/lib/basis/6-311gss.g94"
-    "${EXPORT_STAGE_DIR}/lib/basis/6-311gss.g94"
-  )
+foreach(_alias_spec ${_basis_aliases})
+  string(REPLACE "=" ";" _alias_spec "${_alias_spec}")
+  list(GET _alias_spec 0 _alias)
+  list(GET _alias_spec 1 _target)
+  set(_dest "${EXPORT_STAGE_DIR}/lib/basis/${_alias}")
+  # a stage populated by an older version may hold a symlink here; writing
+  #   through it would clobber its target instead of creating a real file
+  if (IS_SYMLINK "${_dest}")
+    file(REMOVE "${_dest}")
+  endif()
+  # COPYONLY leaves an up-to-date copy untouched
+  configure_file("${PROJECT_SOURCE_DIR}/export/lib/basis/${_target}" "${_dest}" COPYONLY)
+endforeach()
 
 # ====  /fortran  ===============================================================
 
