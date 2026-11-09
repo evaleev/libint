@@ -35,8 +35,9 @@ jobs:
             build_shared_libs: ON
             os: ubuntu-24.04
             do_fortran: ON
-          # exercise derivatives of multi-component nuclear-type operators
-          # (opVop, op_q_gau_op) in one lane only, to save compile time
+          # exercise derivatives of 1-body property operators (multipoles,
+          # opemuop) in one lane only, to save compile time; derivatives of
+          # opVop and op_q_gau_op are generated (and tested) in every lane
           - build_type: Debug
             os: ubuntu-24.04
             subproject: OFF

@@ -174,7 +174,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * `LIBINT2_ENABLE_G12` - G - Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
 * `LIBINT2_ENABLE_G12DKH` - G - Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
 
-* `LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS` - G - Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot).
+* `LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS` - G - Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot, and σ·pVσ·p, i.e. `Operator::opVop` and `Operator::op_q_gau_op`, whose derivatives are needed for X2C nuclear gradients). The max derivative order of the latter is `LIBINT2_DERIV_ONEBODY_ORDER`, of the rest `LIBINT2_DERIV_ONEBODY_PROPERTY_ORDER`.
    These derivatives are disabled by default to save compile time. Use OFF to enable.
    Note that the libtool build won't enable this- if forcibly enabled, build_libint balks. [Default=ON]
 
