@@ -34,6 +34,7 @@
 #include <task.h>
 #include <uncontract.h>
 
+#include <algorithm>
 #include <cstdio>
 #include <fstream>
 #include <functional>
@@ -139,32 +140,68 @@ void DirectedGraph::add_new_vertex(const std::shared_ptr<DGVertex>& vertex) {
   return;
 }
 
+#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
 void DirectedGraph::index_unkeyed(const ver_ptr& v) {
   unkeyed_[v->structural_hash()].push_back(v);
 }
 
 void DirectedGraph::unindex_unkeyed(const ver_ptr& v) {
+  // v must be found under the hash with which it was indexed, else its
+  // structural_hash() changed while it was on the graph (see
+  // DGVertex::structural_hash())
   const auto bucket = unkeyed_.find(v->structural_hash());
-  if (bucket == unkeyed_.end()) return;
+  const auto not_indexed = [&v]() {
+    return ProgrammingError(
+        "DirectedGraph::unindex_unkeyed(): vertex " + v->description() +
+        " is not indexed under its structural_hash(), did the hash change?");
+  };
+  if (bucket == unkeyed_.end()) throw not_indexed();
   auto& vs = bucket->second;
-  vs.erase(std::remove(vs.begin(), vs.end(), v), vs.end());
+  const auto vit = std::find(vs.begin(), vs.end(), v);
+  if (vit == vs.end()) throw not_indexed();
+  vs.erase(vit);
   if (vs.empty()) unkeyed_.erase(bucket);
 }
+
+const std::shared_ptr<DGVertex>& DirectedGraph::find_unkeyed(
+    const std::shared_ptr<DGVertex>& vertex) const {
+  static std::shared_ptr<DGVertex> null_ptr;
+  const auto bucket = unkeyed_.find(vertex->structural_hash());
+  if (bucket != unkeyed_.end())
+    for (const auto& v : bucket->second)
+      if (v->equiv(vertex)) return v;
+  return null_ptr;
+}
+#endif  // USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
 
 const std::shared_ptr<DGVertex>& DirectedGraph::vertex_is_on(
     const std::shared_ptr<DGVertex>& vertex) const {
   if (vertex->dg() == this) return vertex;
 
+#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
+  // the vertices with instance id 0 all have the same key, hence finding one
+  // on stack_ is a linear search: find them by hash instead
+  if (vertex->instid_ == 0) {
+    const auto& found = find_unkeyed(vertex);
+#if CHECK_SAFETY
+    // equivalent vertices must have the same structural_hash()
+    if (found != search_stack(vertex))
+      throw ProgrammingError(
+          "DirectedGraph::vertex_is_on(): the hash index and the search of "
+          "the graph found different vertices equivalent to " +
+          vertex->description() +
+          ", does its type override DGVertex::structural_hash() correctly?");
+#endif
+    return found;
+  }
+#endif
+  return search_stack(vertex);
+}
+
+const std::shared_ptr<DGVertex>& DirectedGraph::search_stack(
+    const std::shared_ptr<DGVertex>& vertex) const {
   static std::shared_ptr<DGVertex> null_ptr;
 #if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
-  // vertices that are not singletons all have the same key, find them by hash
-  if (vertex->instid_ == 0) {
-    const auto bucket = unkeyed_.find(vertex->structural_hash());
-    if (bucket != unkeyed_.end())
-      for (const auto& v : bucket->second)
-        if (v->equiv(vertex)) return v;
-    return null_ptr;
-  }
   typedef vertices::const_iterator citer;
   key_type vkey = key(*vertex);
   // find the first elemnt with this key and iterate until vertex is found or
@@ -181,7 +218,7 @@ const std::shared_ptr<DGVertex>& DirectedGraph::vertex_is_on(
         return vpos->second;
       }
       ++vpos;
-      can_find = (vpos->first == vkey) && (vpos != end);
+      can_find = (vpos != end) && (vpos->first == vkey);
     }
   }
 #else
@@ -451,7 +488,9 @@ void DirectedGraph::reset() {
 
   // if everything went OK then empty out stack_ and targets_
   stack_.clear();
+#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
   unkeyed_.clear();
+#endif
   targets_.clear();
   first_to_compute_.reset();
   func_names_.clear();

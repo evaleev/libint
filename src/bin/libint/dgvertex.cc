@@ -423,10 +423,8 @@ bool DGVertex::need_to_compute() const {
 }
 
 std::size_t DGVertex::structural_hash() const {
-  std::size_t h = std::hash<std::string>{}(label());
-  h ^= std::hash<ClassID>{}(typeid_) + 0x9e3779b97f4a7c15ull + (h << 6) +
-       (h >> 2);
-  return h;
+  return hash_combine(std::hash<std::string>{}(label()),
+                      std::hash<ClassID>{}(typeid_));
 }
 
 bool DGVertex::precomputed() const {

@@ -188,14 +188,12 @@ class AlgebraicOperator : public DGVertex {
   /// operands, see operator==). The operands are only ever replaced by
   /// equivalent vertices (see add_exit_arc()), hence the hash is computed once.
   std::size_t structural_hash() const override {
+    // N.B. not thread-safe: an operator must not be hashed concurrently
     if (!hash_computed_) {
-      auto combine = [](std::size_t h, std::size_t v) {
-        return h ^ (v + 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2));
-      };
-      std::size_t h = std::hash<unsigned int>{}(typeid_);
-      h = combine(h, static_cast<std::size_t>(OT_));
-      h = combine(h, left_->structural_hash());
-      h = combine(h, right_->structural_hash());
+      std::size_t h = std::hash<ClassID>{}(typeid_);
+      h = hash_combine(h, static_cast<std::size_t>(OT_));
+      h = hash_combine(h, left_->structural_hash());
+      h = hash_combine(h, right_->structural_hash());
       hash_ = h;
       hash_computed_ = true;
     }

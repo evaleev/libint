@@ -18,8 +18,10 @@
  *
  */
 
+#include <algebra.h>
 #include <buildtest.h>
 #include <dg.h>
+#include <entity.h>
 #include <integral.h>
 #include <intset_to_ints.h>
 #include <iter.h>
@@ -54,6 +56,7 @@ void test6();
 void test7();
 void test8();
 void test9();
+void test10();
 void test_cgshell_iter(const CGShell& sh);
 
 template <class Callback>
@@ -152,6 +155,9 @@ int try_main(int argc, char* argv[]) {
 #endif
 #if 1
   RunTest(test9, "DerivGaussV2 relation");
+#endif
+#if 1
+  RunTest(test10, "graph vertex index");
 #endif
 
   return 0;
@@ -269,7 +275,7 @@ void RunBuildTest(const typename Integral::BasisFunctionType& f1,
   std::string descr("build ");
   std::shared_ptr<Integral> i = Integral::Instance(f1, f2, f3, f4);
   descr += i->label();
-  std::vector<std::shared_ptr<Integral> > targets(1, i);
+  std::vector<std::shared_ptr<Integral>> targets(1, i);
   RunTest(
       boost::bind(
           __BuildTest<Integral, false>, targets, cparams, size_to_unroll,
@@ -288,7 +294,7 @@ void RunBuildTest(const typename Integral::BasisFunctionType& f1,
   std::string descr("build ");
   std::shared_ptr<Integral> i = Integral::Instance(f1, f2, f3, f4, m);
   descr += i->label();
-  std::vector<std::shared_ptr<Integral> > targets(1, i);
+  std::vector<std::shared_ptr<Integral>> targets(1, i);
   RunTest(
       boost::bind(
           __BuildTest<Integral, false>, targets, cparams, size_to_unroll,
@@ -310,7 +316,7 @@ void RunBuildTest(const typename Integral::BasisFunctionType& f1,
   GenOper<Descriptor> oper(descr);
   std::shared_ptr<Integral> i = Integral::Instance(f1, f2, f3, f4, m, oper);
   descr_label += i->label();
-  std::vector<std::shared_ptr<Integral> > targets(1, i);
+  std::vector<std::shared_ptr<Integral>> targets(1, i);
   RunTest(boost::bind(__BuildTest<Integral, false>, targets, cparams,
                       size_to_unroll, boost::ref(cout),
                       std::shared_ptr<Tactic>(
@@ -664,6 +670,69 @@ void test9() {
             "CR_11_Coulombσp_11 must be an alias");
     }
   }
+}
+
+// DirectedGraph finds the vertices with instance id 0, e.g. operators, by
+// DGVertex::structural_hash(), which must be the same for equivalent vertices
+void test10() {
+  typedef TwoPRep_11_11_sq IType;
+  typedef AlgebraicOperator<DGVertex> Oper;
+  typedef algebra::OperatorTypes OT;
+  auto check = [](bool ok, const std::string& what) {
+    if (!ok) throw ProgrammingError("graph vertex index test: " + what);
+  };
+  auto oper = [](OT::OperatorType type, const std::shared_ptr<DGVertex>& left,
+                 const std::shared_ptr<DGVertex>& right) {
+    return std::static_pointer_cast<DGVertex>(
+        std::make_shared<Oper>(type, left, right));
+  };
+  const mType m0(0u);
+  std::shared_ptr<DGVertex> a = IType::Instance(sh_p, sh_s, sh_s, sh_s, m0);
+  std::shared_ptr<DGVertex> b = IType::Instance(sh_s, sh_p, sh_s, sh_s, m0);
+  std::shared_ptr<DGVertex> two = std::make_shared<CTimeEntity<double>>(2.0);
+  std::shared_ptr<DGVertex> two2 = std::make_shared<CTimeEntity<double>>(2.0);
+  std::shared_ptr<DGVertex> three = std::make_shared<CTimeEntity<double>>(3.0);
+
+  const auto a2 = oper(OT::Times, a, two);
+  const auto a2_copy = oper(OT::Times, a, two2);  // equivalent to a2
+  const auto twoa = oper(OT::Times, two, a);      // operands swapped
+  const auto a3 = oper(OT::Times, a, three);
+  const auto b2 = oper(OT::Times, b, two);
+  const auto a2_plus_b = oper(OT::Plus, a2, b);
+  const auto a2_copy_plus_b = oper(OT::Plus, a2_copy, b);  // equivalent
+  const auto a2_minus_b = oper(OT::Minus, a2, b);
+
+  // equivalent vertices have the same hash
+  check(two->equiv(two2) && two->structural_hash() == two2->structural_hash(),
+        "equivalent CTimeEntity's must have the same hash");
+  check(
+      a2->equiv(a2_copy) && a2->structural_hash() == a2_copy->structural_hash(),
+      "equivalent operators must have the same hash");
+  check(a2_plus_b->equiv(a2_copy_plus_b) &&
+            a2_plus_b->structural_hash() == a2_copy_plus_b->structural_hash(),
+        "equivalent nested operators must have the same hash");
+  check(!a2->equiv(twoa) && !a2->equiv(a3) && !a2->equiv(b2) &&
+            !a2_plus_b->equiv(a2_minus_b),
+        "operators with different operands or types must not be equivalent");
+
+  auto dg = std::make_shared<DirectedGraph>();
+  check(dg->append_vertex(a2) == a2, "a2 must be added");
+  check(dg->append_vertex(a3) == a3, "a3 must be added");
+  check(dg->append_vertex(a2_plus_b) == a2_plus_b, "a2+b must be added");
+  // the equivalent vertex on the graph is found, and not added again
+  check(dg->find(a2_copy) == a2, "a2 must be found for its copy");
+  check(dg->append_vertex(a2_copy) == a2, "the copy of a2 must not be added");
+  check(dg->find(a2_copy_plus_b) == a2_plus_b,
+        "a2+b must be found for its copy");
+  check(!dg->find(twoa) && !dg->find(b2) && !dg->find(a2_minus_b),
+        "vertices that are not on the graph must not be found");
+  check(dg->num_vertices() == 3, "the graph must have 3 vertices");
+  // reset empties the index
+  dg->reset();
+  check(!dg->find(a2_copy), "nothing must be found after reset");
+  check(dg->append_vertex(a2_copy) == a2_copy,
+        "the copy of a2 must be added after reset");
+  dg->reset();
 }
 
 };  // namespace
