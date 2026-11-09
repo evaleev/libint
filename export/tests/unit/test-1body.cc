@@ -1064,12 +1064,14 @@ std::vector<NuclearDerivCase> nuclear_deriv_cases() {
   for (const auto& oper : elecpot_opers)
     cases.push_back({oper.first, oper.second, 1, 2, LIBINT2_MAX_AM_elecpot2});
 #endif
-#if LIBINT2_DERIV_ONEBODY_PROPERTY_ORDER >= 1
+    // σpVσp derivatives are generated whenever the elecpot ones are, even if
+    // the property derivatives are disabled
+#if LIBINT2_DERIV_ONEBODY_ORDER >= 1
   cases.push_back({Operator::opVop, "opVop", 4, 1, LIBINT2_MAX_AM_opVop1});
   cases.push_back(
       {Operator::op_q_gau_op, "op_q_gau_op", 4, 1, LIBINT2_MAX_AM_opVop1});
 #endif
-#if LIBINT2_DERIV_ONEBODY_PROPERTY_ORDER >= 2
+#if LIBINT2_DERIV_ONEBODY_ORDER >= 2
   cases.push_back({Operator::opVop, "opVop", 4, 2, LIBINT2_MAX_AM_opVop2});
   cases.push_back(
       {Operator::op_q_gau_op, "op_q_gau_op", 4, 2, LIBINT2_MAX_AM_opVop2});

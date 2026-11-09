@@ -373,7 +373,12 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
 
   const auto nullaux = typename Onebody_sh_1_1::AuxIndexType(0u);
 
-  // optionally skip derivative property ints
+  // optionally skip derivative property ints; the operators of the (scalar
+  // and X2C) core Hamiltonian are not properties, their geometric derivatives
+  // are needed for nuclear gradients, hence they are never skipped.
+  // N.B. keep this list in sync with the DERIV_ONEBODY_PROPERTY_ORDER comment
+  // in config_to_api() and with the description of
+  // LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS in CMakeLists.txt and INSTALL.md
 #ifdef LIBINT_DISABLE_ONEBODY_PROPERTY_DERIVS
   const auto property_operator =
       !(std::is_same<_OperType, OverlapOper>::value ||
@@ -2498,6 +2503,10 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
   iface->to_params(iface->macro_define("SUPPORT_ONEBODY", 1));
   iface->to_params(
       iface->macro_define("DERIV_ONEBODY_ORDER", LIBINT_INCLUDE_ONEBODY));
+  // DERIV_ONEBODY_ORDER is the max derivative order of the core Hamiltonian
+  // operators (overlap, kinetic, elecpot, and σpVσp, i.e. Operator::opVop and
+  // Operator::op_q_gau_op), DERIV_ONEBODY_PROPERTY_ORDER that of the rest
+  // (multipoles, σpeμσp)
 #ifdef LIBINT_DISABLE_ONEBODY_PROPERTY_DERIVS
   iface->to_params(iface->macro_define("DERIV_ONEBODY_PROPERTY_ORDER", 0));
 #else

@@ -159,7 +159,7 @@ option_with_default(LIBINT2_ENABLE_G12DKH
   "Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors (-1 for OFF)" -1)
 
 option_with_print(LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS
-  "Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot).
+  "Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot, and σpVσp, i.e. opVop and op_q_gau_op).
    These derivatives are disabled by default to save compile time. (enable with OFF)
    Note that the libtool build won't enable this- if forcibly enabled, build_libint balks." ON)
 option_with_print(LIBINT2_ENABLE_T1G12
