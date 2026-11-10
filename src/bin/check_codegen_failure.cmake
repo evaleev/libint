@@ -13,6 +13,10 @@
 #   reported: after the worker reported its shell sets, i.e. when the generator
 #             sends it the RRs to generate (a write to a closed pipe)
 
+# run with cmake -P, which sets no policies: use those of the project's minimum
+#   version (e.g. CMP0057 for if(IN_LIST), which CMake 3.x otherwise rejects)
+cmake_policy(VERSION 3.19)
+
 foreach(_var BUILD_LIBINT WORK_DIR)
   if (NOT DEFINED ${_var})
     message(FATAL_ERROR "check_codegen_failure.cmake: ${_var} must be defined")
