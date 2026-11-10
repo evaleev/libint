@@ -20,8 +20,9 @@ Following is a brief summary of changes made in each release of Libint.
                deprecated in favor of their LIBINT2_-prefixed versions (e.g. LIBINT2_FOR_CART and
                LIBINT2_END_FOR_CART); the unprefixed macros still work but emit a deprecation
                warning where used, and are not defined at all if LIBINT2_DISABLE_DEPRECATED_MACROS
-               is defined. The macros for the GAMESS, ORCA and Molden orderings are usable outside
-               of namespace libint2
+               is defined (an unprefixed macro already defined, e.g. by the user, is not redefined).
+               The macros for the GAMESS, ORCA and Molden orderings are usable outside of namespace
+               libint2
              - removed macros PATH_SEPARATOR, S_ISDIR (Windows), posix_memalign (Windows),
                posix_memfree and STATIC_OON; ULLONG_MAX is no longer defined
              - renamed config macros HAVE_STDINT_H -> LIBINT_HAVE_STDINT_H,
@@ -37,7 +38,10 @@ Following is a brief summary of changes made in each release of Libint.
                locations used to build Libint2 (hence a consumer's Eigen3_DIR/Boost_DIR now take
                precedence), and restores CMAKE_MODULE_PATH; it also no longer warns that the
                Eigen3Config.cmake/BoostConfig.cmake path "is no longer valid" if Libint2 was built
-               with Eigen3/Boost found without their config files (e.g. via FindEigen3.cmake)
+               with Eigen3/Boost found without their config files (e.g. via FindEigen3.cmake), and
+               warns if the Eigen3 it finds differs from the one Libint2 was built with
+             - libint2::INT_CARTINDEX for the IntV3 Cartesian ordering returned wrong indices
+               (operator precedence)
              (the DATADIR macros were already prefixed with LIBINT_ in v2.12.0)
   - PR #451: LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS (ON by default) no longer disables the
              geometric derivatives of the σ·pVσ·p integrals (Operator::opVop and

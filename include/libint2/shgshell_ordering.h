@@ -128,8 +128,10 @@ inline int INT_SOLIDHARMINDEX(int sho, int l, int m) {
 
 //
 // Deprecated unprefixed aliases of the loop macros (see issue #376).
-// Each opening macro calls a [[deprecated]] no-op so that the compiler warns
-// at the point of use. Define LIBINT2_DISABLE_DEPRECATED_MACROS before
+// Each opening macro calls a [[deprecated]] constexpr no-op so that the
+// compiler warns at the point of use (constexpr keeps the macros usable in
+// constexpr functions). A macro that is already defined (e.g., by the user's
+// own code) is not redefined. Define LIBINT2_DISABLE_DEPRECATED_MACROS before
 // including Libint headers to not define these at all.
 //
 namespace libint2 {
@@ -137,25 +139,37 @@ namespace detail {
 LIBINT_DEPRECATED(
     "FOR_SOLIDHARM*/END_FOR_SOLIDHARM* are deprecated, use "
     "LIBINT2_FOR_SOLIDHARM*/LIBINT2_END_FOR_SOLIDHARM* instead")
-inline void deprecated_FOR_SOLIDHARM() {}
+constexpr int deprecated_FOR_SOLIDHARM() { return 0; }
 }  // namespace detail
 }  // namespace libint2
 
 #ifndef LIBINT2_DISABLE_DEPRECATED_MACROS
+#ifndef FOR_SOLIDHARM_STANDARD
 #define FOR_SOLIDHARM_STANDARD(l, m)   \
   LIBINT2_FOR_SOLIDHARM_STANDARD(l, m) \
-  ::libint2::detail::deprecated_FOR_SOLIDHARM();
+  (void)::libint2::detail::deprecated_FOR_SOLIDHARM();
+#endif
+#ifndef FOR_SOLIDHARM_GAUSSIAN
 #define FOR_SOLIDHARM_GAUSSIAN(l, m)   \
   LIBINT2_FOR_SOLIDHARM_GAUSSIAN(l, m) \
-  ::libint2::detail::deprecated_FOR_SOLIDHARM();
+  (void)::libint2::detail::deprecated_FOR_SOLIDHARM();
+#endif
+#ifndef FOR_SOLIDHARM_MOLDEN
 #define FOR_SOLIDHARM_MOLDEN(l, m)   \
   LIBINT2_FOR_SOLIDHARM_MOLDEN(l, m) \
-  ::libint2::detail::deprecated_FOR_SOLIDHARM();
+  (void)::libint2::detail::deprecated_FOR_SOLIDHARM();
+#endif
+#ifndef FOR_SOLIDHARM
 #define FOR_SOLIDHARM(l, m)   \
   LIBINT2_FOR_SOLIDHARM(l, m) \
-  ::libint2::detail::deprecated_FOR_SOLIDHARM();
+  (void)::libint2::detail::deprecated_FOR_SOLIDHARM();
+#endif
+#ifndef END_FOR_SOLIDHARM
 #define END_FOR_SOLIDHARM LIBINT2_END_FOR_SOLIDHARM
+#endif
+#ifndef END_FOR_SOLIDHARM_MOLDEN
 #define END_FOR_SOLIDHARM_MOLDEN LIBINT2_END_FOR_SOLIDHARM_MOLDEN
+#endif
 #endif  // !defined(LIBINT2_DISABLE_DEPRECATED_MACROS)
 
 #endif  // _libint2_src_bin_libint_shgshellordering_h_

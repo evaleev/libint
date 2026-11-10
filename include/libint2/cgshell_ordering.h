@@ -316,8 +316,10 @@ inline int INT_CARTINDEX_MOLDEN(unsigned int am, int i, int j) {
 
 //
 // Deprecated unprefixed aliases of the loop macros (see issue #376).
-// Each opening macro calls a [[deprecated]] no-op so that the compiler warns
-// at the point of use. Define LIBINT2_DISABLE_DEPRECATED_MACROS before
+// Each opening macro calls a [[deprecated]] constexpr no-op so that the
+// compiler warns at the point of use (constexpr keeps the macros usable in
+// constexpr functions). A macro that is already defined (e.g., by the user's
+// own code) is not redefined. Define LIBINT2_DISABLE_DEPRECATED_MACROS before
 // including Libint headers to not define these at all.
 //
 namespace libint2 {
@@ -325,22 +327,30 @@ namespace detail {
 LIBINT_DEPRECATED(
     "FOR_CART/END_FOR_CART are deprecated, use "
     "LIBINT2_FOR_CART/LIBINT2_END_FOR_CART instead")
-inline void deprecated_FOR_CART() {}
+constexpr int deprecated_FOR_CART() { return 0; }
 LIBINT_DEPRECATED(
     "FOR_CART_MOLDEN/END_FOR_CART_MOLDEN are deprecated, use "
     "LIBINT2_FOR_CART_MOLDEN/LIBINT2_END_FOR_CART_MOLDEN instead")
-inline void deprecated_FOR_CART_MOLDEN() {}
+constexpr int deprecated_FOR_CART_MOLDEN() { return 0; }
 }  // namespace detail
 }  // namespace libint2
 
 #ifndef LIBINT2_DISABLE_DEPRECATED_MACROS
+#ifndef FOR_CART
 #define FOR_CART(i, j, k, am) \
-  LIBINT2_FOR_CART(i, j, k, am)::libint2::detail::deprecated_FOR_CART();
+  LIBINT2_FOR_CART(i, j, k, am)(void)::libint2::detail::deprecated_FOR_CART();
+#endif
+#ifndef END_FOR_CART
 #define END_FOR_CART LIBINT2_END_FOR_CART
-#define FOR_CART_MOLDEN(i, j, k, am) \
-  LIBINT2_FOR_CART_MOLDEN(i, j, k,   \
-                          am)::libint2::detail::deprecated_FOR_CART_MOLDEN();
+#endif
+#ifndef FOR_CART_MOLDEN
+#define FOR_CART_MOLDEN(i, j, k, am)   \
+  LIBINT2_FOR_CART_MOLDEN(i, j, k, am) \
+  (void)::libint2::detail::deprecated_FOR_CART_MOLDEN();
+#endif
+#ifndef END_FOR_CART_MOLDEN
 #define END_FOR_CART_MOLDEN LIBINT2_END_FOR_CART_MOLDEN
+#endif
 #endif  // !defined(LIBINT2_DISABLE_DEPRECATED_MACROS)
 
 #endif  // header guard

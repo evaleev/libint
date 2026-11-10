@@ -73,6 +73,14 @@ if (@LIBINT2_REQUIRE_CXX_API@)  # LIBINT2_REQUIRE_CXX_API
       else()
         get_filename_component(_libint2_eigen3_dir "${_libint2_eigen3_config}" DIRECTORY)
         find_dependency(Eigen3 REQUIRED HINTS "${_libint2_eigen3_dir}")
+        # the caller's Eigen3_DIR takes precedence over the hint; using a different
+        # Eigen than the one Libint2 was built with risks ABI mismatches with the
+        # compiled C++ API (Libint2::int2-cxx)
+        get_filename_component(_libint2_eigen3_dir_found "${Eigen3_DIR}" REALPATH)
+        get_filename_component(_libint2_eigen3_dir "${_libint2_eigen3_dir}" REALPATH)
+        if (NOT _libint2_eigen3_dir_found STREQUAL _libint2_eigen3_dir)
+          message(WARNING "Libint2 was built with Eigen3 from ${_libint2_eigen3_dir}, but Eigen3 from ${_libint2_eigen3_dir_found} (Eigen3_DIR) will be used; make sure the two are ABI-compatible")
+        endif()
       endif()
     endif()
 
@@ -155,6 +163,7 @@ set(CMAKE_MODULE_PATH "${_libint2_saved_CMAKE_MODULE_PATH}")
 unset(_libint2_saved_CMAKE_MODULE_PATH)
 unset(_libint2_eigen3_config)
 unset(_libint2_eigen3_dir)
+unset(_libint2_eigen3_dir_found)
 unset(_libint2_boost_config)
 unset(_libint2_boost_dir)
 unset(_libint2_eri)

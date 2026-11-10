@@ -21,6 +21,9 @@
 #include <libint2/cgshell_ordering.h>
 #include <libint2/shgshell_ordering.h>
 
+#include <array>
+#include <vector>
+
 #include "catch.hpp"
 #include "fixture.h"
 
@@ -76,4 +79,101 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "solid harmonics", "[engine]") {
 
 #endif  // LIBINT2_SUPPORT_ONEBODY
   }     // SECTION("solid harmonic p")
+}
+
+// the loop macros must work outside of namespace libint2 (issue #376), hence
+// these helpers are at global scope
+namespace {
+std::vector<std::array<int, 3>> cart_loop(int am) {
+  std::vector<std::array<int, 3>> result;
+  int i, j, k;
+  LIBINT2_FOR_CART(i, j, k, am)
+  result.push_back({i, j, k});
+  LIBINT2_END_FOR_CART
+  return result;
+}
+std::vector<std::array<int, 3>> cart_molden_loop(int am) {
+  std::vector<std::array<int, 3>> result;
+  int i, j, k;
+  LIBINT2_FOR_CART_MOLDEN(i, j, k, am)
+  result.push_back({i, j, k});
+  LIBINT2_END_FOR_CART_MOLDEN
+  return result;
+}
+std::vector<int> solidharm_loop(int l) {
+  std::vector<int> result;
+  int m;
+  LIBINT2_FOR_SOLIDHARM(l, m)
+  result.push_back(m);
+  LIBINT2_END_FOR_SOLIDHARM
+  LIBINT2_FOR_SOLIDHARM_MOLDEN(l, m)
+  result.push_back(m);
+  LIBINT2_END_FOR_SOLIDHARM_MOLDEN
+  return result;
+}
+
+// the deprecated unprefixed macros must behave exactly like their
+// replacements; silence the (intended) deprecation warnings
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
+std::vector<std::array<int, 3>> deprecated_cart_loop(int am) {
+  std::vector<std::array<int, 3>> result;
+  int i, j, k;
+  FOR_CART(i, j, k, am)
+  result.push_back({i, j, k});
+  END_FOR_CART
+  return result;
+}
+std::vector<std::array<int, 3>> deprecated_cart_molden_loop(int am) {
+  std::vector<std::array<int, 3>> result;
+  int i, j, k;
+  FOR_CART_MOLDEN(i, j, k, am)
+  result.push_back({i, j, k});
+  END_FOR_CART_MOLDEN
+  return result;
+}
+std::vector<int> deprecated_solidharm_loop(int l) {
+  std::vector<int> result;
+  int m;
+  FOR_SOLIDHARM(l, m)
+  result.push_back(m);
+  END_FOR_SOLIDHARM
+  FOR_SOLIDHARM_MOLDEN(l, m)
+  result.push_back(m);
+  END_FOR_SOLIDHARM_MOLDEN
+  return result;
+}
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+}  // namespace
+
+TEST_CASE("shell loop macros", "[shell-order]") {
+  for (int l = 0; l <= 4; ++l) {
+    const auto cart = cart_loop(l);
+    REQUIRE(cart.size() == static_cast<std::size_t>(libint2::INT_NCART(l)));
+    for (std::size_t f = 0; f != cart.size(); ++f) {
+      REQUIRE(cart[f][0] + cart[f][1] + cart[f][2] == l);
+      REQUIRE(libint2::INT_CARTINDEX(l, cart[f][0], cart[f][1]) ==
+              static_cast<int>(f));
+    }
+    const auto cart_molden = cart_molden_loop(l);
+    for (std::size_t f = 0; f != cart_molden.size(); ++f)
+      REQUIRE(libint2::INT_CARTINDEX_MOLDEN(l, cart_molden[f][0],
+                                            cart_molden[f][1]) ==
+              static_cast<int>(f));
+    REQUIRE(solidharm_loop(l).size() ==
+            static_cast<std::size_t>(2 * (2 * l + 1)));
+
+    REQUIRE(deprecated_cart_loop(l) == cart);
+    REQUIRE(deprecated_cart_molden_loop(l) == cart_molden);
+    REQUIRE(deprecated_solidharm_loop(l) == solidharm_loop(l));
+  }
 }
