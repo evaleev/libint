@@ -43,7 +43,7 @@
 // library generated with support for contracted integrals
 #if !defined(LIBINT2_CONTRACTED_INTS) || !LIBINT2_CONTRACTED_INTS
 #error \
-    "Libint2 C++ API requires a library generated with support for contracted integrals; reconfigure Libint2 with -DLIBINT2_CONTRACTED_INTS=ON, or with -DLIBINT2_REQUIRE_CXX_API=OFF if the C++ API is not needed"
+    "Libint2 C++ API requires a library generated with support for contracted integrals; regenerate the library with -DLIBINT2_CONTRACTED_INTS=ON, or configure it with -DLIBINT2_REQUIRE_CXX_API=OFF -DLIBINT2_REQUIRE_CXX_API_COMPILED=OFF (and LIBINT2_ENABLE_PYTHON=OFF) if the C++ API is not needed"
 #endif
 
 #if !defined(LIBINT_INCLUDE_ONEBODY) ||                                  \
