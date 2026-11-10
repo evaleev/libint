@@ -93,7 +93,7 @@ __libint2_engine_inline
 /// \brief types of operators (operator sets) supported by Engine.
 
 /// \warning These must start with 0 and appear in same order as elements of
-/// BOOST_PP_NBODY_OPERATOR_LIST preprocessor macro (aliases do not need to be
+/// LIBINT2_PP_NBODY_OPERATOR_LIST preprocessor macro (aliases do not need to be
 /// included). \warning for the sake of nbody() order operators by # of
 /// particles
 enum class Operator {
@@ -160,7 +160,8 @@ enum class Operator {
   //! operators),
   //! in the order of increasing \c l , with the operators of same \c l but
   //! different \c m ordered according to the solid harmonics ordering
-  //! CCA standard (see macro FOR_SOLIDHARM_STANDARD in shgshell_ordering.h.in).
+  //! CCA standard (see macro LIBINT2_FOR_SOLIDHARM_STANDARD in
+  //! shgshell_ordering.h).
   //! For example, the operators will appear in the following order
   //! \f$ \mathcal{N}^+_{0,0} , \mathcal{N}^-_{1,1}, \mathcal{N}^+_{1,0},
   //! \mathcal{N}^+_{1,1}, \mathcal{N}^-_{2,2}, \mathcal{N}^-_{2,1},
@@ -763,8 +764,6 @@ template <Operator Op>
 using core_eval_pack_type =
     __core_eval_pack_type<typename operator_traits<Op>::core_eval_type>;
 }  // namespace detail
-
-#define BOOST_PP_NBODY_BRAKET_MAX_INDEX 4
 
 /// @param[in] braket a BraKet object
 /// @return rank of @c braket

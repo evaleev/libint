@@ -332,16 +332,16 @@ bool test_4eri(unsigned int deriv_order, unsigned int lmax_max) {
               int ijkl = 0;
 
               int l0, m0, n0;
-              FOR_CART(l0, m0, n0, am[0])
+              LIBINT2_FOR_CART(l0, m0, n0, am[0])
 
               int l1, m1, n1;
-              FOR_CART(l1, m1, n1, am[1])
+              LIBINT2_FOR_CART(l1, m1, n1, am[1])
 
               int l2, m2, n2;
-              FOR_CART(l2, m2, n2, am[2])
+              LIBINT2_FOR_CART(l2, m2, n2, am[2])
 
               int l3, m3, n3;
-              FOR_CART(l3, m3, n3, am[3])
+              LIBINT2_FOR_CART(l3, m3, n3, am[3])
 
               for (uint v = 0; v < veclen; v++) {
                 //
@@ -415,10 +415,10 @@ bool test_4eri(unsigned int deriv_order, unsigned int lmax_max) {
 
               }  // end of vector loop
               ++ijkl;
-              END_FOR_CART
-              END_FOR_CART
-              END_FOR_CART
-              END_FOR_CART
+              LIBINT2_END_FOR_CART
+              LIBINT2_END_FOR_CART
+              LIBINT2_END_FOR_CART
+              LIBINT2_END_FOR_CART
 
               cout << (success ? "ok" : "failed") << std::endl;
 
@@ -675,13 +675,13 @@ bool test_3eri(unsigned int deriv_order, unsigned int lmax_max) {
             int ijk = 0;
 
             int l0, m0, n0;
-            FOR_CART(l0, m0, n0, am[0])
+            LIBINT2_FOR_CART(l0, m0, n0, am[0])
 
             int l1, m1, n1;
-            FOR_CART(l1, m1, n1, am[1])
+            LIBINT2_FOR_CART(l1, m1, n1, am[1])
 
             int l2, m2, n2;
-            FOR_CART(l2, m2, n2, am[2])
+            LIBINT2_FOR_CART(l2, m2, n2, am[2])
 
             for (uint v = 0; v < veclen; v++) {
               std::vector<LIBINT2_REF_REALTYPE> ref_eri(nderiv, 0.0);
@@ -748,9 +748,9 @@ bool test_3eri(unsigned int deriv_order, unsigned int lmax_max) {
 
             }  // end of vector loop
             ++ijk;
-            END_FOR_CART
-            END_FOR_CART
-            END_FOR_CART
+            LIBINT2_END_FOR_CART
+            LIBINT2_END_FOR_CART
+            LIBINT2_END_FOR_CART
 
             cout << (success ? "ok" : "failed") << endl;
 
@@ -959,10 +959,10 @@ bool test_2eri(unsigned int deriv_order, unsigned int lmax_max) {
       int ij = 0;
 
       int l0, m0, n0;
-      FOR_CART(l0, m0, n0, am[0])
+      LIBINT2_FOR_CART(l0, m0, n0, am[0])
 
       int l1, m1, n1;
-      FOR_CART(l1, m1, n1, am[1])
+      LIBINT2_FOR_CART(l1, m1, n1, am[1])
 
       for (uint v = 0; v < veclen; v++) {
         std::vector<LIBINT2_REF_REALTYPE> ref_eri(nderiv, 0.0);
@@ -1023,8 +1023,8 @@ bool test_2eri(unsigned int deriv_order, unsigned int lmax_max) {
 
       }  // end of vector loop
       ++ij;
-      END_FOR_CART
-      END_FOR_CART
+      LIBINT2_END_FOR_CART
+      LIBINT2_END_FOR_CART
 
       cout << (success ? "ok" : "failed") << endl;
 

@@ -51,7 +51,7 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "solid harmonics", "[engine]") {
 
       int ix, iy, iz;
       int xyz = 0;
-      FOR_CART(ix, iy, iz, 1)
+      LIBINT2_FOR_CART(ix, iy, iz, 1)
       int lm;
       if (ix == 1) {
         lm = libint2::INT_SOLIDHARMINDEX(libint2::solid_harmonics_ordering(), 1,
@@ -71,7 +71,7 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "solid harmonics", "[engine]") {
       }
 
       ++xyz;
-      END_FOR_CART
+      LIBINT2_END_FOR_CART
     }
 
 #endif  // LIBINT2_SUPPORT_ONEBODY

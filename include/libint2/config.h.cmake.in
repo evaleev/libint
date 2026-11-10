@@ -364,13 +364,13 @@
  */
 
 /* have stdint.h ? */
-#cmakedefine HAVE_STDINT_H @HAVE_STDINT_H@
+#cmakedefine LIBINT_HAVE_STDINT_H @LIBINT_HAVE_STDINT_H@
 
 /* have MPFR library ? */
 #cmakedefine LIBINT_HAS_MPFR @LIBINT_HAS_MPFR@
 
 /* have posix_memalign ? */
-#cmakedefine HAVE_POSIX_MEMALIGN @HAVE_POSIX_MEMALIGN@
+#cmakedefine LIBINT_HAVE_POSIX_MEMALIGN @LIBINT_HAVE_POSIX_MEMALIGN@
 
 /* compiler type detection */
 #define LIBINT_COMPILER_ID_GNU 0

@@ -46,13 +46,8 @@
 #include <sys/stat.h>
 #ifdef _WIN32
 #include <io.h>
-#ifndef S_ISDIR  // MinGW's <sys/stat.h> provides it, MSVC's does not
-#define S_ISDIR(m) (((m)&S_IFMT) == S_IFDIR)
-#endif
-#define PATH_SEPARATOR "\\"
 #else
 #include <unistd.h>
-#define PATH_SEPARATOR "/"
 #endif
 
 #include <libint2.h>
@@ -60,6 +55,15 @@
 #include <libint2/atom.h>
 
 namespace libint2 {
+
+  namespace detail {
+  /// the separator of path components on this platform
+#ifdef _WIN32
+  constexpr const char* path_separator = "\\";
+#else
+  constexpr const char* path_separator = "/";
+#endif
+  }  // namespace detail
 
   /// Computes the number of basis functions in a range of shells
   /// @tparam ShellRange a range type
@@ -117,7 +121,14 @@ namespace libint2 {
   /// @sa BasisSet::data_path()
   inline std::string basis_data_path() {
     std::string path;
+#ifdef _MSC_VER  // getenv is "unsafe" (C4996) on MSVC; it is fine here
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
     const char* data_path_env = getenv("LIBINT_DATA_PATH");
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
     if (data_path_env) {
       path = data_path_env;
     } else {
@@ -130,14 +141,14 @@ namespace libint2 {
 #endif
     }
     // validate basis_path = path + "/basis"
-    std::string basis_path = path + PATH_SEPARATOR + std::string("basis");
+    std::string basis_path = path + libint2::detail::path_separator + std::string("basis");
     bool error = true;
     std::error_code ec;
     auto validate_basis_path = [&basis_path, &error, &ec]() -> void {
       if (not basis_path.empty()) {
         struct stat sb;
         error = (::stat(basis_path.c_str(), &sb) == -1);
-        error = error || not S_ISDIR(sb.st_mode);
+        error = error || (sb.st_mode & S_IFMT) != S_IFDIR;
         if (error)
           ec = std::error_code(errno, std::generic_category());
       }
@@ -217,7 +228,7 @@ namespace libint2 {
 
         // read in ALL basis set components
         for(const auto& basis_component_name: basis_component_names) {
-          auto file_dot_g94 = basis_lib_path + PATH_SEPARATOR + basis_component_name + ".g94";
+          auto file_dot_g94 = basis_lib_path + libint2::detail::path_separator + basis_component_name + ".g94";
 
           // use same cartesian_d convention for all components!
           component_basis_sets.emplace_back(read_g94_basis_library(file_dot_g94, force_cartesian_d, throw_if_no_match,
@@ -241,7 +252,7 @@ namespace libint2 {
             else if (throw_if_no_match) {  // not found? throw, if needed
               std::string errmsg(std::string("did not find the basis for Z=") +
                       std::to_string(Z) + " in " +
-                      basis_lib_path + PATH_SEPARATOR + basis_component_names[comp_idx] + ".g94");
+                      basis_lib_path + libint2::detail::path_separator + basis_component_names[comp_idx] + ".g94");
               throw std::logic_error(errmsg);
             }
           } // basis component loop
@@ -847,7 +858,7 @@ namespace libint2 {
                      if (cc == '/') cc = 'I';
                      return cc;
                    });
-    auto file = basis_lib_path + PATH_SEPARATOR + canonical_name + ".g94";
+    auto file = basis_lib_path + libint2::detail::path_separator + canonical_name + ".g94";
     auto sap_by_Z = read_sap_basis_library(file);
 
     // Validate unconditionally: SAP data comes from disk (system boundary).

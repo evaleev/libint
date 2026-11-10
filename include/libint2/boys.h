@@ -42,11 +42,6 @@
 
 #ifdef _WIN32
 #include <malloc.h>
-#define posix_memalign(p, a, s) \
-  (((*(p)) = _aligned_malloc((s), (a))), *(p) ? 0 : errno)
-#define posix_memfree(p) ((_aligned_free((p))))
-#else
-#define posix_memfree(p) ((free((p))))
 #endif
 
 // from now on at least C++11 is required by default
@@ -59,13 +54,37 @@
 #include <libint2/initialize.h>
 #include <libint2/numeric.h>
 #include <libint2/truncated_coulomb.h>
+#include <libint2/util/math_constants.h>
 
-#if HAVE_LAPACK  // use F77-type interface for now, switch to LAPACKE later
+#if LIBINT_HAS_LAPACK  // use F77-type interface for now, switch to LAPACKE
+                       // later
 extern "C" void dgesv_(const int* n, const int* nrhs, double* A, const int* lda,
                        int* ipiv, double* b, const int* ldb, int* info);
 #endif
 
 namespace libint2 {
+
+namespace detail {
+/// portable posix_memalign: allocates @p size bytes aligned to @p alignment
+/// @return 0 on success, an errno value otherwise
+/// @note the result must be released with aligned_free()
+inline int aligned_malloc(void** ptr, std::size_t alignment, std::size_t size) {
+#ifdef _WIN32
+  *ptr = _aligned_malloc(size, alignment);
+  return *ptr ? 0 : errno;
+#else
+  return ::posix_memalign(ptr, alignment, size);
+#endif
+}
+/// releases memory allocated by aligned_malloc()
+inline void aligned_free(void* ptr) {
+#ifdef _WIN32
+  _aligned_free(ptr);
+#else
+  ::free(ptr);
+#endif
+}
+}  // namespace detail
 
 /// holds tables of expensive quantities
 template <typename Real>
@@ -313,7 +332,7 @@ class FmEval_Chebyshev7 {
   }
   ~FmEval_Chebyshev7() {
     if (mmax >= 0) {
-      posix_memfree(c);
+      detail::aligned_free(c);
     }
   }
 
@@ -462,7 +481,7 @@ class FmEval_Chebyshev7 {
   void init_table() {
     // get memory
     void* result;
-    int status = posix_memalign(
+    int status = detail::aligned_malloc(
         &result, ORDERp1 * sizeof(Real),
         (mmax + 1) * cheb_table_nintervals * ORDERp1 * sizeof(Real));
     if (status != 0) {
@@ -503,14 +522,11 @@ double FmEval_Chebyshev7<
 #endif
 #endif
 
-#ifndef STATIC_OON
-#define STATIC_OON
 namespace {
 const double oon[] = {0.0,       1.0,       1.0 / 2.0,  1.0 / 3.0,
                       1.0 / 4.0, 1.0 / 5.0, 1.0 / 6.0,  1.0 / 7.0,
                       1.0 / 8.0, 1.0 / 9.0, 1.0 / 10.0, 1.0 / 11.0};
 }
-#endif
 
 /** Computes the Boys function, \$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \,
  * {\rm d}u \$, using Taylor interpolation of up to 8-th order.
@@ -558,7 +574,7 @@ class FmEval_Taylor {
 
     assert(mmax <= 63);
 
-    const double sqrt_pi = std::sqrt(M_PI);
+    const double sqrt_pi = std::sqrt(math::pi);
 
     /*---------------------------------------
      We are doing Taylor interpolation with
@@ -972,7 +988,7 @@ struct TennoGmEval {
   }
 
   ~TennoGmEval() {
-    if (c_ != nullptr) posix_memfree(c_);
+    if (c_ != nullptr) detail::aligned_free(c_);
   }
 
   /// Singleton interface allows to manage the lone instance; adjusts max m
@@ -1790,9 +1806,10 @@ struct TennoGmEval {
   void init_table() {
     // get memory
     void* result;
-    int status = posix_memalign(&result, std::max(sizeof(Real), (size_t)32),
-                                (mmax_ - mmin_ + 1) * cheb_table_nintervals *
-                                    ORDERp1 * ORDERp1 * sizeof(Real));
+    int status =
+        detail::aligned_malloc(&result, std::max(sizeof(Real), (size_t)32),
+                               (mmax_ - mmin_ + 1) * cheb_table_nintervals *
+                                   ORDERp1 * ORDERp1 * sizeof(Real));
     if (status != 0) {
       if (status == EINVAL)
         throw std::logic_error(
@@ -2154,7 +2171,7 @@ struct delta_gm_eval {
 
   delta_gm_eval(unsigned int, Real) {}
   void operator()(Real* Gm, Real rho, Real T, int mmax) const {
-    constexpr static auto one_over_two_pi = 1.0 / (2.0 * M_PI);
+    constexpr static auto one_over_two_pi = 1.0 / (2.0 * math::pi);
     const auto G0 = exp(-T) * rho * one_over_two_pi;
     std::fill(Gm, Gm + mmax + 1, G0);
   }
@@ -2356,7 +2373,7 @@ struct q_gau_gm_eval {
 /*
  *  Slater geminal fitting is available only if have LAPACK
  */
-#if HAVE_LAPACK
+#if LIBINT_HAS_LAPACK
 /*
 f[x_] := - Exp[-\[Zeta] x] / \[Zeta];
 
@@ -2455,7 +2472,7 @@ void stg_ng_fit(unsigned int n, Real zeta,
     for (unsigned int j = 0; j < n; ++j)
       ffnormfac += cc[i] * cc[j] / sqrt(aa[i] + aa[j]);
   const Real Nf = sqrt(2.0 * zeta) * zeta;
-  const Real Nff = sqrt(2.0) / (sqrt(ffnormfac) * sqrt(sqrt(M_PI)));
+  const Real Nff = sqrt(2.0) / (sqrt(ffnormfac) * sqrt(sqrt(math::pi)));
   for (unsigned int i = 0; i < n; ++i) cc[i] *= -Nff / Nf;
 
   Real lambda0 = 1000;  // damping factor is initially set to 1000, eventually

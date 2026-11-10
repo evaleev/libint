@@ -30,7 +30,7 @@
 
 #undef LIBINT_ALIGN_SIZE
 #undef LIBINT_HAS_MPFR
-#undef HAVE_POSIX_MEMALIGN
+#undef LIBINT_HAVE_POSIX_MEMALIGN
 #undef LIBINT_USER_DEFINED_REAL
 /* retired Jan 2023 #undef LIBINT_SHGSHELL_ORDERING */
 #undef LIBINT_HAS_EIGEN
@@ -59,6 +59,6 @@
 #cmakedefine LIBINT_HAS_MPFR @LIBINT_HAS_MPFR@
 
 /* have posix_memalign ? */
-#cmakedefine HAVE_POSIX_MEMALIGN @HAVE_POSIX_MEMALIGN@
+#cmakedefine LIBINT_HAVE_POSIX_MEMALIGN @LIBINT_HAVE_POSIX_MEMALIGN@
 
 #endif /* header guard */

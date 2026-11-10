@@ -213,7 +213,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 
 The use of the `LIBINT2_SHGAUSS_ORDERING` option has changed recently (Dec 2023). See also discussion in the "2023-12-12: 2.8.0" section of [CHANGES](https://github.com/evaleev/libint/blob/master/CHANGES) and in the "cdbb9f3" comment of [engine.h](https://github.com/evaleev/libint/blob/master/include/libint2/engine.h).
 
-Previous to v2.8.0, `LIBINT2_SHGAUSS_ORDERING` was set at generator-build-time for `Operator::sphemultipole` but was re-set-able at library-build-time for other integral classes for both the C and C++ interfaces. Certain macros, `INT_SOLIDHARMINDEX` and `FOR_SOLIDHARM` depended on the library-build-time choice for both the C and C++ interfaces.
+Previous to v2.8.0, `LIBINT2_SHGAUSS_ORDERING` was set at generator-build-time for `Operator::sphemultipole` but was re-set-able at library-build-time for other integral classes for both the C and C++ interfaces. Certain macros, `INT_SOLIDHARMINDEX` and `FOR_SOLIDHARM` (now `LIBINT2_FOR_SOLIDHARM`) depended on the library-build-time choice for both the C and C++ interfaces.
 
 Starting at v2.8.0, the generator-build-time construction of `Operator::sphemultipole` has been _fixed at Standard ordering_; thus, the `LIBINT2_SHGAUSS_ORDERING` setting does not influence it. For the C++ interface, solid harmonic ordering for other integrals classes can be toggled at library runtime through `libint2::set_solid_harmonics_ordering`, and the "SOLIDHARM" macros have different forms for accessing either ordering; thus the library build-time `LIBINT2_SHGAUSS_ORDERING` setting is non-constraining. For the C interface, solid harmonic ordering for other integrals classes and the output of "SOLIDHARM" macros _is constrained_ by the `LIBINT2_SHGAUSS_ORDERING` setting. Currently, this setting is fixed at generator-build-time. The build system could be adjusted so that it's re-set-able at library-build-time, but the C interface is discouraged anyways.
 
@@ -399,6 +399,13 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 [^17]: Targets in export/CMakeLists.txt.export . Names subject to change. Use namespaced target names in any consuming code.
 [^18]: Deprecated legacy aliases. Update any uses to namespaced target.
 [^19]: `libint_f` compiles the Fortran module; `int_f` packages its objects into the installed `libint2_f` library (shared or static, per `BUILD_SHARED_LIBS`) and carries the usage requirements, so linking `Libint2::fortran` alone brings in the Fortran module directory, the generated Fortran headers, and the Libint2 C library. Set `LIBINT2_INSTALL_FMODDIR` to control where `libint_f.mod` is installed. Since Libint2 is implemented in C++, a consuming project must enable the `CXX` language when linking a static Libint2, so that CMake adds the C++ runtime to the link. On macOS with a shared Libint2, `Libint2::fortran` adds the `-Wl,-commons,use_dylibs` linker flag where needed, so that the Fortran module's `BIND(C)` variables resolve to those in `libint2.dylib`; pass this flag yourself if linking the Fortran interface without CMake.
+
+
+### Names Visible to Consumers
+
+Libint headers and targets keep the names they put into consuming code within the `libint2` namespace (C++), or prefixed with `LIBINT2_`/`LIBINT_` (macros), and `find_package(Libint2)` does not define unprefixed variables of its own in the caller's scope (besides those set by CMake's standard package machinery, such as `PACKAGE_PREFIX_DIR`, and by the packages of the dependencies it finds, such as Eigen3).
+The only exceptions are the deprecated loop macros `FOR_CART`, `FOR_CART_MOLDEN`, `FOR_SOLIDHARM`, `FOR_SOLIDHARM_STANDARD`, `FOR_SOLIDHARM_GAUSSIAN`, `FOR_SOLIDHARM_MOLDEN` and their `END_` counterparts, kept for backward compatibility; use their `LIBINT2_`-prefixed versions (e.g., `LIBINT2_FOR_CART` ... `LIBINT2_END_FOR_CART`) instead.
+The deprecated macros emit a deprecation warning where used; define `LIBINT2_DISABLE_DEPRECATED_MACROS` before including any Libint header (e.g., `target_compile_definitions(... PRIVATE LIBINT2_DISABLE_DEPRECATED_MACROS)`) to not define them at all, e.g., if they clash with your own macros.
 
 
 -----------------------------------------------------------------------------

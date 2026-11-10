@@ -69,7 +69,7 @@ class truncated_coulomb_gm_eval;
 /*
  *  Slater geminal fitting is available only if have LAPACK
  */
-#if HAVE_LAPACK
+#if LIBINT_HAS_LAPACK
 template <typename Real>
 void stg_ng_fit(unsigned int n, Real zeta,
                 std::vector<std::pair<Real, Real> >& geminal, Real xmin = 0.0,

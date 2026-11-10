@@ -391,13 +391,13 @@ int main(int argc, char** argv) {
   /*
   {
         unsigned int x0,y0,z0;
-        FOR_CART(x0,y0,z0,am0)
+        LIBINT2_FOR_CART(x0,y0,z0,am0)
                 unsigned int x1,y1,z1;
-                FOR_CART(x1,y1,z1,am1)
+                LIBINT2_FOR_CART(x1,y1,z1,am1)
                         unsigned int x2,y2,z2;
-                        FOR_CART(x2,y2,z2,am2)
+                        LIBINT2_FOR_CART(x2,y2,z2,am2)
                                 unsigned int x3,y3,z3;
-                                FOR_CART(x3,y3,z3,am3)
+                                LIBINT2_FOR_CART(x3,y3,z3,am3)
                                 //LIBINT2_REALTYPE new_eri = 0;
                                 //for(uint pt=0; pt!=npts; ++pt) {
   //I think I want to time this... ?
@@ -405,9 +405,8 @@ int main(int argc, char** argv) {
   * gtg_y(pt,y0,y1,y2,y3) * gtg_z(pt,z0,z1,z2,z3);
                                 //}
                                         std::cout<<x0<<x1<<x2<<x3<<"
-  "<<y0<<y1<<y2<<y3<<" "<<z0<<z1<<z2<<z3<<std::endl; END_FOR_CART END_FOR_CART
-                END_FOR_CART
-        END_FOR_CART
+  "<<y0<<y1<<y2<<y3<<" "<<z0<<z1<<z2<<z3<<std::endl; LIBINT2_END_FOR_CART
+  LIBINT2_END_FOR_CART LIBINT2_END_FOR_CART LIBINT2_END_FOR_CART
 
   }
   */
@@ -567,13 +566,13 @@ int main(int argc, char** argv) {
     LIBINT2_REALTYPE new_eri = 0;
     while (int_num < max_num_ints) {
       int x0, y0, z0;
-      FOR_CART(x0, y0, z0, am0)
+      LIBINT2_FOR_CART(x0, y0, z0, am0)
       int x1, y1, z1;
-      FOR_CART(x1, y1, z1, am1)
+      LIBINT2_FOR_CART(x1, y1, z1, am1)
       int x2, y2, z2;
-      FOR_CART(x2, y2, z2, am2)
+      LIBINT2_FOR_CART(x2, y2, z2, am2)
       int x3, y3, z3;
-      FOR_CART(x3, y3, z3, am3)
+      LIBINT2_FOR_CART(x3, y3, z3, am3)
       // std::cout<<x0<<y1<<z1<<" "<<x1<<y1<<z1<<" "<<x2<<y2<<z2<<"
       //"<<x3<<y3<<z3<<std::endl;
       for (uint pt = 0; pt != npts; ++pt) {
@@ -595,10 +594,10 @@ int main(int argc, char** argv) {
         new_eri += gtg_x(pt, l0, l1, l2, l3) * gtg_y(pt, m0, m1, m2, m3) *
                    gtg_z(pt, n0, n1, n2, n3);
       }
-      END_FOR_CART
-      END_FOR_CART
-      END_FOR_CART
-      END_FOR_CART
+      LIBINT2_END_FOR_CART
+      LIBINT2_END_FOR_CART
+      LIBINT2_END_FOR_CART
+      LIBINT2_END_FOR_CART
       int_num++;
     }
     timers.stop(2);

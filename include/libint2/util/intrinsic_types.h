@@ -29,7 +29,7 @@
 #endif
 
 /* determine default LIBINT2 64-bit integer */
-#ifdef HAVE_STDINT_H
+#ifdef LIBINT_HAVE_STDINT_H
 
 #ifdef __cplusplus
 #include <cstdint>
@@ -51,12 +51,14 @@ typedef long int LIBINT2_INT_LEAST64;
 
 #else
 
-#if defined(ULONGLONG_MAX) && !defined(ULLONG_MAX)
-#define ULLONG_MAX ULONGLONG_MAX
+#if defined(ULLONG_MAX)
+#define LIBINT2_ULLONG_MAX_ ULLONG_MAX
+#elif defined(ULONGLONG_MAX)
+#define LIBINT2_ULLONG_MAX_ ULONGLONG_MAX
 #endif
 
-#ifdef ULLONG_MAX
-#if ULONGLONG_MAX == (0xffffffffffffffffuLL) /* uLL reqd for xlC */
+#ifdef LIBINT2_ULLONG_MAX_
+#if LIBINT2_ULLONG_MAX_ == (0xffffffffffffffffuLL) /* uLL reqd for xlC */
 typedef long long LIBINT2_INT_LEAST64;
 typedef unsigned long long LIBINT2_UINT_LEAST64;
 #else
@@ -73,7 +75,8 @@ typedef unsigned long LIBINT2_UINT_LEAST64;
 #else /* assume no 64-bit integers */
 #error 64 bit integer types are required
 #endif
+#undef LIBINT2_ULLONG_MAX_
 
-#endif /* HAVE_STDINT_H */
+#endif /* LIBINT_HAVE_STDINT_H */
 
 #endif

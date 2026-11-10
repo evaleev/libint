@@ -65,7 +65,7 @@ struct OSVRR_xs_xs<0, La, Lc, unit_b, vectorize> {
     const unsigned int NcV = Nc * veclen;
 
     int ax, ay, az;
-    FOR_CART(ax, ay, az, La)
+    LIBINT2_FOR_CART(ax, ay, az, La)
 
     int a[3];
     a[0] = ax;
@@ -154,7 +154,7 @@ struct OSVRR_xs_xs<0, La, Lc, unit_b, vectorize> {
 
       // loop over c-1 shell and include (a-1_xyz 0 | c-1_xyz 0) to (a 0 | c 0)
       int cx, cy, cz;
-      FOR_CART(cx, cy, cz, Lc - 1)
+      LIBINT2_FOR_CART(cx, cy, cz, Lc - 1)
 
       int c[3];
       c[0] = cx;
@@ -174,12 +174,12 @@ struct OSVRR_xs_xs<0, La, Lc, unit_b, vectorize> {
 #endif
       src4_ptr += veclen;
 
-      END_FOR_CART
+      LIBINT2_END_FOR_CART
     }
 
     target += NcV;
 
-    END_FOR_CART
+    LIBINT2_END_FOR_CART
 
     /** Number of flops = ??? */
     // inteval->nflops[0] = inteval->nflops[0] + 222 * 1 * 1 * veclen;
@@ -214,7 +214,7 @@ struct OSAVRR_xs_xs<0, La, Lc, vectorize> {
     const unsigned int NcV = Nc * veclen;
 
     int ax, ay, az;
-    FOR_CART(ax, ay, az, La)
+    LIBINT2_FOR_CART(ax, ay, az, La)
 
     int a[3];
     a[0] = ax;
@@ -266,7 +266,7 @@ struct OSAVRR_xs_xs<0, La, Lc, vectorize> {
 
       // loop over c-1 shell and include (a-1_xyz 0 | c-1_xyz 0) to (a 0 | c 0)
       int cx, cy, cz;
-      FOR_CART(cx, cy, cz, Lc - 1)
+      LIBINT2_FOR_CART(cx, cy, cz, Lc - 1)
 
       int c[3];
       c[0] = cx;
@@ -286,12 +286,12 @@ struct OSAVRR_xs_xs<0, La, Lc, vectorize> {
 #endif
       src4_ptr += veclen;
 
-      END_FOR_CART
+      LIBINT2_END_FOR_CART
     }
 
     target += NcV;
 
-    END_FOR_CART
+    LIBINT2_END_FOR_CART
 
     /** Number of flops = ??? */
     // inteval->nflops[0] = inteval->nflops[0] + 222 * 1 * 1 * veclen;

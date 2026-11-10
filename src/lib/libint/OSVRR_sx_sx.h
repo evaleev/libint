@@ -69,7 +69,7 @@ struct OSVRR_sx_sx<0, Lb, Ld, unit_a, vectorize> {
     const unsigned int NdV = Nd * veclen;
 
     int bx, by, bz;
-    FOR_CART(bx, by, bz, Lb)
+    LIBINT2_FOR_CART(bx, by, bz, Lb)
 
     int b[3];
     b[0] = bx;
@@ -158,7 +158,7 @@ struct OSVRR_sx_sx<0, Lb, Ld, unit_a, vectorize> {
 
       // loop over d-1 shell and include (0 b-1_xyz | 0 d-1_xyz) to (0 b | 0 d)
       int dx, dy, dz;
-      FOR_CART(dx, dy, dz, Ld - 1)
+      LIBINT2_FOR_CART(dx, dy, dz, Ld - 1)
 
       int d[3];
       d[0] = dx;
@@ -178,12 +178,12 @@ struct OSVRR_sx_sx<0, Lb, Ld, unit_a, vectorize> {
 #endif
       src4_ptr += veclen;
 
-      END_FOR_CART
+      LIBINT2_END_FOR_CART
     }
 
     target += NdV;
 
-    END_FOR_CART
+    LIBINT2_END_FOR_CART
   }
 };
 
@@ -234,7 +234,7 @@ struct OSVRR_sx_sx<0, Lb, Ld, unit_a, vectorize> {
 
       int dx, dy, dz;
       int id = 0;
-      FOR_CART(dx, dy, dz, Ld)
+      LIBINT2_FOR_CART(dx, dy, dz, Ld)
 
         int d[3]; d[0] = dx;  d[1] = dy;  d[2] = dz;
 
@@ -314,7 +314,7 @@ struct OSVRR_sx_sx<0, Lb, Ld, unit_a, vectorize> {
 
           // loop over b-1 shell and include (0 b-1_xyz | 0 d-1_xyz) to (0 b | 0 d)
           int bx, by, bz;
-          FOR_CART(bx, by, bz, Lb-1)
+          LIBINT2_FOR_CART(bx, by, bz, Lb-1)
 
             int b[3]; b[0] = bx;  b[1] = by;  b[2] = bz;
             ++b[xyz];
@@ -331,12 +331,12 @@ struct OSVRR_sx_sx<0, Lb, Ld, unit_a, vectorize> {
 #endif
             src4_ptr += Ndm1v;
 
-          END_FOR_CART // end of loop over b
+          LIBINT2_END_FOR_CART // end of loop over b
         }
 
         ++id;
 
-      END_FOR_CART // end of loop over d
+      LIBINT2_END_FOR_CART // end of loop over d
 
     }
 
@@ -370,7 +370,7 @@ struct OSAVRR_sx_sx<0, Lb, Ld, vectorize> {
     const unsigned int NdV = Nd * veclen;
 
     int bx, by, bz;
-    FOR_CART(bx, by, bz, Lb)
+    LIBINT2_FOR_CART(bx, by, bz, Lb)
 
     int b[3];
     b[0] = bx;
@@ -422,7 +422,7 @@ struct OSAVRR_sx_sx<0, Lb, Ld, vectorize> {
 
       // loop over d-1 shell and include (0 b-1_xyz | 0 d-1_xyz) to (0 b | 0 d)
       int dx, dy, dz;
-      FOR_CART(dx, dy, dz, Ld - 1)
+      LIBINT2_FOR_CART(dx, dy, dz, Ld - 1)
 
       int d[3];
       d[0] = dx;
@@ -442,12 +442,12 @@ struct OSAVRR_sx_sx<0, Lb, Ld, vectorize> {
 #endif
       src4_ptr += veclen;
 
-      END_FOR_CART
+      LIBINT2_END_FOR_CART
     }
 
     target += NdV;
 
-    END_FOR_CART
+    LIBINT2_END_FOR_CART
   }
 };
 

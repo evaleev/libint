@@ -106,7 +106,7 @@ struct OSVRR_sx_sx_deriv<0, Lb, Ld, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
     const unsigned int NdV = Nd * veclen;
 
     int bx, by, bz;
-    FOR_CART(bx, by, bz, Lb)
+    LIBINT2_FOR_CART(bx, by, bz, Lb)
 
     int b[3];
     b[0] = bx;
@@ -195,7 +195,7 @@ struct OSVRR_sx_sx_deriv<0, Lb, Ld, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
 
       // loop over d-1 shell and include (0 b-1_xyz | 0 d-1_xyz) to (0 b | 0 d)
       int dx, dy, dz;
-      FOR_CART(dx, dy, dz, Ld - 1)
+      LIBINT2_FOR_CART(dx, dy, dz, Ld - 1)
 
       int d[3];
       d[0] = dx;
@@ -215,7 +215,7 @@ struct OSVRR_sx_sx_deriv<0, Lb, Ld, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
 #endif
       src4_ptr += veclen;
 
-      END_FOR_CART
+      LIBINT2_END_FOR_CART
     }
 
 #define OSVRR_SX_SX_DERIV_DCONTR_A(target, srcA, srcB, id, ecoef1, ecoef2)  \
@@ -376,7 +376,7 @@ struct OSVRR_sx_sx_deriv<0, Lb, Ld, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
 
     target += NdV;
 
-    END_FOR_CART  // end of loop over a-1
+    LIBINT2_END_FOR_CART  // end of loop over a-1
 
     /** Number of flops = ??? */
     // inteval->nflops[0] = inteval->nflops[0] + 222 * 1 * 1 * veclen;
@@ -454,7 +454,7 @@ struct OSAVRR_sx_sx_deriv<0, Lb, Ld, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
     const unsigned int NdV = Nd * veclen;
 
     int bx, by, bz;
-    FOR_CART(bx, by, bz, Lb)
+    LIBINT2_FOR_CART(bx, by, bz, Lb)
 
     int b[3];
     b[0] = bx;
@@ -506,7 +506,7 @@ struct OSAVRR_sx_sx_deriv<0, Lb, Ld, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
 
       // loop over d-1 shell and include (0 b-1_xyz | 0 d-1_xyz) to (0 b | 0 d)
       int dx, dy, dz;
-      FOR_CART(dx, dy, dz, Ld - 1)
+      LIBINT2_FOR_CART(dx, dy, dz, Ld - 1)
 
       int d[3];
       d[0] = dx;
@@ -526,7 +526,7 @@ struct OSAVRR_sx_sx_deriv<0, Lb, Ld, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
 #endif
       src4_ptr += veclen;
 
-      END_FOR_CART
+      LIBINT2_END_FOR_CART
     }
 
     // if Da_x-1 exists
@@ -629,7 +629,7 @@ struct OSAVRR_sx_sx_deriv<0, Lb, Ld, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
 
     target += NdV;
 
-    END_FOR_CART  // end of loop over a-1
+    LIBINT2_END_FOR_CART  // end of loop over a-1
 
     /** Number of flops = ??? */
     // inteval->nflops[0] = inteval->nflops[0] + 222 * 1 * 1 * veclen;

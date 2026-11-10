@@ -28,6 +28,7 @@
 #include <libint2/initialize.h>
 #include <libint2/shell.h>
 #include <libint2/shgshell_ordering.h>
+#include <libint2/util/math_constants.h>
 
 #include <cmath>
 #include <iomanip>
@@ -313,18 +314,18 @@ class Export {
                   ao + libint2::INT_SOLIDHARMINDEX(sho, 1, 0);
               ao_molden += 3;
             } else {
-              FOR_SOLIDHARM_MOLDEN(l, m)
+              LIBINT2_FOR_SOLIDHARM_MOLDEN(l, m)
               const auto ao_in_shell = libint2::INT_SOLIDHARMINDEX(sho, l, m);
               ao_map_[ao_molden++] = ao + ao_in_shell;
-              END_FOR_SOLIDHARM_MOLDEN
+              LIBINT2_END_FOR_SOLIDHARM_MOLDEN
             }
             ao += 2 * l + 1;
           } else {
             long i, j, k;
-            FOR_CART_MOLDEN(i, j, k, l)
+            LIBINT2_FOR_CART_MOLDEN(i, j, k, l)
             const auto ao_in_shell = libint2::INT_CARTINDEX(l, i, j);
             ao_map_[ao_molden++] = ao + ao_in_shell;
-            END_FOR_CART_MOLDEN
+            LIBINT2_END_FOR_CART_MOLDEN
             ao += INT_NCART(l);
           }
         }  // contraction loop
@@ -412,7 +413,7 @@ class PBCExport : public Export {
       const bool nonzero_a = a >= eps;
       const bool nonzero_b = b >= eps;
       const bool nonzero_c = c >= eps;
-      static constexpr double right_angle = M_PI / 2;
+      static constexpr double right_angle = math::pi / 2;
       const double alpha =
           nonzero_b && nonzero_c
               ? std::acos(cell_axes_[1].dot(cell_axes_[2]) / (b * c))
@@ -425,7 +426,7 @@ class PBCExport : public Export {
           nonzero_a && nonzero_b
               ? std::acos(cell_axes_[0].dot(cell_axes_[1]) / (a * b))
               : right_angle;
-      const double radian_to_degree = 180 / M_PI;
+      const double radian_to_degree = 180 / math::pi;
       os << std::setw(12) << a * bohr_to_angstrom() << std::setw(12)
          << b * bohr_to_angstrom() << std::setw(12) << c * bohr_to_angstrom()
          << std::setw(12) << alpha * radian_to_degree << std::setw(12)

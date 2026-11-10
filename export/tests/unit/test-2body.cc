@@ -381,16 +381,16 @@ TEST_CASE("eri geometric derivatives", "[engine][2-body]") {
               int ijkl = 0;
 
               int l0, m0, n0;
-              FOR_CART(l0, m0, n0, obs[s0].contr[0].l)
+              LIBINT2_FOR_CART(l0, m0, n0, obs[s0].contr[0].l)
 
               int l1, m1, n1;
-              FOR_CART(l1, m1, n1, obs[s1].contr[0].l)
+              LIBINT2_FOR_CART(l1, m1, n1, obs[s1].contr[0].l)
 
               int l2, m2, n2;
-              FOR_CART(l2, m2, n2, obs[s2].contr[0].l)
+              LIBINT2_FOR_CART(l2, m2, n2, obs[s2].contr[0].l)
 
               int l3, m3, n3;
-              FOR_CART(l3, m3, n3, obs[s3].contr[0].l)
+              LIBINT2_FOR_CART(l3, m3, n3, obs[s3].contr[0].l)
 
               {
                 //
@@ -476,10 +476,10 @@ TEST_CASE("eri geometric derivatives", "[engine][2-body]") {
                 }
               }
               ++ijkl;
-              END_FOR_CART
-              END_FOR_CART
-              END_FOR_CART
-              END_FOR_CART
+              LIBINT2_END_FOR_CART
+              LIBINT2_END_FOR_CART
+              LIBINT2_END_FOR_CART
+              LIBINT2_END_FOR_CART
 
             }  // checking computed values vs. the reference
           }
@@ -898,16 +898,16 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
             int ijkl = 0;
 
             int l0, m0, n0;
-            FOR_CART(l0, m0, n0, obs[s0].contr[0].l)
+            LIBINT2_FOR_CART(l0, m0, n0, obs[s0].contr[0].l)
 
             int l1, m1, n1;
-            FOR_CART(l1, m1, n1, obs[s1].contr[0].l)
+            LIBINT2_FOR_CART(l1, m1, n1, obs[s1].contr[0].l)
 
             int l2, m2, n2;
-            FOR_CART(l2, m2, n2, obs[s2].contr[0].l)
+            LIBINT2_FOR_CART(l2, m2, n2, obs[s2].contr[0].l)
 
             int l3, m3, n3;
-            FOR_CART(l3, m3, n3, obs[s3].contr[0].l)
+            LIBINT2_FOR_CART(l3, m3, n3, obs[s3].contr[0].l)
 
             std::array<LIBINT2_REF_REALTYPE, 4> ref_coulomb_opop{0.0, 0.0, 0.0,
                                                                  0.0};
@@ -1082,10 +1082,10 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
             }
 
             ++ijkl;
-            END_FOR_CART
-            END_FOR_CART
-            END_FOR_CART
-            END_FOR_CART
+            LIBINT2_END_FOR_CART
+            LIBINT2_END_FOR_CART
+            LIBINT2_END_FOR_CART
+            LIBINT2_END_FOR_CART
           }
         }
       }
@@ -1119,13 +1119,13 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
             int ijkl = 0;
 
             int l0, m0, n0;
-            FOR_CART(l0, m0, n0, obs[s0].contr[0].l)
+            LIBINT2_FOR_CART(l0, m0, n0, obs[s0].contr[0].l)
             int l1, m1, n1;
-            FOR_CART(l1, m1, n1, obs[s1].contr[0].l)
+            LIBINT2_FOR_CART(l1, m1, n1, obs[s1].contr[0].l)
             int l2, m2, n2;
-            FOR_CART(l2, m2, n2, obs[s2].contr[0].l)
+            LIBINT2_FOR_CART(l2, m2, n2, obs[s2].contr[0].l)
             int l3, m3, n3;
-            FOR_CART(l3, m3, n3, obs[s3].contr[0].l)
+            LIBINT2_FOR_CART(l3, m3, n3, obs[s3].contr[0].l)
 
             // Raw 3x3 dyadic T_{ab} = (a b∂_a | c d∂_b), accumulated in
             // chemist-notation index 3*a+b. After the primitive loop we
@@ -1213,10 +1213,10 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
             }
 
             ++ijkl;
-            END_FOR_CART
-            END_FOR_CART
-            END_FOR_CART
-            END_FOR_CART
+            LIBINT2_END_FOR_CART
+            LIBINT2_END_FOR_CART
+            LIBINT2_END_FOR_CART
+            LIBINT2_END_FOR_CART
           }
         }
       }
@@ -1436,11 +1436,11 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
         int ijk = 0;
 
         int l0, m0, n0;
-        FOR_CART(l0, m0, n0, dfsh.contr[0].l)  // P (fitting, s)
+        LIBINT2_FOR_CART(l0, m0, n0, dfsh.contr[0].l)  // P (fitting, s)
         int l2, m2, n2;
-        FOR_CART(l2, m2, n2, obs[sa].contr[0].l)  // μ
+        LIBINT2_FOR_CART(l2, m2, n2, obs[sa].contr[0].l)  // μ
         int l3, m3, n3;
-        FOR_CART(l3, m3, n3, obs[sb].contr[0].l)  // ν (σ·p acts here)
+        LIBINT2_FOR_CART(l3, m3, n3, obs[sb].contr[0].l)  // ν (σ·p acts here)
 
         std::array<LIBINT2_REF_REALTYPE, 3> ref_coulomb_op{0.0, 0.0, 0.0};
 
@@ -1489,9 +1489,9 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
         }
 
         ++ijk;
-        END_FOR_CART
-        END_FOR_CART
-        END_FOR_CART
+        LIBINT2_END_FOR_CART
+        LIBINT2_END_FOR_CART
+        LIBINT2_END_FOR_CART
       }
     }
   }

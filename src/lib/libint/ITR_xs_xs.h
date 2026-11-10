@@ -62,7 +62,7 @@ struct ITR_xs_xs<0, La, Lc, InBra, vectorize> {
     const unsigned int NcV = Nc * veclen;
 
     int ax, ay, az;
-    FOR_CART(ax, ay, az, La)
+    LIBINT2_FOR_CART(ax, ay, az, La)
 
     int a[3];
     a[0] = ax;
@@ -171,7 +171,7 @@ struct ITR_xs_xs<0, La, Lc, InBra, vectorize> {
       // loop over c shell and include (a-1_xyz 0 | c+1_xyz 0) to (a 0 | c 0)
       int cx, cy, cz;
       int cv = 0;
-      FOR_CART(cx, cy, cz, Lc)
+      LIBINT2_FOR_CART(cx, cy, cz, Lc)
 
       int c[3];
       c[0] = cx;
@@ -190,7 +190,7 @@ struct ITR_xs_xs<0, La, Lc, InBra, vectorize> {
       inteval->nflops[0] += 2 * veclen;
 #endif
 
-      END_FOR_CART
+      LIBINT2_END_FOR_CART
     }
 
     {
@@ -201,7 +201,7 @@ struct ITR_xs_xs<0, La, Lc, InBra, vectorize> {
 
       // loop over c-1 shell and include (a-1_xyz 0 | c-1_xyz 0) to (a 0 | c 0)
       int cx, cy, cz;
-      FOR_CART(cx, cy, cz, Lc - 1)
+      LIBINT2_FOR_CART(cx, cy, cz, Lc - 1)
 
       int c[3];
       c[0] = cx;
@@ -221,12 +221,12 @@ struct ITR_xs_xs<0, La, Lc, InBra, vectorize> {
 #endif
       src3_ptr += veclen;
 
-      END_FOR_CART
+      LIBINT2_END_FOR_CART
     }
 
     target += NcV;
 
-    END_FOR_CART
+    LIBINT2_END_FOR_CART
   }
 };
 
@@ -256,7 +256,7 @@ struct ITR_xs_xs<0, La, Lc, InBra, vectorize> {
       const unsigned int NaV = Na * veclen;
 
       int cx, cy, cz;
-      FOR_CART(cx, cy, cz, Lc)
+      LIBINT2_FOR_CART(cx, cy, cz, Lc)
 
         int c[3]; c[0] = cx;  c[1] = cy;  c[2] = cz;
 
@@ -362,7 +362,7 @@ struct ITR_xs_xs<0, La, Lc, InBra, vectorize> {
           // loop over c shell and include (c-1_xyz 0 | c+1_xyz 0) to (c 0 | c 0)
           int cx, cy, cz;
           int cv = 0;
-          FOR_CART(cx, cy, cz, Lc)
+          LIBINT2_FOR_CART(cx, cy, cz, Lc)
 
             int c[3]; c[0] = cx;  c[1] = cy;  c[2] = cz;
             ++c[xyz];
@@ -378,7 +378,7 @@ struct ITR_xs_xs<0, La, Lc, InBra, vectorize> {
           inteval->nflops[0] += 2 * veclen;
 #endif
 
-          END_FOR_CART
+          LIBINT2_END_FOR_CART
         }
 
 
@@ -390,7 +390,7 @@ struct ITR_xs_xs<0, La, Lc, InBra, vectorize> {
 
           // loop over c-1 shell and include (c-1_xyz 0 | c-1_xyz 0) to (c 0 | c 0)
           int cx, cy, cz;
-          FOR_CART(cx, cy, cz, Lc-1)
+          LIBINT2_FOR_CART(cx, cy, cz, Lc-1)
 
             int c[3]; c[0] = cx;  c[1] = cy;  c[2] = cz;
             ++c[xyz];
@@ -407,12 +407,12 @@ struct ITR_xs_xs<0, La, Lc, InBra, vectorize> {
 #endif
             src3_ptr += veclen;
 
-          END_FOR_CART
+          LIBINT2_END_FOR_CART
         }
 
         target += NcV;
 
-      END_FOR_CART
+      LIBINT2_END_FOR_CART
 
     }
 
