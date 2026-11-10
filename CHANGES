@@ -12,6 +12,9 @@ Following is a brief summary of changes made in each release of Libint.
     - unprefixed macros (FOR_CART etc.) are deprecated in favor of LIBINT2_-prefixed ones; some
       unscoped macros were removed or renamed (see PR #459)
     - the compiler requires C++17 (the generated library still requires C++11)
+    - the SAP basis files (sap_helfem_large, sap_grasp_large) have the BSE coefficients (PR #408):
+      they are meant for make_q_gau_data(); as a 3-center fitting basis they now give a wrong
+      potential (previously the coefficients included the normalization factors)
   - PR #399: relativistic (RKB) 2-body integrals and 1-body Operator::opemuop (HT @kshitij-05)
   - PR #408: generalized Gaussian potential operators q_gau and op_q_gau_op (HT @kshitij-05)
   - PR #409: libint2::infinite_exponent for point charges (HT @kshitij-05)
