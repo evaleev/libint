@@ -108,11 +108,10 @@ message(STATUS "Preparing generic LIBINT_MAX_AM_LIST ${LIBINT_MAX_AM_LIST} and m
 # <<<  overall opt_am defaults  >>>
 
 list(LENGTH LIBINT2_OPT_AM _ntokens_optam)
-if (NOT LIBINT2_OPT_AM EQUAL -1)
-    if (NOT _ntokens_optam EQUAL _ntokens_maxam)
-        # discard two cases: scalar opt and list max -and- list opt and scalar max
-        message(FATAL_ERROR "Invalid format for LIBINT2_OPT_AM (${LIBINT2_OPT_AM}). Use the same format and length like `N` or `N0;N1;N2` as LIBINT2_MAX_AM (${LIBINT2_MAX_AM}).")
-    endif()
+# a scalar opt applies to all derivative levels (also with list max); a list
+# opt must have the length of list max
+if (_ntokens_optam GREATER 1 AND NOT _ntokens_optam EQUAL _ntokens_maxam)
+    message(FATAL_ERROR "Invalid format for LIBINT2_OPT_AM (${LIBINT2_OPT_AM}). Use `N` (for all derivative levels) or a list of the same length as LIBINT2_MAX_AM (${LIBINT2_MAX_AM}).")
 endif()
 if (_ntokens_optam GREATER 1)
     # list opt and list max: use list opt validating aginst max
@@ -152,7 +151,8 @@ else()
             math(EXPR LIBINT_OPT_AM "${LIBINT_MAX_AM}/2 + 1")
         endif()
     else()
-        # scalar opt and scalar max: use scalar opt validating aginst max
+        # scalar opt (and scalar or list max): use scalar opt for all derivative
+        # levels, validating against max
         set(LIBINT_OPT_AM_LIST "")
         set(LIBINT_OPT_AM ${LIBINT2_OPT_AM})
 

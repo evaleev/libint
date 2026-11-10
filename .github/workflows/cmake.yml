@@ -31,10 +31,16 @@ jobs:
             build_shared_libs: OFF
             do_fortran: ON
             api_prefix: gha
+          # exercise the generic kernels (LIBINT2_ENABLE_GENERIC_CODE, used
+          # beyond LIBINT2_OPT_AM) in one lane, as in the release tarballs;
+          # check-libint2compiler then also checks that generating them in
+          # parallel gives the same source (e.g. GenericGaussDeriv.cc)
           - build_type: Release
             build_shared_libs: ON
             os: ubuntu-24.04
             do_fortran: ON
+            generic_code: ON
+            opt_am: 1
           # exercise derivatives of 1-body property operators (multipoles,
           # opemuop) in one lane only, to save compile time; derivatives of
           # opVop and op_q_gau_op are generated (and tested) in every lane
@@ -93,6 +99,8 @@ jobs:
         -D LIBINT2_ENABLE_PYTHON=ON
         -D LIBINT2_EXPORT_COMPRESSOR=${{ matrix.compressor }}
         -D LIBINT2_API_PREFIX=${{ matrix.api_prefix }}
+        -D LIBINT2_ENABLE_GENERIC_CODE=${{ matrix.generic_code || 'OFF' }}
+        ${{ matrix.opt_am && format('-D LIBINT2_OPT_AM={0}', matrix.opt_am) || '' }}
 
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
