@@ -127,12 +127,12 @@ jobs:
 
     - name: Install prerequisite Ubuntu packages
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'ubuntu-24.04' }}
-      timeout-minutes: 20
+      timeout-minutes: 15
       run: |
-        # a stalled mirror must fail (and be retried) quickly, not hang the job until the 6 h limit
-        apt="sudo DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
-        for i in 1 2 3; do timeout 300 $apt update && break; [ $i -lt 3 ] || exit 1; sleep 15; done
-        $apt install -y ninja-build gfortran liblapack-dev libboost-dev libeigen3-dev ccache python3-numpy python3-scipy python3-pip
+        # a stalled mirror must fail fast, not hang the job until the 6 h limit (#461)
+        echo 'Acquire::Retries "3"; Acquire::http::Timeout "30"; Acquire::https::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/99ci-network
+        sudo apt-get update
+        sudo apt-get install -y ninja-build gfortran liblapack-dev libboost-dev libeigen3-dev ccache python3-numpy python3-scipy python3-pip
         pip3 install --break-system-packages scikit-build-core build pytest
         echo "FC=/usr/bin/gfortran" >> $GITHUB_ENV
 
@@ -287,12 +287,12 @@ jobs:
         fetch-depth: 0
 
     - name: Install prerequisite Ubuntu packages
-      timeout-minutes: 20
+      timeout-minutes: 15
       run: |
-        # a stalled mirror must fail (and be retried) quickly, not hang the job until the 6 h limit
-        apt="sudo DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
-        for i in 1 2 3; do timeout 300 $apt update && break; [ $i -lt 3 ] || exit 1; sleep 15; done
-        $apt install -y ninja-build libboost-dev libeigen3-dev
+        # a stalled mirror must fail fast, not hang the job until the 6 h limit (#461)
+        echo 'Acquire::Retries "3"; Acquire::http::Timeout "30"; Acquire::https::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/99ci-network
+        sudo apt-get update
+        sudo apt-get install -y ninja-build libboost-dev libeigen3-dev
 
     - name: Build Libint generator and library, run tests
       shell: bash
