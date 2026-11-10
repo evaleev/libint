@@ -40,7 +40,7 @@ jobs:
             os: ubuntu-24.04
             do_fortran: ON
             generic_code: ON
-            opt_am: '1;1'  # same format as LIBINT2_MAX_AM ('2;2')
+            opt_am: 1
           # exercise derivatives of 1-body property operators (multipoles,
           # opemuop) in one lane only, to save compile time; derivatives of
           # opVop and op_q_gau_op are generated (and tested) in every lane

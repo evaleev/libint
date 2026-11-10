@@ -239,7 +239,7 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
       `export CMAKE_BUILD_PARALLEL_LEVEL=N`.
 
 * `LIBINT2_MAX_AM` - G - Support Gaussians of angular momentum up to N. If ERI3 ints are enabled, specifing values for each derivative level as a semicolon-separated string also controls the AM of the paired centers. [Default=4]
-* `LIBINT2_OPT_AM` - G - Optimize maximally for up to angular momentum N (N <= LIBINT2_MAX_AM). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `(LIBINT2_MAX_AM/2)+1`]
+* `LIBINT2_OPT_AM` - G - Optimize maximally for up to angular momentum N (N <= LIBINT2_MAX_AM). Can specify values for each derivative level as a semicolon-separated string of the same length as `LIBINT2_MAX_AM`; a single value applies to all derivative levels. [Default=-1 -> `(LIBINT2_MAX_AM/2)+1`]
 
 * `LIBINT2_MULTIPOLE_MAX_ORDER` - G - Maximum order of spherical multipole integrals. There is no maximum. [Default=4]
 
