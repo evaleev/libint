@@ -13,7 +13,7 @@ Following is a brief summary of changes made in each release of Libint.
              stack memory)
   - LIBINT2_ACCUM_INTS=ON: the generated library compiles again (the kernels reset
              zero_out_targets through the pointer to const Libint_t)
-  - PR #PRNUM (issue #376): Libint headers and CMake targets no longer leak unscoped names into
+  - PR #459 (issue #376): Libint headers and CMake targets no longer leak unscoped names into
              the code of their consumers:
              - the loop macros FOR_CART, FOR_CART_MOLDEN, FOR_SOLIDHARM, FOR_SOLIDHARM_STANDARD,
                FOR_SOLIDHARM_GAUSSIAN, FOR_SOLIDHARM_MOLDEN and their END_ counterparts are
