@@ -1874,7 +1874,11 @@ void DirectedGraph::print_def(const std::shared_ptr<CodeContext>& context,
          << bvecdim->id() << ")" << endl;
     }
 
-    os << "inteval->zero_out_targets = 0;" << std::endl << "}" << std::endl;
+    // N.B. inteval is a pointer to const, but resetting zero_out_targets is
+    // part of its contract (see the documentation of zero_out_targets)
+    os << "((" << context->inteval_gen_type_name()
+       << "*)inteval)->zero_out_targets = 0;" << std::endl
+       << "}" << std::endl;
   }
 #endif
 
@@ -2256,6 +2260,44 @@ void DirectedGraph::print_def(const std::shared_ptr<CodeContext>& context,
   os << outer_vloop->close();
   os << lsi_loop->close();
   os << hsi_loop->close();
+
+  //
+  // Load the targets that are precomputed quantities
+  //
+  // A target integral set that consists of a single precomputed integral, e.g.
+  // the (ss|ss) shell set in a library without contracted integrals, refers to
+  // that integral (see assign_symbols()), hence no code above computes the
+  // target. Its location on the stack is where the targets are returned from
+  // or accumulated from, hence the precomputed integral, which is held by
+  // inteval, must be copied there (or, if the targets are accumulated
+  // directly, accumulated there). With contracted integrals the prerequisites
+  // code accumulates the precomputed integral on the stack instead.
+  if (!context->cparams()->contracted_targets()) {
+    for (target_iter t = targets_.begin(); t != targets_.end(); ++t) {
+      const ver_ptr& tptr = vertex_ptr(*t);
+      if (!tptr->precomputed()) continue;
+
+      // the precomputed vertex is the target itself or, if the target refers
+      // to another vertex, the only child of the target
+      const DGVertex* src = tptr.get();
+      if (!src->this_precomputed() && src->num_exit_arcs() == 1)
+        src = (*(src->first_exit_arc()))->dest().get();
+      if (!src->this_precomputed() || src->size() != 1 || !tptr->address_set())
+        throw ProgrammingError(
+            "DirectedGraph::print_def() -- cannot load precomputed target " +
+            tptr->label());
+
+      const std::string stack_ptr = registry()->stack_name() + "+" +
+                                    std::to_string(tptr->address()) + "*" +
+                                    dims->vecdim()->id();
+      const std::string src_ptr =
+          "inteval->" + context->label_to_name(src->label());
+      os << (accumulate_targets_directly ? "_libint2_static_api_inc1_short_("
+                                         : "_libint2_static_api_copy_short_(")
+         << stack_ptr << "," << src_ptr << "," << dims->vecdim()->id() << ")"
+         << endl;
+    }
+  }
 
   //
   // Accumulate targets

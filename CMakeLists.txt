@@ -280,6 +280,9 @@ option_with_default(LIBINT2_G12DKH_OPT_AM
 
 option_with_print(LIBINT2_CONTRACTED_INTS
   "Turn on support for contracted integrals." ON)
+if (NOT LIBINT2_CONTRACTED_INTS AND (LIBINT2_REQUIRE_CXX_API OR LIBINT2_REQUIRE_CXX_API_COMPILED OR LIBINT2_ENABLE_PYTHON))
+    message(FATAL_ERROR "Libint2 C++ API requires a library generated with support for contracted integrals; use -DLIBINT2_CONTRACTED_INTS=ON, or add -DLIBINT2_REQUIRE_CXX_API=OFF -DLIBINT2_REQUIRE_CXX_API_COMPILED=OFF (and LIBINT2_ENABLE_PYTHON=OFF) if the C++ API is not needed")
+endif()
 option_with_default(LIBINT2_ERI_STRATEGY
   "(EXPERT) Compute ERIs using the following strategy. (0 for OS, 1 for HGP, 2 for HL)" 1)
 option_with_print(LIBINT2_USE_COMPOSITE_EVALUATORS

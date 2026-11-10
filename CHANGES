@@ -4,6 +4,15 @@
 Following is a brief summary of changes made in each release of Libint.
 
 - unreleased:
+  - issue #425: configuring with LIBINT2_CONTRACTED_INTS=OFF and the C++ API enabled fails at
+             configure time with a clear message (the C++ API requires contracted integrals;
+             previously the build failed compiling libint2::Engine)
+  - issue #425: with LIBINT2_CONTRACTED_INTS=OFF the kernels whose target is a single precomputed
+             integral, e.g. the (ss|ss), (s|ss) and (s|s) ERI kernels, load it from Libint_t
+             (previously they returned, or with LIBINT2_ACCUM_INTS=ON accumulated, uninitialized
+             stack memory)
+  - LIBINT2_ACCUM_INTS=ON: the generated library compiles again (the kernels reset
+             zero_out_targets through the pointer to const Libint_t)
   - PR #451: LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS (ON by default) no longer disables the
              geometric derivatives of the σ·pVσ·p integrals (Operator::opVop and
              Operator::op_q_gau_op, which share the generated code), needed for X2C nuclear

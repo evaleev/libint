@@ -80,6 +80,15 @@ if ((LIBINT2_REQUIRE_CXX_API_COMPILED OR LIBINT2_ENABLE_PYTHON) AND NOT LIBINT2_
     message(STATUS "Setting option LIBINT2_REQUIRE_CXX_API=ON as needed by LIBINT2_REQUIRE_CXX_API_COMPILED=${LIBINT2_REQUIRE_CXX_API_COMPILED} and/or LIBINT2_ENABLE_PYTHON=${LIBINT2_ENABLE_PYTHON}.")
 endif()
 
+# libint2::Engine (C++ API) requires a library generated with support for contracted integrals
+if (LIBINT2_REQUIRE_CXX_API)
+    file(STRINGS ${PROJECT_SOURCE_DIR}/include/libint2_params.h _contracted_ints
+         REGEX "^#[ \t]*define[ \t]+LIBINT2_CONTRACTED_INTS[ \t]+1")
+    if (NOT _contracted_ints)
+        message(FATAL_ERROR "Libint2 C++ API requires a library generated with support for contracted integrals, but this library was generated with LIBINT2_CONTRACTED_INTS=OFF; regenerate the library with -DLIBINT2_CONTRACTED_INTS=ON, or add -DLIBINT2_REQUIRE_CXX_API=OFF -DLIBINT2_REQUIRE_CXX_API_COMPILED=OFF (and LIBINT2_ENABLE_PYTHON=OFF) if the C++ API is not needed")
+    endif()
+endif()
+
 if (LIBINT2_ENABLE_FORTRAN)
     include(CheckLanguage)
     check_language(Fortran)

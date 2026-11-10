@@ -256,6 +256,57 @@ jobs:
         cmake --build build
         ./build/fortran_example
 
+  # a library without contracted integrals (C API only, since the C++ API
+  # requires contracted integrals), with and without accumulated targets
+  # N.B. with accumulated targets only nondifferentiated ERIs are generated,
+  # since accumulating the derivative ERIs is broken
+  build_uncontracted:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - accum_ints: 'OFF'
+            eri_deriv_order: 1
+            eri_max_am: '2;2'
+            eri3_max_am: '3;2'
+          - accum_ints: 'ON'
+            eri_deriv_order: 0
+            eri_max_am: '2'
+            eri3_max_am: '3'
+    name: "Repo • ubuntu-24.04: uncontracted ints, accum=${{ matrix.accum_ints }}"
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install prerequisite Ubuntu packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install ninja-build libboost-dev libeigen3-dev
+
+    - name: Build Libint generator and library, run tests
+      shell: bash
+      run: |
+        cmake -S . -B build -G Ninja \
+          -D CMAKE_BUILD_TYPE=Release \
+          -D LIBINT2_MAX_AM='2;2' \
+          -D LIBINT2_ERI_MAX_AM='${{ matrix.eri_max_am }}' \
+          -D LIBINT2_ERI3_MAX_AM='${{ matrix.eri3_max_am }}' \
+          -D LIBINT2_ERI2_MAX_AM='${{ matrix.eri3_max_am }}' \
+          -D LIBINT2_ENABLE_ERI=${{ matrix.eri_deriv_order }} \
+          -D LIBINT2_ENABLE_ERI3=${{ matrix.eri_deriv_order }} \
+          -D LIBINT2_ENABLE_ERI2=${{ matrix.eri_deriv_order }} \
+          -D LIBINT2_ENABLE_ONEBODY=1 \
+          -D LIBINT2_MULTIPOLE_MAX_ORDER=2 \
+          -D LIBINT2_CONTRACTED_INTS=OFF \
+          -D LIBINT2_ACCUM_INTS=${{ matrix.accum_ints }} \
+          -D LIBINT2_REQUIRE_CXX_API=OFF \
+          -D LIBINT2_REQUIRE_CXX_API_COMPILED=OFF
+        cmake --build build --target check-libint2compiler
+        cmake --build build
+        CTEST_PARALLEL_LEVEL=2 cmake --build build --target check-libint2
+
   build_export:
     # to debug the second stage, it is handy to short-circuit the first stage:
     # * suppress steps beyond "Archive Library Tarball" with "if: false"
