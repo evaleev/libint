@@ -3,125 +3,70 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- unreleased:
-  - issue #425: configuring with LIBINT2_CONTRACTED_INTS=OFF and the C++ API enabled fails at
-             configure time with a clear message (the C++ API requires contracted integrals;
-             previously the build failed compiling libint2::Engine)
-  - issue #425: with LIBINT2_CONTRACTED_INTS=OFF the kernels whose target is a single precomputed
-             integral, e.g. the (ss|ss), (s|ss) and (s|s) ERI kernels, load it from Libint_t
-             (previously they returned, or with LIBINT2_ACCUM_INTS=ON accumulated, uninitialized
-             stack memory)
-  - LIBINT2_ACCUM_INTS=ON: the generated library compiles again (the kernels reset
-             zero_out_targets through the pointer to const Libint_t)
-  - PR #459 (issue #376): Libint headers and CMake targets no longer leak unscoped names into
-             the code of their consumers:
-             - the loop macros FOR_CART, FOR_CART_MOLDEN, FOR_SOLIDHARM, FOR_SOLIDHARM_STANDARD,
-               FOR_SOLIDHARM_GAUSSIAN, FOR_SOLIDHARM_MOLDEN and their END_ counterparts are
-               deprecated in favor of their LIBINT2_-prefixed versions (e.g. LIBINT2_FOR_CART and
-               LIBINT2_END_FOR_CART); the unprefixed macros still work but emit a deprecation
-               warning where used, and are not defined at all if LIBINT2_DISABLE_DEPRECATED_MACROS
-               is defined (an unprefixed macro already defined, e.g. by the user, is not redefined).
-               The macros for the GAMESS, ORCA and Molden orderings are usable outside of namespace
-               libint2
-             - removed macros PATH_SEPARATOR, S_ISDIR (Windows), posix_memalign (Windows),
-               posix_memfree and STATIC_OON; ULLONG_MAX is no longer defined
-             - renamed config macros HAVE_STDINT_H -> LIBINT_HAVE_STDINT_H,
-               HAVE_POSIX_MEMALIGN -> LIBINT_HAVE_POSIX_MEMALIGN, and the opt-in
-               HAVE_LAPACK -> LIBINT_HAS_LAPACK
-             - renamed the engine preprocessor metaprogramming macros BOOST_PP_NBODY* and
-               BOOST_PP_MAKE_TUPLE* to LIBINT2_PP_*; all are #undef'ed after use
-             - the C++ API headers no longer use M_PI and M_SQRT2 (see libint2::math::pi and
-               libint2::math::sqrt2), and Libint2 targets no longer add the _CRT_* definitions to the
-               compile line of their MSVC consumers (_USE_MATH_DEFINES is still added, for consumers
-               that rely on it for M_PI etc.)
-             - find_package(Libint2) no longer sets variables pnv, L2 and _eri in the caller's
-               scope, no longer sets Eigen3_DIR, Eigen3_CONFIG, Boost_DIR and Boost_CONFIG to the
-               locations used to build Libint2 (hence a consumer's Eigen3_DIR/Boost_DIR now take
-               precedence), and restores CMAKE_MODULE_PATH, also if a dependency is not found (which
-               no longer is a fatal error unless Libint2 is REQUIRED); it also no longer warns that the
-               Eigen3Config.cmake/BoostConfig.cmake path "is no longer valid" if Libint2 was built
-               with Eigen3/Boost found without their config files (e.g. via FindEigen3.cmake), and
-               warns if the Eigen3 it finds differs from the one Libint2 was built with
-             - libint2::INT_CARTINDEX for the IntV3 Cartesian ordering returned wrong indices
-               (operator precedence)
-             (the DATADIR macros were already prefixed with LIBINT_ in v2.12.0)
-  - PR #458: the export of the library stages the basis set aliases (6-31gs.g94 etc.) as real files
-             without staging symlinks first (addresses #393, where the export failed on FreeBSD
-             while overwriting the staged symlinks); the export fails if it would contain a symlink
-  - PR #451: LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS (ON by default) no longer disables the
-             geometric derivatives of the σ·pVσ·p integrals (Operator::opVop and
-             Operator::op_q_gau_op, which share the generated code), needed for X2C nuclear
-             gradients; like those of the elecpot integrals they are available up to
-             LIBINT2_DERIV_ONEBODY_ORDER (LIBINT2_DERIV_ONEBODY_PROPERTY_ORDER now refers to the
-             multipole and σ·peμσ·p integrals only). This increases the size and the compile time
-             of the default library with LIBINT2_ENABLE_ONEBODY >= 1
-  - PR #450: Engine::compute() throws Engine::lmax_exceeded, in all builds, if a shell exceeds the
-             max_l of the Engine (previously a Debug-only assert); Engine::lmax_exceeded::lmax_limit()
-             is the max angular momentum also when thrown by the constructor/set() (previously the
-             max angular momentum + 1)
-  - PR #450: Engine::set(BraKet) and Engine::set(Operator) resize the primitive data for the rank
-             of the new braket (previously e.g. switching an Engine from a 3-center to a 4-center
-             braket overran a buffer); Engine::max_nprim() returns the max number of primitives the
-             Engine was sized for (previously derived from the last computed shell pair)
-  - PR #450: the generated Operator::coulomb_op kernels compute each component in place, without
-             an element-wise copy of the derivative integrals (the compiler makes the target of a
-             recurrence relation that is an alias of its child refer to the child)
-  - PR #399: relativistic restricted kinetic balance (RKB) integrals: 2-body Operator::coulomb_opop,
-    Operator::coulomb_op, Operator::opop_coulomb_opop, Operator::op_coulomb_op (enabled by
-    LIBINT2_ENABLE_RKB_ERI and LIBINT2_ENABLE_RKB_ERI3, off by default; no geometric derivatives yet)
-    and 1-body Operator::opemuop. N.B. Operator::opemuop is inserted after the other 1-body
-    operators, hence the numeric values of all 2-body Operator enumerators increase by 1.
-    Engine::compute() now throws Engine::missing_kernel if the library was not configured to
-    compute the requested operator/braket/derivative order (previously the result was undefined),
-    and std::invalid_argument if given a cartesian fitting shell with l > 1 when the library was
-    configured with LIBINT2_ERI3_PURE_SH (previously a Debug-only assert). The Libint compiler
-    now requires C++17; the generated library still requires C++11 only.
-    Other changes that affect all libraries, not just the RKB integrals:
-    - BraKet::xx_xs is now usable for 3-center energies (as the alias of BraKet::xs_xx with the
-      fitting function last); previously Engine::compute() aborted for it.
-    - the geometric-derivative kernels of all 2-body Coulomb integrals (ERI, ERI3, ERI2) are now
-      generated by DerivGaussV2 (comp_deriv_gauss_v2.h), which shares one function between all
-      shell sets with the same differentiated shell, instead of by CR_DerivGauss; the generated
-      code is validated against finite differences for every shell set in the unit tests. With
-      LIBINT2_ENABLE_GENERIC_CODE the generic kernel is used when the differentiated shell is
-      beyond LIBINT2_OPT_AM (previously: when the average AM of the shell set is).
-    - Engine::initialize() no longer asserts (in Debug builds only) that the library includes the
-      braket type; missing kernels are reported by Engine::missing_kernel from compute().
-    - the validation of LIBINT2_<class>_MAX_AM in cmake/modules/int_am.cmake now actually runs
-      (it referred to undefined variables); a value of 0 is accepted, negative values are rejected.
-    - Engine::compute() throws Engine::lmax_exceeded in all builds if a shell exceeds the angular
-      momentum limit of its center (e.g. an AO shell beyond LIBINT2_MAX_AM given to a 3-center Engine
-      whose max_l is within LIBINT2_ERI3_MAX_AM); previously a Debug-only assert, and Release builds
-      dispatched the kernel of another shell set.
-    - Engine::set(BraKet) and Engine::set_max_l() rebuild the core integral evaluator, whose order
-      depends on the rank of the braket and on the maximum angular momentum.
-    - the Fortran ERI test and example and the hartree-fock++ test honor a lower angular momentum
-      limit of the derivative kernels (e.g. LIBINT2_MAX_AM="2;2;1").
-  - PR #447: TennoGmEval (Yukawa/Slater core integrals) fixed for U < 1e-7 at small T (#444) and no
-             longer returns NaN for large U and T; the slow, thread-unsafe Gaussian-fit fallback
-             is replaced by series expansions
-  - PR #449: generated and generic RR functions declare their target LIBINT2_RESTRICT (new config.h
-             macro), up to ~1.2x faster high-am and derivative ERIs
-  - PR #446: a value of 0 for LIBINT2_OPT_AM (or for the per-class LIBINT2_<class>_MAX_AM /
-             LIBINT2_<class>_OPT_AM) is now honored; previously config.h dropped the macro
-             (#cmakedefine treats 0 as false), which broke the compiler build for LIBINT2_OPT_AM
-             and silently fell back to the default for the per-class values (#445)
-  - PR #440: incremental builds re-export the library when include/libint2, export/tests, etc. change,
-             without recompiling unchanged library sources (#438)
-  - PR #436: GenericGmEval no longer copies the core evaluator on every call; fixes poor thread
-             scaling of erf/erfc/erfx, q_gau and r12 integrals (#431, HT @mgoldey);
-             N.B. removed detail::CoreEvalScratch specializations for r12_xx_K_gm_eval<Real,1>,
-             erfx_coulomb_gm_eval and q_gau_gm_eval, and their base_type typedefs
-  - PR #420: libint2::molden::Export orders solid harmonics according to the runtime
-             libint2::solid_harmonics_ordering() instead of the build-time default
-             (fixes Molden output when the two differ); silence compiler warnings
+- 2026-11-09: 2.14.0
+  N.B. compatibility notes:
+    - new Operator enumerators were inserted, hence the numeric values of Operator from
+      emultipole1 on differ from 2.13 (BraKet is unchanged)
+    - Engine::compute() throws (Engine::missing_kernel, Engine::lmax_exceeded, std::invalid_argument)
+      where previously the result was undefined or a Debug-only assert fired
+    - unprefixed macros FOR_CART etc. are deprecated in favor of LIBINT2_FOR_CART etc.; several
+      unscoped macros were removed or renamed (see PR #459)
+    - the Libint compiler requires C++17 (the generated library still requires C++11 only);
+      the generated source differs from 2.13 but computes the same integrals
+  - PR #399: relativistic restricted kinetic balance (RKB) integrals: 2-body coulomb_opop,
+             coulomb_op, opop_coulomb_opop, op_coulomb_op (LIBINT2_ENABLE_RKB_ERI{,3}) and 1-body
+             opemuop; 2-body Coulomb derivative kernels are generated by DerivGaussV2 (HT @kshitij-05)
+  - PR #408: generalized Gaussian potential operators Operator::q_gau and Operator::op_q_gau_op
+             (point and Gaussian nuclei, erf/erfc attenuation, SAP guesses) (HT @kshitij-05)
+  - PR #409: libint2::infinite_exponent marks a point charge; Gaussian potential parameters are
+             validated (HT @kshitij-05)
+  - PR #434: Operator::truncated_coulomb, the spherically truncated Coulomb kernel (HT @RTChou67)
+  - PR #448: Operator::delcgtga_delcgtgb, delcgtg2 for two different geminals (HT @ak-ustutt)
+  - PR #430: fixed geometric derivatives of opVop, q_gau and op_q_gau_op (#429) (HT @kshitij-05)
+  - PR #451: geometric derivatives of σ·pVσ·p integrals are kept when property derivatives are
+             disabled (needed for X2C gradients)
+  - PR #450: fixed buffer overrun in Engine::set(BraKet) when switching to a higher-rank braket;
+             Engine::compute() always checks max_l
+  - PR #457: fixed LIBINT2_CONTRACTED_INTS=OFF (#425; the C++ API requires ON) and
+             LIBINT2_ACCUM_INTS=ON
+  - PR #459: headers and CMake targets no longer leak unscoped names into consumers (#376)
+  - PRs #454, #455, #456: the library is generated in parallel (LIBINT2_GENERATOR_JOBS, default:
+             all hardware threads; e.g. 5x faster for RKB integrals) and unrolled code is generated
+             up to 37x faster; the generated code no longer depends on the generation order;
+             fixed LIBINT2_ENABLE_G12DKH
+  - PRs #443, #449: faster generated recurrence kernels (scalar-hoisted coefficients, restrict
+             targets), up to ~1.4x faster ERIs with large basis sets (#443 HT @0xWOLAND)
+  - PR #436: fixed poor thread scaling of erf/erfc/erfx, q_gau and r12 integrals (#431, HT @mgoldey)
+  - PR #447: fixed TennoGmEval (Yukawa/Slater) for small U (#444) and large U, T; dropped the
+             thread-unsafe Gaussian-fit fallback
+  - PR #446: a value of 0 for LIBINT2_OPT_AM and LIBINT2_<class>_{MAX,OPT}_AM is honored (#445)
+  - PR #453: fixed compiler build with LIBINT2_ENABLE_ONEBODY=-1
+  - PR #420: molden::Export honors the runtime solid harmonics ordering
+  - PR #441: fixed out-of-bounds access in OriginDerivative<NDIM>::operator- for NDIM != 3 (#428)
+  - PR #437: util/compressed_pair.h and cgshellinfo.h are self-contained
+  - PR #432: MinGW support for the C++ API (HT @tjira)
+  - PR #423: Fortran interface exported as Libint2::fortran; LIBINT2_INSTALL_FMODDIR (HT @Growl1234)
+  - PR #412: C++ API dependencies are only required when the C++ API is enabled (HT @Growl1234)
+  - PR #410: LIBINT_BUILDID is a cache variable; .tar.xz export tarballs (HT @Growl1234)
+  - PR #440: incremental builds re-export the library when exported sources change (#438)
+  - PR #458: export no longer stages symlinks for basis aliases (#393)
+  - PRs #421, #435: installed basis.h has 0644 permissions; absolute install dirs are handled
+  - PR #413: install supports DESTDIR (HT @susilehtola)
+  - PR #416: SOVERSION set on the int2 target (#414, #415) (HT @loriab)
+  - PRs #407, #419: fixed the install of the library built by the compiler build (#406)
+  - PR #418: fixed sstream_convert with gcc 16 (HT @susilehtola)
+  - PR #405: LIBINT2_USER_DEFINED_REAL_INCLUDES is passed to the library build (HT @johannes-menzel)
+  - PR #403: LIBINT2_API_PREFIX applies to function names only (HT @johannes-menzel)
+  - PR #439: generator prints the missing "done" for eri2/eri3 targets (#427)
+  - PR #426: fixed preprocessor warning in LIBINT_MAYBE_UNUSED (HT @RMeli)
+  - PR #402: clarified docs of Shell's embed_normalization_into_coefficients (HT @ryanmrichard)
 
-- 2025-2-2: 2.13.1
+- 2026-2-2: 2.13.1
   - PR #397: cmake boost check supports in-tree (non-IMPORTED) targets, including modularized Boost
   - PR #s 395, 398: support for Eigen 5.0.0 (HT @EricaCMitchell)
   - PR #394: add .gitattributes to enable building from git archive tarballs (HT @cho-m)
 
-- 2025-2-1: 2.13.0
+- 2026-2-1: 2.13.0
   - PRs 309, 312, 313, 314, 315, 316, 317, 388: full CMake harness for compiler, megadebt to @loriab
   - PRs 389, 390, 391: misc laundry: separate out compiler code from exported code (as much as possible),
     trim install header list, complete namespacing of CMake options, goodbye to autotools
