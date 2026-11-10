@@ -23,9 +23,11 @@
 
 #include <smart_ptr.h>
 
+#include <algorithm>
 #include <climits>
 #include <map>
 #include <ostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -217,9 +219,16 @@ class TaskParameters {
   unsigned int max_ntarget() const { return max_ntarget_; }
   /// returns the max quantum number of targets
   unsigned int max_am() const { return max_stack_size_.size() - 1; }
-  /// returns max stack size needed for quantum numbers up to am
+  /// @return the stack size needed to compute the shell sets with angular
+  /// momenta up to @p am (an evaluator initialized for @p am computes all of
+  /// them), i.e. the max of the stack sizes reported for angular momenta up to
+  /// @p am
   unsigned int max_stack_size(unsigned int am) const {
-    return max_stack_size_.at(am);
+    if (am >= max_stack_size_.size())
+      throw std::out_of_range(
+          "TaskParameters::max_stack_size(am): am too large");
+    return *std::max_element(max_stack_size_.begin(),
+                             max_stack_size_.begin() + am + 1);
   }
   /** returns max vector stack size.
       vector stack is only used to hold intermediate quantities

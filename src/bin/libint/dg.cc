@@ -50,11 +50,6 @@ using namespace libint2;
 //// utils first
 
 namespace {
-void push(DirectedGraph::VPtrAssociativeContainer& vertices,
-          const DirectedGraph::ver_ptr& v) {
-  DirectedGraph::key_type vkey = libint2::key(*v);
-  vertices.insert(std::make_pair(vkey, v));
-}
 void push(DirectedGraph::VPtrSequenceContainer& vertices,
           const DirectedGraph::ver_ptr& v) {
   vertices.push_back(v);
@@ -130,9 +125,11 @@ void DirectedGraph::add_new_vertex(const std::shared_ptr<DGVertex>& vertex) {
   vertex->set_graph_label(label);
   vertex->dg(this);
 
-  push(stack_, vertex);
 #if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
-  if (vertex->instid_ == 0) index_unkeyed(vertex);
+  stack_.emplace(next_seq_++, vertex);
+  index_vertex(vertex);
+#else
+  push(stack_, vertex);
 #endif
 #if DEBUG
   cout << "add_new_vertex: added vertex " << vertex->description() << endl;
@@ -142,35 +139,50 @@ void DirectedGraph::add_new_vertex(const std::shared_ptr<DGVertex>& vertex) {
 }
 
 #if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
-void DirectedGraph::index_unkeyed(const ver_ptr& v) {
-  unkeyed_[v->structural_hash()].push_back(v);
+std::size_t DirectedGraph::lookup_hash(const DGVertex& v) {
+  if (v.instid_ == 0) return v.structural_hash();
+  return hash_combine(std::hash<DGVertex::ClassID>{}(v.typeid_),
+                      std::hash<unsigned long>{}(v.instid_.get_ui()));
 }
 
-void DirectedGraph::unindex_unkeyed(const ver_ptr& v) {
+void DirectedGraph::index_vertex(const ver_ptr& v) {
+  index_[lookup_hash(*v)].push_back(v);
+}
+
+void DirectedGraph::unindex_vertex(const ver_ptr& v) {
   // v must be found under the hash with which it was indexed, else its
-  // structural_hash() changed while it was on the graph (see
-  // DGVertex::structural_hash())
-  const auto bucket = unkeyed_.find(v->structural_hash());
+  // lookup_hash() (for a vertex with instance id 0, its structural_hash())
+  // changed while it was on the graph (see DGVertex::structural_hash())
+  const auto bucket = index_.find(lookup_hash(*v));
   const auto not_indexed = [&v]() {
     return ProgrammingError(
-        "DirectedGraph::unindex_unkeyed(): vertex " + v->description() +
-        " is not indexed under its structural_hash(), did the hash change?");
+        "DirectedGraph::unindex_vertex(): vertex " + v->description() +
+        " is not indexed under its lookup hash, did its structural_hash() "
+        "change?");
   };
-  if (bucket == unkeyed_.end()) throw not_indexed();
+  if (bucket == index_.end()) throw not_indexed();
   auto& vs = bucket->second;
   const auto vit = std::find(vs.begin(), vs.end(), v);
   if (vit == vs.end()) throw not_indexed();
   vs.erase(vit);
-  if (vs.empty()) unkeyed_.erase(bucket);
+  if (vs.empty()) index_.erase(bucket);
 }
 
-const std::shared_ptr<DGVertex>& DirectedGraph::find_unkeyed(
+const std::shared_ptr<DGVertex>& DirectedGraph::find_indexed(
     const std::shared_ptr<DGVertex>& vertex) const {
   static std::shared_ptr<DGVertex> null_ptr;
-  const auto bucket = unkeyed_.find(vertex->structural_hash());
-  if (bucket != unkeyed_.end())
+  const auto bucket = index_.find(lookup_hash(*vertex));
+  if (bucket != index_.end())
     for (const auto& v : bucket->second)
-      if (v->equiv(vertex)) return v;
+      if (v->equiv(vertex)) {
+#if DEBUG
+        std::cout << "vertex_is_on: " << v->label() << std::endl;
+#endif
+        return v;
+      }
+#if DEBUG
+  std::cout << "vertex_is_on: NOT " << (vertex)->label() << std::endl;
+#endif
   return null_ptr;
 }
 #endif  // USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
@@ -180,48 +192,35 @@ const std::shared_ptr<DGVertex>& DirectedGraph::vertex_is_on(
   if (vertex->dg() == this) return vertex;
 
 #if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
-  // the vertices with instance id 0 all have the same key, hence finding one
-  // on stack_ is a linear search: find them by hash instead
-  if (vertex->instid_ == 0) {
-    const auto& found = find_unkeyed(vertex);
+  const auto& found = find_indexed(vertex);
 #if CHECK_SAFETY
-    // equivalent vertices must have the same structural_hash()
-    if (found != search_stack(vertex))
-      throw ProgrammingError(
-          "DirectedGraph::vertex_is_on(): the hash index and the search of "
-          "the graph found different vertices equivalent to " +
-          vertex->description() +
-          ", does its type override DGVertex::structural_hash() correctly?");
+  // equivalent vertices with instance id 0 must have the same
+  // structural_hash()
+  if (vertex->instid_ == 0 && found != search_stack(vertex))
+    throw ProgrammingError(
+        "DirectedGraph::vertex_is_on(): the hash index and the search of "
+        "the graph found different vertices equivalent to " +
+        vertex->description() +
+        ", does its type override DGVertex::structural_hash() correctly?");
 #endif
-    return found;
-  }
-#endif
+  return found;
+#else
   return search_stack(vertex);
+#endif
 }
 
 const std::shared_ptr<DGVertex>& DirectedGraph::search_stack(
     const std::shared_ptr<DGVertex>& vertex) const {
   static std::shared_ptr<DGVertex> null_ptr;
 #if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
-  typedef vertices::const_iterator citer;
-  key_type vkey = key(*vertex);
-  // find the first elemnt with this key and iterate until vertex is found or
-  // key changes
-  citer vpos = stack_.find(vkey);
-  const citer end = stack_.end();
-  if (vpos != end) {
-    bool can_find = true;
-    while (can_find) {
-      if (can_find && (vpos->second)->equiv(vertex)) {
+  // the first equivalent vertex in the order of addition, as find_indexed()
+  for (const auto& sv : stack_)
+    if (sv.second->equiv(vertex)) {
 #if DEBUG
-        std::cout << "vertex_is_on: " << (vpos->second)->label() << std::endl;
+      std::cout << "vertex_is_on: " << sv.second->label() << std::endl;
 #endif
-        return vpos->second;
-      }
-      ++vpos;
-      can_find = (vpos != end) && (vpos->first == vkey);
+      return sv.second;
     }
-  }
 #else
   typedef vertices::const_reverse_iterator criter;
   typedef vertices::reverse_iterator riter;
@@ -278,7 +277,7 @@ void DirectedGraph::del_vertex(vertices::iterator& v) {
         vertex_ptr(*v);  // keep an instance of the pointer to avoid accidental
                          // automatic destruction of the DGVertex object
 #if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
-    if (vptr->instid_ == 0) unindex_unkeyed(vptr);
+    unindex_vertex(vptr);
 #endif
     stack_.erase(v);
     rv(vptr);
@@ -490,7 +489,8 @@ void DirectedGraph::reset() {
   // if everything went OK then empty out stack_ and targets_
   stack_.clear();
 #if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
-  unkeyed_.clear();
+  index_.clear();
+  next_seq_ = 0;
 #endif
   targets_.clear();
   first_to_compute_.reset();

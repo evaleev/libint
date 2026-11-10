@@ -21,6 +21,7 @@
 #ifndef _libint2_src_bin_libint_buildtest_h_
 #define _libint2_src_bin_libint_buildtest_h_
 
+#include <codegen_jobs.h>
 #include <dg.h>
 #include <dims.h>
 #include <graph_registry.h>
@@ -54,6 +55,8 @@ struct CodeGenProgress {
   std::chrono::steady_clock::time_point start_time;
   bool started = false;
   bool interactive = false;
+  /// prefix of the lines (e.g. to identify the process that prints them)
+  std::string tag;
   std::string last_printed_task;
 
   void start() {
@@ -80,17 +83,23 @@ struct CodeGenProgress {
                 << done << " functions generated]  " << current_task
                 << "                    " << std::flush;
     } else if (current_task != last_printed_task) {
-      std::cerr << "  " << elapsed() << "  [" << done << "] " << current_task
-                << std::endl;
+      // std::cerr is unbuffered: compose the line first, so that it is
+      // written at once and the lines of the worker processes (see
+      // CodegenJobs) do not interleave
+      std::ostringstream line;
+      line << "  " << tag << elapsed() << "  [" << done << "] " << current_task
+           << '\n';
+      std::cerr << line.str() << std::flush;
       last_printed_task = current_task;
     }
   }
 
   void finish() {
     if (!started) return;
-    std::cerr << (interactive ? "\r" : "") << "  done  " << elapsed() << "  ["
-              << done << " functions generated]"
-              << (interactive ? "                                        " : "")
+    // with LIBINT_GENERATOR_JOBS > 1 the worker processes count the functions
+    std::cerr << (interactive ? "\r" : "") << "  done  " << elapsed();
+    if (done > 0) std::cerr << "  [" << done << " functions generated]";
+    std::cerr << (interactive ? "                                        " : "")
               << std::endl;
     started = false;
   }
@@ -108,12 +117,6 @@ struct CodeGenProgress {
 inline CodeGenProgress g_progress;
 
 namespace libint2 {
-
-// defined in buildtest.cc
-void generate_rr_code(std::ostream& os,
-                      const std::shared_ptr<CompilationParameters>& cparams,
-                      std::deque<std::string>& decl_filenames,
-                      std::deque<std::string>& def_filenames);
 
 /// defined below generates code for dg; dg and memman are reset at the end
 void GenerateCode(const std::shared_ptr<DirectedGraph>& dg,
@@ -293,7 +296,7 @@ void __BuildTest(const std::vector<std::shared_ptr<Integral> >& targets,
         iface->macro_define("SHELLQUARTET_SET_ORCA", LIBINT_SHELL_SET_ORCA));
 
     // Generate set-level RR code
-    generate_rr_code(os, cparams, decl_filenames, def_filenames);
+    generate_rr_code(os, cparams);
 
     // Print log
     std::cout << "Generated headers: ";

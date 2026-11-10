@@ -19,6 +19,7 @@
  */
 
 #include <codeblock.h>
+#include <codegen_jobs.h>
 #include <context.h>
 #include <default_params.h>
 
@@ -107,20 +108,41 @@ std::string CodeContext::label_to_function_name(
   return cparams()->api_prefix() + label_to_name(label_to_funcname(label));
 }
 
-std::string CodeContext::label_to_filename(const std::string& label) const {
-  const std::string name = label_to_name(label);
+namespace libint2 {
+
+std::map<std::string, std::vector<std::string>>& filename_registry() {
+  static std::map<std::string, std::vector<std::string>> registry;
+  return registry;
+}
+
+std::string fold_case(const std::string& name) {
   std::string folded_name = name;
   std::transform(folded_name.begin(), folded_name.end(), folded_name.begin(),
                  [](unsigned char c) { return std::tolower(c); });
+  return folded_name;
+}
+
+std::string disambiguated_filename(const std::string& name, std::size_t idx) {
+  // '-' cannot appear in label_to_name() output, so suffixed names cannot
+  // collide with unsuffixed ones
+  return idx == 0 ? name : name + "-" + std::to_string(idx);
+}
+
+}  // namespace libint2
+
+std::string CodeContext::label_to_filename(const std::string& label) const {
+  const std::string name = label_to_name(label);
+  const std::string folded_name = fold_case(name);
   // folded name -> distinct names seen so far; index in vector = suffix
-  static std::map<std::string, std::vector<std::string>> registry;
+  // N.B. the suffixes depend on the order in which the names are seen; the
+  // generator renames the files at the end, so that the suffixes follow the
+  // lexicographic order of the names (see CodegenJobs::run())
+  auto& registry = filename_registry();
   auto& names = registry[folded_name];
   auto it = std::find(names.begin(), names.end(), name);
   const auto idx = std::distance(names.begin(), it);
   if (it == names.end()) names.push_back(name);
-  // '-' cannot appear in label_to_name() output, so suffixed names cannot
-  // collide with unsuffixed ones
-  return idx == 0 ? name : name + "-" + std::to_string(idx);
+  return disambiguated_filename(name, idx);
 }
 
 std::string CodeContext::replace_chars(const std::string& S,

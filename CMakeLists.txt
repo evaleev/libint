@@ -318,6 +318,13 @@ option_with_print(LIBINT2_PROFILE
   "Turn on profiling instrumentation of the library. (Generated code will require C++11!)" OFF)
 option_with_print(LIBINT2_ENABLE_MPFR
   "Use GNU MPFR library for high-precision testing (EXPERTS ONLY). Consumed at library build-time." OFF)
+option_with_default(LIBINT2_GENERATOR_JOBS
+  "Number of processes that generate the library source (0 for the number of hardware threads, at
+   most 8; 1 to generate serially). Each process needs its own memory. The generated source is
+   identical for any number of processes. Ignored on platforms without fork() (Windows)." 0)
+if (NOT LIBINT2_GENERATOR_JOBS MATCHES "^[0-9]+$")
+    message(FATAL_ERROR "LIBINT2_GENERATOR_JOBS=${LIBINT2_GENERATOR_JOBS}: expected a non-negative integer")
+endif()
 option_with_default(LIBINT2_EXPORT_COMPRESSOR
   "Export tarball with compression gzip or bzip2" gzip)
 # next one defined by `include(CTest)`

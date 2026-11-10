@@ -577,6 +577,11 @@ std::string HRR<IntType, F, part, loc_a, pos_a, loc_b, pos_b>::spfunction_call(
     }
   }
   // Use TaskParameters to keep track of maximum hsr
+  // N.B. this (and the call below) calls the const getter max_hrr_hsrank(am)
+  // (the setter takes (am, rank)), hence does nothing, and
+  // LIBINT2_MAX_HRR_HSRANK_<am> is always 0. If this is made a setter, the
+  // value must be recorded in the ShellSetJournal (or reported by the workers
+  // that generate the RRs), else it is lost with LIBINT_GENERATOR_JOBS > 1.
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current().params()->max_hrr_hsrank(hsr);
 
@@ -603,7 +608,8 @@ std::string HRR<IntType, F, part, loc_a, pos_a, loc_b, pos_b>::spfunction_call(
       delete iter;
     }
   }
-  // Use TaskParameters to keep track of maximum hsr
+  // Use TaskParameters to keep track of maximum hsr (N.B. does nothing, see
+  // above)
   taskmgr.current().params()->max_hrr_hsrank(hsr);
 
   if (expl_high_dim()) os << "," << hsr;

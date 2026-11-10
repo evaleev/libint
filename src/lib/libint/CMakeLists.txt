@@ -11,7 +11,8 @@ add_custom_command(
     "${PROJECT_BINARY_DIR}/generated/libint2_params.h"
     "${PROJECT_BINARY_DIR}/generated/HRRPart0bra0ket0pp.h"
     "${PROJECT_BINARY_DIR}/generated/HRRPart0bra0ket0pp.cc"
-  COMMAND $<TARGET_FILE:build_libint>
+  COMMAND ${CMAKE_COMMAND} -E env LIBINT_GENERATOR_JOBS=${LIBINT2_GENERATOR_JOBS}
+          $<TARGET_FILE:build_libint>
   DEPENDS
     build_libint
   WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/generated"
