@@ -168,6 +168,9 @@ jobs:
       run: |
         cmake --build build --target export
         cd build && echo "ARTIFACT=`ls -1 libint*z*`" >> $GITHUB_ENV
+        # symlinks in the tarball break its extraction on Windows
+        symlinks=$(tar -tvf libint*z* | grep '^l' || true)
+        if [ -n "$symlinks" ]; then echo "exported tarball contains symlinks:"; echo "$symlinks"; exit 1; fi
 
     - name: Archive Libint library tarball
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.build_type == 'Release' }}
