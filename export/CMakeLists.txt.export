@@ -277,9 +277,10 @@ message(DEBUG "LIBINT2_LIBRARY_CXX_SRC=${LIBINT2_LIBRARY_CXX_SRC}")
 # * MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined
 # * /EHsc sets the exception handling model (allows "throw")
 # * _CRT_* squashs some getenv, strdup, strncpy, ctime, fopen warnings
-# * _USE_MATH_DEFINES and _CRT_* are PRIVATE: they must not leak into the
-#   compile lines of Libint2 consumers (see issue #376); public headers must not
-#   depend on them
+# * public headers must not depend on _USE_MATH_DEFINES or _CRT_*; the _CRT_*
+#   definitions are not exported to Libint2 consumers (see issue #376), but
+#   _USE_MATH_DEFINES still is, for backward compatibility of MSVC consumers
+#   that use M_PI etc. without defining it themselves
 
 # ====  pre-user-targets: plain/C++(compiled)  ==================================
 
@@ -418,6 +419,7 @@ if (L2_BUILD_SHARED_LIBS)
       int-shared
       INTERFACE
         $<BUILD_INTERFACE:__COMPILING_LIBINT2=1>
+        $<$<BOOL:${MSVC}>:_USE_MATH_DEFINES>  # see Notes above
       )
     target_compile_options(
       int-shared
@@ -545,6 +547,7 @@ if (L2_BUILD_STATIC_LIBS)
       int-static
       INTERFACE
         $<BUILD_INTERFACE:__COMPILING_LIBINT2=1>
+        $<$<BOOL:${MSVC}>:_USE_MATH_DEFINES>  # see Notes above
       )
     target_compile_options(
       int-static

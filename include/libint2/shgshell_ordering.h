@@ -159,10 +159,13 @@ constexpr int deprecated_FOR_SOLIDHARM() { return 0; }
   LIBINT2_FOR_SOLIDHARM_MOLDEN(l, m) \
   (void)::libint2::detail::deprecated_FOR_SOLIDHARM();
 #endif
+// N.B. object-like, as it was before the deprecation
 #ifndef FOR_SOLIDHARM
-#define FOR_SOLIDHARM(l, m)   \
-  LIBINT2_FOR_SOLIDHARM(l, m) \
-  (void)::libint2::detail::deprecated_FOR_SOLIDHARM();
+#if LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD
+#define FOR_SOLIDHARM FOR_SOLIDHARM_STANDARD
+#else
+#define FOR_SOLIDHARM FOR_SOLIDHARM_GAUSSIAN
+#endif
 #endif
 #ifndef END_FOR_SOLIDHARM
 #define END_FOR_SOLIDHARM LIBINT2_END_FOR_SOLIDHARM

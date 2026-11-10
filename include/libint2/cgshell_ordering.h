@@ -204,11 +204,12 @@ inline int INT_CARTINDEX(unsigned int am, int i, int j) {
  *   Stuff using i,j,k.
  *   LIBINT2_END_FOR_CART
  */
-#define LIBINT2_FOR_CART(i, j, k, am)                                          \
-  for (int __xyz = 0; __xyz < ::libint2::INT_NCART(am); ++__xyz) {             \
-    ::libint2::CGShellInfo<::libint2::CGShellOrderingData<                     \
-        ::libint2::CGShellOrdering_GAMESS>>::cartindex_to_ijk(am, __xyz, i, j, \
-                                                              k);
+#define LIBINT2_FOR_CART(i, j, k, am)                                         \
+  for (int libint2_cartindex_ = 0;                                            \
+       libint2_cartindex_ < ::libint2::INT_NCART(am); ++libint2_cartindex_) { \
+    ::libint2::CGShellInfo<                                                   \
+        ::libint2::CGShellOrderingData<::libint2::CGShellOrdering_GAMESS>>::  \
+        cartindex_to_ijk(am, libint2_cartindex_, i, j, k);
 #define LIBINT2_END_FOR_CART }
 
 #endif  // GAMESS ordering
@@ -238,11 +239,12 @@ inline int INT_CARTINDEX(unsigned int am, int i, int j) {
  *   Stuff using i,j,k.
  *   LIBINT2_END_FOR_CART
  */
-#define LIBINT2_FOR_CART(i, j, k, am)                                        \
-  for (int __xyz = 0; __xyz < ::libint2::INT_NCART(am); ++__xyz) {           \
-    ::libint2::CGShellInfo<::libint2::CGShellOrderingData<                   \
-        ::libint2::CGShellOrdering_ORCA>>::cartindex_to_ijk(am, __xyz, i, j, \
-                                                            k);
+#define LIBINT2_FOR_CART(i, j, k, am)                                         \
+  for (int libint2_cartindex_ = 0;                                            \
+       libint2_cartindex_ < ::libint2::INT_NCART(am); ++libint2_cartindex_) { \
+    ::libint2::CGShellInfo<                                                   \
+        ::libint2::CGShellOrderingData<::libint2::CGShellOrdering_ORCA>>::    \
+        cartindex_to_ijk(am, libint2_cartindex_, i, j, k);
 #define LIBINT2_END_FOR_CART }
 
 #endif  // ORCA ordering
@@ -307,11 +309,12 @@ inline int INT_CARTINDEX_MOLDEN(unsigned int am, int i, int j) {
 /* LIBINT2_FOR_CART_MOLDEN(i,j,k,am)
  *   LIBINT2_END_FOR_CART_MOLDEN
  */
-#define LIBINT2_FOR_CART_MOLDEN(i, j, k, am)                                 \
-  for (int __xyz = 0; __xyz < ::libint2::INT_NCART(am); ++__xyz) {           \
-    ::libint2::CGShellInfo<::libint2::CGShellOrderingData<                   \
-        ::libint2::CGShellOrdering_MOLDEN, 4u>>::cartindex_to_ijk(am, __xyz, \
-                                                                  i, j, k);
+#define LIBINT2_FOR_CART_MOLDEN(i, j, k, am)                                  \
+  for (int libint2_cartindex_ = 0;                                            \
+       libint2_cartindex_ < ::libint2::INT_NCART(am); ++libint2_cartindex_) { \
+    ::libint2::CGShellInfo<::libint2::CGShellOrderingData<                    \
+        ::libint2::CGShellOrdering_MOLDEN,                                    \
+        4u>>::cartindex_to_ijk(am, libint2_cartindex_, i, j, k);
 #define LIBINT2_END_FOR_CART_MOLDEN }
 
 //

@@ -46,19 +46,46 @@
 @PACKAGE_INIT@
 
 # N.B. this file is evaluated in the scope of the caller of find_package(Libint2)
-#      hence all helper variables are prefixed with _libint2_ and unset at the
-#      end, and variables of other packages (e.g., Eigen3_DIR) are not modified
+#      hence all helper variables and macros are prefixed with _libint2_, the
+#      variables are unset by _libint2_cleanup(), and variables of other
+#      packages (e.g., Eigen3_DIR) are not modified
 
 set(Libint2_EXT_VERSION "@LIBINT_EXT_VERSION@")
 
+# undoes the changes of this file to the caller's scope (other than the results)
+macro(_libint2_cleanup)
+  set(CMAKE_MODULE_PATH "${_libint2_saved_CMAKE_MODULE_PATH}")
+  unset(_libint2_saved_CMAKE_MODULE_PATH)
+  unset(_libint2_eigen3_config)
+  unset(_libint2_eigen3_dir)
+  unset(_libint2_eigen3_dir_found)
+  unset(_libint2_boost_config)
+  unset(_libint2_boost_dir)
+  unset(_libint2_eri)
+  unset(_libint2_find_args)
+endmacro()
+
+# like find_dependency(), but cleans up before returning if the dependency is
+# not found, and does not make a failure fatal unless Libint2 is REQUIRED
+macro(_libint2_find_dependency _libint2_dep)
+  set(_libint2_find_args ${ARGN})
+  if (Libint2_FIND_QUIETLY)
+    list(APPEND _libint2_find_args QUIET)
+  endif()
+  find_package(${_libint2_dep} ${_libint2_find_args})
+  if (NOT ${_libint2_dep}_FOUND)
+    set(Libint2_NOT_FOUND_MESSAGE "Libint2 could not be found because dependency ${_libint2_dep} could not be found")
+    set(Libint2_FOUND FALSE)
+    _libint2_cleanup()
+    return()
+  endif()
+endmacro()
+
 # make detectable the various cmake modules exported alongside
 # * prepend to trump any pre-target FindEigen3.cmake modules lying around
-# * restored at the end of this file
+# * restored at the end of this file, or before returning early
 set(_libint2_saved_CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}")
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
-
-# check library language component
-include(CMakeFindDependencyMacro)
 
 if (@LIBINT2_REQUIRE_CXX_API@)  # LIBINT2_REQUIRE_CXX_API
     set(Libint2_CXX_FOUND 1)
@@ -69,10 +96,10 @@ if (@LIBINT2_REQUIRE_CXX_API@)  # LIBINT2_REQUIRE_CXX_API
         if (_libint2_eigen3_config)  # empty if Eigen3 was found without its Eigen3Config.cmake
           message(WARNING "Libint2 library was built with Eigen3Config.cmake detected at ${_libint2_eigen3_config}, but this path is no longer valid; directory moved since Libint2 library build?")
         endif()
-        find_dependency(Eigen3 REQUIRED)
+        _libint2_find_dependency(Eigen3)
       else()
         get_filename_component(_libint2_eigen3_dir "${_libint2_eigen3_config}" DIRECTORY)
-        find_dependency(Eigen3 REQUIRED HINTS "${_libint2_eigen3_dir}")
+        _libint2_find_dependency(Eigen3 HINTS "${_libint2_eigen3_dir}")
         # the caller's Eigen3_DIR takes precedence over the hint; using a different
         # Eigen than the one Libint2 was built with risks ABI mismatches with the
         # compiled C++ API (Libint2::int2-cxx)
@@ -92,10 +119,10 @@ if (@LIBINT2_REQUIRE_CXX_API@)  # LIBINT2_REQUIRE_CXX_API
               if (_libint2_boost_config)  # empty if Boost was found without its BoostConfig.cmake
                 message(WARNING "Libint2 library was built with BoostConfig.cmake detected at ${_libint2_boost_config}, but this path is no longer valid; directory moved since Libint2 library build?")
               endif()
-              find_dependency(Boost 1.57 REQUIRED)
+              _libint2_find_dependency(Boost 1.57)
             else()
               get_filename_component(_libint2_boost_dir "${_libint2_boost_config}" DIRECTORY)
-              find_dependency(Boost 1.57 REQUIRED HINTS "${_libint2_boost_dir}")
+              _libint2_find_dependency(Boost 1.57 HINTS "${_libint2_boost_dir}")
             endif()
         endif()
     else()
@@ -159,11 +186,4 @@ endif()
 
 check_required_components(Libint2)
 
-set(CMAKE_MODULE_PATH "${_libint2_saved_CMAKE_MODULE_PATH}")
-unset(_libint2_saved_CMAKE_MODULE_PATH)
-unset(_libint2_eigen3_config)
-unset(_libint2_eigen3_dir)
-unset(_libint2_eigen3_dir_found)
-unset(_libint2_boost_config)
-unset(_libint2_boost_dir)
-unset(_libint2_eri)
+_libint2_cleanup()

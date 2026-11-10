@@ -31,12 +31,14 @@ Following is a brief summary of changes made in each release of Libint.
              - renamed the engine preprocessor metaprogramming macros BOOST_PP_NBODY* and
                BOOST_PP_MAKE_TUPLE* to LIBINT2_PP_*; all are #undef'ed after use
              - the C++ API headers no longer use M_PI and M_SQRT2 (see libint2::math::pi and
-               libint2::math::sqrt2), hence Libint2 targets no longer add _USE_MATH_DEFINES and
-               _CRT_* definitions to the compile line of their MSVC consumers
+               libint2::math::sqrt2), and Libint2 targets no longer add the _CRT_* definitions to the
+               compile line of their MSVC consumers (_USE_MATH_DEFINES is still added, for consumers
+               that rely on it for M_PI etc.)
              - find_package(Libint2) no longer sets variables pnv, L2 and _eri in the caller's
                scope, no longer sets Eigen3_DIR, Eigen3_CONFIG, Boost_DIR and Boost_CONFIG to the
                locations used to build Libint2 (hence a consumer's Eigen3_DIR/Boost_DIR now take
-               precedence), and restores CMAKE_MODULE_PATH; it also no longer warns that the
+               precedence), and restores CMAKE_MODULE_PATH, also if a dependency is not found (which
+               no longer is a fatal error unless Libint2 is REQUIRED); it also no longer warns that the
                Eigen3Config.cmake/BoostConfig.cmake path "is no longer valid" if Libint2 was built
                with Eigen3/Boost found without their config files (e.g. via FindEigen3.cmake), and
                warns if the Eigen3 it finds differs from the one Libint2 was built with
