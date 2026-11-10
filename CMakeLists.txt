@@ -40,7 +40,7 @@ set(${PROJECT_NAME}_LICENSE "GPL-3.0-only for generator; LGPL-3.0-only for gener
 # along with project(... VERSION) above scanned by dynamic_version() from `git
 #   describe`, these are the authoritative version source (formerly in configure.ac)
 set(LIBINT_BUILDID "post999" CACHE STRING "Custom build ID suffix for the exported tarball")
-set(LIBINT_SO_VERSION "2:3:0")
+set(LIBINT_SO_VERSION "3:0:0")
 set(LIBINT_DOI "10.5281/zenodo.10369117")  # 2.8.0
 
 include(int_versions)
@@ -280,9 +280,6 @@ option_with_default(LIBINT2_G12DKH_OPT_AM
 
 option_with_print(LIBINT2_CONTRACTED_INTS
   "Turn on support for contracted integrals." ON)
-if (NOT LIBINT2_CONTRACTED_INTS AND (LIBINT2_REQUIRE_CXX_API OR LIBINT2_REQUIRE_CXX_API_COMPILED OR LIBINT2_ENABLE_PYTHON))
-    message(FATAL_ERROR "Libint2 C++ API requires a library generated with support for contracted integrals; use -DLIBINT2_CONTRACTED_INTS=ON, or add -DLIBINT2_REQUIRE_CXX_API=OFF -DLIBINT2_REQUIRE_CXX_API_COMPILED=OFF (and LIBINT2_ENABLE_PYTHON=OFF) if the C++ API is not needed")
-endif()
 option_with_default(LIBINT2_ERI_STRATEGY
   "(EXPERT) Compute ERIs using the following strategy. (0 for OS, 1 for HGP, 2 for HL)" 1)
 option_with_print(LIBINT2_USE_COMPOSITE_EVALUATORS
@@ -318,15 +315,8 @@ option_with_print(LIBINT2_PROFILE
   "Turn on profiling instrumentation of the library. (Generated code will require C++11!)" OFF)
 option_with_print(LIBINT2_ENABLE_MPFR
   "Use GNU MPFR library for high-precision testing (EXPERTS ONLY). Consumed at library build-time." OFF)
-option_with_default(LIBINT2_GENERATOR_JOBS
-  "Number of processes that generate the library source (0 for the number of hardware threads, at
-   most 8; 1 to generate serially). Each process needs its own memory. The generated source is
-   identical for any number of processes. Ignored on platforms without fork() (Windows)." 0)
-if (NOT LIBINT2_GENERATOR_JOBS MATCHES "^[0-9]+$")
-    message(FATAL_ERROR "LIBINT2_GENERATOR_JOBS=${LIBINT2_GENERATOR_JOBS}: expected a non-negative integer")
-endif()
 option_with_default(LIBINT2_EXPORT_COMPRESSOR
-  "Export tarball with compression gzip or bzip2" gzip)
+  "Export tarball with compression gzip, bzip2, or xz" gzip)
 # next one defined by `include(CTest)`
 message(STATUS "Showing option BUILD_TESTING: ${BUILD_TESTING}")
 
@@ -352,12 +342,12 @@ foreach(_v MAX_AM OPT_AM
     endif()
 endforeach()
 
-check_function_exists(posix_memalign LIBINT_HAVE_POSIX_MEMALIGN)
-if (NOT LIBINT_HAVE_POSIX_MEMALIGN)
+check_function_exists(posix_memalign HAVE_POSIX_MEMALIGN)
+if (NOT HAVE_POSIX_MEMALIGN)
     message(FATAL_ERROR "did not find posix_memalign ... this SHOULD NOT happen. Cannot proceed.")
 endif()
 
-check_include_file_cxx(stdint.h LIBINT_HAVE_STDINT_H)  # limits.h?
+check_include_file_cxx(stdint.h HAVE_STDINT_H)  # limits.h?
 
 if (cxx_std_11 IN_LIST CMAKE_CXX_COMPILE_FEATURES)
     set(LIBINT_HAS_CXX11 1)
