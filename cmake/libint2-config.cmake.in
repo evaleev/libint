@@ -66,7 +66,9 @@ if (@LIBINT2_REQUIRE_CXX_API@)  # LIBINT2_REQUIRE_CXX_API
     if(NOT TARGET Eigen3::Eigen)
       set(_libint2_eigen3_config "@Eigen3_CONFIG@")
       if (NOT _libint2_eigen3_config OR NOT EXISTS "${_libint2_eigen3_config}")
-        message(WARNING "Libint2 library was built with Eigen3Config.cmake detected at ${_libint2_eigen3_config}, but this path is no longer valid; directory moved since Libint2 library build?")
+        if (_libint2_eigen3_config)  # empty if Eigen3 was found without its Eigen3Config.cmake
+          message(WARNING "Libint2 library was built with Eigen3Config.cmake detected at ${_libint2_eigen3_config}, but this path is no longer valid; directory moved since Libint2 library build?")
+        endif()
         find_dependency(Eigen3 REQUIRED)
       else()
         get_filename_component(_libint2_eigen3_dir "${_libint2_eigen3_config}" DIRECTORY)
@@ -79,7 +81,9 @@ if (@LIBINT2_REQUIRE_CXX_API@)  # LIBINT2_REQUIRE_CXX_API
         if (NOT TARGET Boost::headers)
             set(_libint2_boost_config "@Boost_CONFIG@")
             if (NOT _libint2_boost_config OR NOT EXISTS "${_libint2_boost_config}")
-              message(WARNING "Libint2 library was built with BoostConfig.cmake detected at ${_libint2_boost_config}, but this path is no longer valid; directory moved since Libint2 library build?")
+              if (_libint2_boost_config)  # empty if Boost was found without its BoostConfig.cmake
+                message(WARNING "Libint2 library was built with BoostConfig.cmake detected at ${_libint2_boost_config}, but this path is no longer valid; directory moved since Libint2 library build?")
+              endif()
               find_dependency(Boost 1.57 REQUIRED)
             else()
               get_filename_component(_libint2_boost_dir "${_libint2_boost_config}" DIRECTORY)

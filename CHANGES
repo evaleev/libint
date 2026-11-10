@@ -35,7 +35,9 @@ Following is a brief summary of changes made in each release of Libint.
              - find_package(Libint2) no longer sets variables pnv, L2 and _eri in the caller's
                scope, no longer sets Eigen3_DIR, Eigen3_CONFIG, Boost_DIR and Boost_CONFIG to the
                locations used to build Libint2 (hence a consumer's Eigen3_DIR/Boost_DIR now take
-               precedence), and restores CMAKE_MODULE_PATH
+               precedence), and restores CMAKE_MODULE_PATH; it also no longer warns that the
+               Eigen3Config.cmake/BoostConfig.cmake path "is no longer valid" if Libint2 was built
+               with Eigen3/Boost found without their config files (e.g. via FindEigen3.cmake)
              (the DATADIR macros were already prefixed with LIBINT_ in v2.12.0)
   - PR #451: LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS (ON by default) no longer disables the
              geometric derivatives of the σ·pVσ·p integrals (Operator::opVop and
