@@ -156,7 +156,7 @@ inline int INT_CARTINDEX(unsigned int am, int i, int j) {
  */
 namespace libint2 {
 inline int INT_CARTINDEX(unsigned int am, int i, int j) {
-  return ((((am + 1) << 1) - i) * (i + 1)) >> 1 - j - 1;
+  return (((((am + 1) << 1) - i) * (i + 1)) >> 1) - j - 1;
 }
 }  // namespace libint2
 LIBINT_DEPRECATED("please use libint2::INT_CARTINDEX instead")
