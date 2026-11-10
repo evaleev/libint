@@ -61,6 +61,8 @@ jobs:
 
     name: "Repo • ${{ matrix.os }}: ${{ matrix.cxx }} ${{ matrix.build_type }} shared=${{ matrix.build_shared_libs }} fetch=${{ matrix.subproject }}"
     runs-on: ${{ matrix.os }}
+    # bound a hung step (stalled download, deadlocked test); the longest job takes ~30 min
+    timeout-minutes: 90
     env:
       CC: ${{ matrix.cc }}
       CXX : ${{ matrix.cxx }}
@@ -281,6 +283,8 @@ jobs:
             eri3_max_am: '3'
     name: "Repo • ubuntu-24.04: uncontracted ints, accum=${{ matrix.accum_ints }}"
     runs-on: ubuntu-24.04
+    # bound a hung step (stalled download, deadlocked test); the longest job takes ~30 min
+    timeout-minutes: 90
     steps:
     - uses: actions/checkout@v4
       with:
@@ -378,6 +382,8 @@ jobs:
 
     name: "Export • ${{ matrix.cfg.lane }}"
     runs-on: ${{ matrix.cfg.runs-on }}
+    # bound a hung step (stalled download, deadlocked test); the longest job takes ~30 min
+    timeout-minutes: 90
 
     steps:
     # Note we're not checking out the repo. All src from Linux tarball generated above.
@@ -609,6 +615,8 @@ jobs:
 
     name: "Export • windows-mingw-${{ matrix.msystem }}"
     runs-on: windows-latest
+    # bound a hung step (stalled download, deadlocked test); the longest job takes ~30 min
+    timeout-minutes: 90
     defaults:
       run:
         shell: msys2 {0}
