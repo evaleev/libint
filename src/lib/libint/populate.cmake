@@ -67,33 +67,37 @@ file(
 #   them on Windows (either the symlink extracted before the target file or
 #   problems with the stars in filenames themselves). To make export tarballs
 #   broadly usable, the symlinks are not staged; instead their targets are
-#   copied into real files, which is what libtool effectively did. Copying from
-#   the targets also does not rely on the source tree having kept the symlinks.
-set(_basis_aliases
-  "6-31gs.g94=6-31g*.g94"
-  "6-31gss.g94=6-31g**.g94"
-  "6-311gss.g94=6-311g**.g94"
-  )
+#   copied into real files, which is what libtool effectively did. The aliases
+#   are listed rather than detected so that a checkout without symlinks (git on
+#   Windows checks them out as text files holding the target name) is handled
+#   too; any other symlink is an error, since it would be staged as a symlink.
+set(_basis_dir "${PROJECT_SOURCE_DIR}/export/lib/basis")
+set(_basis_aliases      6-31gs.g94  6-31gss.g94  6-311gss.g94)
+set(_basis_alias_targets 6-31g*.g94 6-31g**.g94 6-311g**.g94)
+
+file(GLOB _basis_files LIST_DIRECTORIES false "${_basis_dir}/*")
+foreach(_file ${_basis_files})
+  get_filename_component(_name "${_file}" NAME)
+  if (IS_SYMLINK "${_file}" AND NOT _name IN_LIST _basis_aliases)
+    message(FATAL_ERROR "${_file} is a symlink but is not in _basis_aliases in ${CMAKE_CURRENT_LIST_FILE}; add it there with its target")
+  endif()
+endforeach()
+
 set(_basis_alias_excludes)
-foreach(_alias_spec ${_basis_aliases})
-  string(REPLACE "=" ";" _alias_spec "${_alias_spec}")
-  list(GET _alias_spec 0 _alias)
+foreach(_alias ${_basis_aliases})
   list(APPEND _basis_alias_excludes PATTERN "${_alias}" EXCLUDE)
 endforeach()
 
 file(
   INSTALL
-    "${PROJECT_SOURCE_DIR}/export/lib/basis/"
+    "${_basis_dir}/"
   DESTINATION "${EXPORT_STAGE_DIR}/lib/basis"
   FILES_MATCHING
     PATTERN "*.g94"
     ${_basis_alias_excludes}
   )
 
-foreach(_alias_spec ${_basis_aliases})
-  string(REPLACE "=" ";" _alias_spec "${_alias_spec}")
-  list(GET _alias_spec 0 _alias)
-  list(GET _alias_spec 1 _target)
+foreach(_alias _target IN ZIP_LISTS _basis_aliases _basis_alias_targets)
   set(_dest "${EXPORT_STAGE_DIR}/lib/basis/${_alias}")
   # a stage populated by an older version may hold a symlink here; writing
   #   through it would clobber its target instead of creating a real file
@@ -101,7 +105,14 @@ foreach(_alias_spec ${_basis_aliases})
     file(REMOVE "${_dest}")
   endif()
   # COPYONLY leaves an up-to-date copy untouched
-  configure_file("${PROJECT_SOURCE_DIR}/export/lib/basis/${_target}" "${_dest}" COPYONLY)
+  configure_file("${_basis_dir}/${_target}" "${_dest}" COPYONLY)
+endforeach()
+
+file(GLOB _staged_basis_files LIST_DIRECTORIES false "${EXPORT_STAGE_DIR}/lib/basis/*")
+foreach(_file ${_staged_basis_files})
+  if (IS_SYMLINK "${_file}")
+    message(FATAL_ERROR "${_file} is a symlink; the exported library must not contain symlinks")
+  endif()
 endforeach()
 
 # ====  /fortran  ===============================================================
