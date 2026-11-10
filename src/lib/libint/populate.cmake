@@ -1,3 +1,7 @@
+# run with cmake -P, which sets no policies: use those of the project's minimum
+#   version (e.g. CMP0057 for if(IN_LIST), which CMake 3.x otherwise rejects)
+cmake_policy(VERSION 3.19)
+
 set(LIBRARY_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src/lib/libint)
 
 # ====  /doc  ===================================================================
