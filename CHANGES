@@ -3,7 +3,7 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2026-11-09: 2.14.0
+- 2026-11-10: 2.14.0
   N.B. compatibility notes:
     - numeric values of Operator enumerators changed (new operators were inserted)
     - SOVERSION is now 3
