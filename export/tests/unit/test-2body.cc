@@ -509,7 +509,7 @@ size_t hessian_index(size_t ncoords, size_t i, size_t j) {
 }
 
 // all centers distinct and in general position
-Shell make_fd_shell(int l, bool contracted, int center) {
+Shell make_fd_shell(int l, bool contracted, int center, bool pure) {
   const std::array<double, 3> O[] = {{{0.0, 0.0, 0.0}},
                                      {{0.7, 0.2, -0.3}},
                                      {{-0.4, 0.9, 0.5}},
@@ -517,9 +517,9 @@ Shell make_fd_shell(int l, bool contracted, int center) {
   const double scale = 1.0 + 0.2 * center;
   if (contracted)
     return Shell{{2.3 * scale, 0.8 * scale, 0.31 * scale},
-                 {{l, false, {0.5, 0.4, 0.3}}},
+                 {{l, pure, {0.5, 0.4, 0.3}}},
                  O[center]};
-  return Shell{{0.65 * scale}, {{l, false, {1.0}}}, O[center]};
+  return Shell{{0.65 * scale}, {{l, pure, {1.0}}}, O[center]};
 }
 
 std::vector<std::vector<double>> compute_fd_shellsets(
@@ -557,8 +557,22 @@ bool check_fd_derivs(BraKet braket, int deriv_order, const std::vector<int> &l,
                      const std::vector<bool> &contracted) {
   const auto ncenters = l.size();
   std::vector<Shell> shells;
+  // the energy kernels (used for the finite differences of the first
+  // derivatives) of a library configured with LIBINT2_ERI3_PURE_SH
+  // (LIBINT2_ERI2_PURE_SH) assume that the fitting shell (both shells) is a
+  // solid harmonics shell if l > 1
+  auto pure = [braket](size_t c) {
+#if LIBINT_ERI3_PURE_SH
+    if (braket == BraKet::xs_xx && c == 0) return true;
+#endif
+#if LIBINT_ERI2_PURE_SH
+    if (braket == BraKet::xs_xs) return true;
+#endif
+    return false;
+  };
   for (size_t c = 0; c != ncenters; ++c)
-    shells.push_back(make_fd_shell(l[c], contracted[c], c));
+    shells.push_back(
+        make_fd_shell(l[c], contracted[c], c, pure(c) && l[c] > 1));
   const auto nprim = libint2::max_nprim(shells);
   const auto lmax = libint2::max_l(shells);
   const auto eps = std::numeric_limits<double>::epsilon();
@@ -574,7 +588,14 @@ bool check_fd_derivs(BraKet braket, int deriv_order, const std::vector<int> &l,
   engine.set_precision(0.0);
   engine_lower.set_precision(0.0);
 
-  const auto analytic = compute_fd_shellsets(engine, braket, shells);
+  // the limits of the kernels may depend on the center and on the derivative
+  // order, beyond what the constructor checks (e.g. LIBINT2_ERI3_MAX_AM)
+  std::vector<std::vector<double>> analytic;
+  try {
+    analytic = compute_fd_shellsets(engine, braket, shells);
+  } catch (Engine::lmax_exceeded &) {
+    return false;
+  }
   const auto ncoords = 3 * ncenters;
   REQUIRE(analytic.size() ==
           libint2::num_geometrical_derivatives(ncenters, deriv_order));
