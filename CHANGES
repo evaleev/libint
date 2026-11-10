@@ -3,6 +3,10 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- 2.14.1 (unreleased)
+  - PR #467: shared code for derivatives via translational invariance (smaller geometric-derivative
+    and RKB code, e.g. half the compiled code of RKB 3-center ERIs with L=6)
+
 - 2026-11-10: 2.14.0
   N.B. compatibility notes:
     - numeric values of Operator enumerators changed (new operators were inserted)
