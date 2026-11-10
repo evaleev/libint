@@ -40,6 +40,12 @@ class CR_DerivGauss_GenericInstantiator {
  public:
   static CR_DerivGauss_GenericInstantiator& instance();
   void add(unsigned int L, bool vectorize);
+  /// @return the (L,vectorize) pairs of the instances added so far (the
+  /// workers of CodegenJobs report them to the parent process, which writes
+  /// GenericGaussDeriv.cc)
+  const std::set<std::pair<unsigned int, bool> >& instances() const {
+    return template_instances_;
+  }
 };
 
 /** Compute relation for (geometric) derivative Gaussian ints of generic type \c

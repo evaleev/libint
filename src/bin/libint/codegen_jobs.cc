@@ -19,6 +19,7 @@
  */
 
 #include <codegen_jobs.h>
+#include <comp_deriv_gauss.h>
 #include <context.h>
 #include <default_params.h>
 #include <dims.h>
@@ -691,6 +692,14 @@ void CodegenJobs::run_in_parallel(
           std::ofstream report(report_file(k, "rrs"));
           write_task_symbols(report);
           write_names(report, registry_filenames());
+          // the instances of GenericGaussDeriv used by the code of this
+          // worker; GenericGaussDeriv.cc is written by the parent at exit
+          // (this process exits without running the destructors)
+          const auto& generic_instances =
+              CR_DerivGauss_GenericInstantiator::instance().instances();
+          report << generic_instances.size() << ' ';
+          for (auto& i : generic_instances)
+            report << i.first << ' ' << (i.second ? 1 : 0) << ' ';
           report.close();
           if (!report) throw std::runtime_error("failed to write the report");
         }
@@ -838,6 +847,12 @@ void CodegenJobs::run_in_parallel(
       std::ifstream report(report_file(k, "rrs"));
       merge_task_symbols(report);
       local[k] = read_names(report);
+      const auto ngeneric = read_value<std::size_t>(report);
+      for (std::size_t i = 0; i != ngeneric; ++i) {
+        const auto L = read_value<unsigned int>(report);
+        const auto vectorize = read_value<int>(report);
+        CR_DerivGauss_GenericInstantiator::instance().add(L, vectorize != 0);
+      }
     }
 
     // file names that differ only in case get suffixes in the lexicographic
