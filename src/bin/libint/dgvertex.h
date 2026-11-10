@@ -21,7 +21,10 @@
 #ifndef _libint2_src_bin_libint_dgvertex_h_
 #define _libint2_src_bin_libint_dgvertex_h_
 
+#include <cstddef>
+#include <functional>
 #include <list>
+#include <string>
 #include <vector>
 // #include <dg.h>
 #include <dgarc.h>
@@ -39,6 +42,16 @@
 namespace libint2 {
 
 class DirectedGraph;
+
+/// mixes hash value @p v into @p h (as boost::hash_combine), see
+/// DGVertex::structural_hash()
+inline std::size_t hash_combine(std::size_t h, std::size_t v) {
+  // 2^N / golden ratio, N = 64 or 32
+  constexpr std::size_t golden =
+      sizeof(std::size_t) >= 8 ? static_cast<std::size_t>(0x9e3779b97f4a7c15ull)
+                               : static_cast<std::size_t>(0x9e3779b9ul);
+  return h ^ (v + golden + (h << 6) + (h >> 2));
+}
 
 /// This is a vertex of a Directed Graph (DG)
 class DGVertex : public Hashable<KeyTypes::InstanceID, ComputeKey> {
@@ -136,6 +149,16 @@ class DGVertex : public Hashable<KeyTypes::InstanceID, ComputeKey> {
       equivalent to *aVertex.
   */
   virtual bool equiv(const std::shared_ptr<DGVertex>&) const = 0;
+  /** structural_hash() must be the same for equivalent vertices: a.equiv(b)
+      implies a.structural_hash() == b.structural_hash(); it must not change
+      while the vertex is on a DirectedGraph. DirectedGraph uses it to find the
+      vertices with instance id 0 (the vertices that are not singletons, e.g.
+      operators, and the first instance of each singleton type), hence a
+      vertex type whose equiv() is not determined by its type and label must
+      override it, or equivalent vertices will be duplicated on the graph
+      (CHECK_SAFETY checks this). The default combines the type and the label.
+   */
+  virtual std::size_t structural_hash() const;
 
   /** precomputed() returns whether this DGVertex is precomputed. See
   this_precomputed() for description.
