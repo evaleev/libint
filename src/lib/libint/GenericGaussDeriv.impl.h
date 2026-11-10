@@ -57,7 +57,7 @@ void GenericGaussDeriv<L, vectorize>::compute(
     const unsigned int hNm1 = h * Nm1;
 
     int ax, ay, az;
-    FOR_CART(ax, ay, az, L)
+    LIBINT2_FOR_CART(ax, ay, az, L)
 
     int a[3];
     a[0] = ax;
@@ -103,7 +103,7 @@ void GenericGaussDeriv<L, vectorize>::compute(
     inteval->nflops[0] += (have_am1 ? 3 : 1) * lveclen;
 #endif
 
-    END_FOR_CART  // end of loop over a
+    LIBINT2_END_FOR_CART  // end of loop over a
   }
 }
 

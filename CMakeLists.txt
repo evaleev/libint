@@ -345,12 +345,12 @@ foreach(_v MAX_AM OPT_AM
     endif()
 endforeach()
 
-check_function_exists(posix_memalign HAVE_POSIX_MEMALIGN)
-if (NOT HAVE_POSIX_MEMALIGN)
+check_function_exists(posix_memalign LIBINT_HAVE_POSIX_MEMALIGN)
+if (NOT LIBINT_HAVE_POSIX_MEMALIGN)
     message(FATAL_ERROR "did not find posix_memalign ... this SHOULD NOT happen. Cannot proceed.")
 endif()
 
-check_include_file_cxx(stdint.h HAVE_STDINT_H)  # limits.h?
+check_include_file_cxx(stdint.h LIBINT_HAVE_STDINT_H)  # limits.h?
 
 if (cxx_std_11 IN_LIST CMAKE_CXX_COMPILE_FEATURES)
     set(LIBINT_HAS_CXX11 1)

@@ -98,12 +98,12 @@ inline std::vector<std::vector<Real>> make_cart_coeffs(int lmax) {
     result[l].resize(cart_shell_size);
     int ixyz = 0;
     int ix, iy, iz;
-    FOR_CART(ix, iy, iz, l)
+    LIBINT2_FOR_CART(ix, iy, iz, l)
     using std::sqrt;
     result[l][ixyz] = sqrt(
         dfm1.at(2 * l) / (dfm1.at(2 * ix) * dfm1.at(2 * iy) * dfm1.at(2 * iz)));
     ++ixyz;
-    END_FOR_CART
+    LIBINT2_END_FOR_CART
   }
 
   return result;

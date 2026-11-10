@@ -51,11 +51,12 @@ inline int INT_SOLIDHARMINDEX_STANDARD(int l, int m) { return m + l; }
 
 /* This sets up the above loop over cartesian exponents as follows
  * int m;
- * FOR_SOLIDHARM_STANDARD(l,m)
- * END_FOR_SOLIDHARM
+ * LIBINT2_FOR_SOLIDHARM_STANDARD(l,m)
+ * LIBINT2_END_FOR_SOLIDHARM
  */
-#define FOR_SOLIDHARM_STANDARD(l, m) for ((m) = -(l); (m) <= (l); ++(m)) {
-#define END_FOR_SOLIDHARM }
+#define LIBINT2_FOR_SOLIDHARM_STANDARD(l, m) \
+  for ((m) = -(l); (m) <= (l); ++(m)) {
+#define LIBINT2_END_FOR_SOLIDHARM }
 
 /* Computes an index to a Cartesian function within a shell given
  * l = total angular momentum
@@ -70,10 +71,10 @@ inline int INT_SOLIDHARMINDEX_GAUSSIAN(int l, int m) {
 
 /* This sets up the above loop over cartesian exponents as follows
  * int m;
- * FOR_SOLIDHARM_GAUSSIAN(l,m)
- * END_FOR_SOLIDHARM
+ * LIBINT2_FOR_SOLIDHARM_GAUSSIAN(l,m)
+ * LIBINT2_END_FOR_SOLIDHARM
  */
-#define FOR_SOLIDHARM_GAUSSIAN(l, m) \
+#define LIBINT2_FOR_SOLIDHARM_GAUSSIAN(l, m) \
   for ((m) = 0; (m) != (l) + 1; (m) = ((m) > 0 ? -(m) : 1 - (m))) {
 /// these always-available macros encode orderings assumed by Molden ... useful
 /// for writing Molden-specific code
@@ -85,8 +86,8 @@ inline int INT_SOLIDHARMINDEX_MOLDEN(int l, int m) {
 }
 }
 
-#define FOR_SOLIDHARM_MOLDEN(l, m) FOR_SOLIDHARM_GAUSSIAN(l, m)
-#define END_FOR_SOLIDHARM_MOLDEN END_FOR_SOLIDHARM
+#define LIBINT2_FOR_SOLIDHARM_MOLDEN(l, m) LIBINT2_FOR_SOLIDHARM_GAUSSIAN(l, m)
+#define LIBINT2_END_FOR_SOLIDHARM_MOLDEN LIBINT2_END_FOR_SOLIDHARM
 
 namespace libint2 {
 LIBINT_DEPRECATED(
@@ -115,13 +116,63 @@ inline int INT_SOLIDHARMINDEX(int sho, int l, int m) {
 }
 }
 
-// FOR_SOLIDHARM dispatches to the appropriate FOR_SOLIDHARM_ macro
+// LIBINT2_FOR_SOLIDHARM dispatches to the appropriate LIBINT2_FOR_SOLIDHARM_
+// macro
 #if LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD
-#define FOR_SOLIDHARM FOR_SOLIDHARM_STANDARD
+#define LIBINT2_FOR_SOLIDHARM LIBINT2_FOR_SOLIDHARM_STANDARD
 #elif LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_GAUSSIAN
-#define FOR_SOLIDHARM FOR_SOLIDHARM_GAUSSIAN
+#define LIBINT2_FOR_SOLIDHARM LIBINT2_FOR_SOLIDHARM_GAUSSIAN
 #else
 #error "unknown value of macro LIBINT_SHGSHELL_ORDERING"
 #endif
+
+//
+// Deprecated unprefixed aliases of the loop macros (see issue #376).
+// Each opening macro calls a [[deprecated]] constexpr no-op so that the
+// compiler warns at the point of use (constexpr keeps the macros usable in
+// constexpr functions). A macro that is already defined (e.g., by the user's
+// own code) is not redefined. Define LIBINT2_DISABLE_DEPRECATED_MACROS before
+// including Libint headers to not define these at all.
+//
+namespace libint2 {
+namespace detail {
+LIBINT_DEPRECATED(
+    "FOR_SOLIDHARM*/END_FOR_SOLIDHARM* are deprecated, use "
+    "LIBINT2_FOR_SOLIDHARM*/LIBINT2_END_FOR_SOLIDHARM* instead")
+constexpr int deprecated_FOR_SOLIDHARM() { return 0; }
+}  // namespace detail
+}  // namespace libint2
+
+#ifndef LIBINT2_DISABLE_DEPRECATED_MACROS
+#ifndef FOR_SOLIDHARM_STANDARD
+#define FOR_SOLIDHARM_STANDARD(l, m)   \
+  LIBINT2_FOR_SOLIDHARM_STANDARD(l, m) \
+  (void)::libint2::detail::deprecated_FOR_SOLIDHARM();
+#endif
+#ifndef FOR_SOLIDHARM_GAUSSIAN
+#define FOR_SOLIDHARM_GAUSSIAN(l, m)   \
+  LIBINT2_FOR_SOLIDHARM_GAUSSIAN(l, m) \
+  (void)::libint2::detail::deprecated_FOR_SOLIDHARM();
+#endif
+#ifndef FOR_SOLIDHARM_MOLDEN
+#define FOR_SOLIDHARM_MOLDEN(l, m)   \
+  LIBINT2_FOR_SOLIDHARM_MOLDEN(l, m) \
+  (void)::libint2::detail::deprecated_FOR_SOLIDHARM();
+#endif
+// N.B. object-like, as it was before the deprecation
+#ifndef FOR_SOLIDHARM
+#if LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD
+#define FOR_SOLIDHARM FOR_SOLIDHARM_STANDARD
+#else
+#define FOR_SOLIDHARM FOR_SOLIDHARM_GAUSSIAN
+#endif
+#endif
+#ifndef END_FOR_SOLIDHARM
+#define END_FOR_SOLIDHARM LIBINT2_END_FOR_SOLIDHARM
+#endif
+#ifndef END_FOR_SOLIDHARM_MOLDEN
+#define END_FOR_SOLIDHARM_MOLDEN LIBINT2_END_FOR_SOLIDHARM_MOLDEN
+#endif
+#endif  // !defined(LIBINT2_DISABLE_DEPRECATED_MACROS)
 
 #endif  // _libint2_src_bin_libint_shgshellordering_h_

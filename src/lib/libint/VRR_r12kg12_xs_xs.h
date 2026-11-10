@@ -67,7 +67,7 @@ struct VRR_r12kg12_xs_xs<0, La, Lc, K, vectorize> {
     const unsigned int Ncp1V = Ncp1 * veclen;
 
     int ax, ay, az;
-    FOR_CART(ax, ay, az, La)
+    LIBINT2_FOR_CART(ax, ay, az, La)
 
     int a[3];
     a[0] = ax;
@@ -140,7 +140,7 @@ struct VRR_r12kg12_xs_xs<0, La, Lc, K, vectorize> {
 
       // loop over c-1 shell and include (a-1_xyz 0 | c-1_xyz 0) to (a 0 | c 0)
       int cx, cy, cz;
-      FOR_CART(cx, cy, cz, Lc - 1)
+      LIBINT2_FOR_CART(cx, cy, cz, Lc - 1)
 
       int c[3];
       c[0] = cx;
@@ -160,7 +160,7 @@ struct VRR_r12kg12_xs_xs<0, La, Lc, K, vectorize> {
 #endif
       src2_ptr += veclen;
 
-      END_FOR_CART
+      LIBINT2_END_FOR_CART
     }
 
     if (K > 0) {
@@ -186,7 +186,7 @@ struct VRR_r12kg12_xs_xs<0, La, Lc, K, vectorize> {
       cv = 0;
       const unsigned int am10cp10_offset = iam1 * Ncp1V;
       const LIBINT2_REALTYPE* src4_ptr0 = src4 + am10cp10_offset;
-      FOR_CART(cx, cy, cz, Lc)
+      LIBINT2_FOR_CART(cx, cy, cz, Lc)
 
       int c[3];
       c[0] = cx;
@@ -204,12 +204,12 @@ struct VRR_r12kg12_xs_xs<0, La, Lc, K, vectorize> {
       inteval->nflops[0] += 3 * veclen;
 #endif
 
-      END_FOR_CART
+      LIBINT2_END_FOR_CART
     }
 
     target += NcV;
 
-    END_FOR_CART
+    LIBINT2_END_FOR_CART
 
     /** Number of flops = ??? */
     // inteval->nflops[0] = inteval->nflops[0] + 222 * 1 * 1 * veclen;

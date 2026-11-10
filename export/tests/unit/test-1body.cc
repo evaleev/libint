@@ -25,8 +25,8 @@
 
 #define LIBINT2_TEST_ONEBODY_MARGIN(scale, op_idx, abs_margin)         \
   int m0, m1;                                                          \
-  FOR_SOLIDHARM_STANDARD(l0, m0)                                       \
-  FOR_SOLIDHARM_STANDARD(l1, m1)                                       \
+  LIBINT2_FOR_SOLIDHARM_STANDARD(l0, m0)                               \
+  LIBINT2_FOR_SOLIDHARM_STANDARD(l1, m1)                               \
   const auto i0_s = libint2::INT_SOLIDHARMINDEX_STANDARD(l0, m0);      \
   const auto i1_s = libint2::INT_SOLIDHARMINDEX_STANDARD(l1, m1);      \
   const auto i0i1_s = i0_s * n1 + i1_s;                                \
@@ -41,8 +41,8 @@
     REQUIRE(engine.results()[op_idx][i0i1_g] / scale ==                \
             Approx(shellset_ref_standard[i0i1_s]).margin(abs_margin)); \
   }                                                                    \
-  END_FOR_SOLIDHARM                                                    \
-  END_FOR_SOLIDHARM
+  LIBINT2_END_FOR_SOLIDHARM                                            \
+  LIBINT2_END_FOR_SOLIDHARM
 
 #define LIBINT2_TEST_ONEBODY(scale, op_idx) \
   LIBINT2_TEST_ONEBODY_MARGIN(scale, op_idx, 0.0)

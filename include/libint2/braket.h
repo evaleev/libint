@@ -29,9 +29,9 @@
 namespace libint2 {
 /// types of shell sets supported by Engine, in chemist notation (i.e. '_'
 /// separates particles)
-/// \warning macro \c BOOST_PP_NBODY_BRAKET_RANK_TUPLE include the ranks of all
-/// brakets in \c BraKet
-///          and macro \c BOOST_PP_NBODY_BRAKET_MAX_INDEX must be equal to the
+/// \warning macro \c LIBINT2_PP_NBODY_BRAKET_RANK_TUPLE include the ranks of
+/// all brakets in \c BraKet
+///          and macro \c LIBINT2_PP_NBODY_BRAKET_MAX_INDEX must be equal to the
 ///          max value in this enum
 enum class BraKet {
   x_x = 0,

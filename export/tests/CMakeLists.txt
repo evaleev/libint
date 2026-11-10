@@ -12,6 +12,17 @@ add_custom_target_subproject(
 
 ## Tests ========================================================================
 
+# test sources use M_PI, getenv, strncpy, etc.; Libint2 targets do not export
+# these definitions to consumers
+if (MSVC)
+    add_compile_definitions(
+      _USE_MATH_DEFINES
+      _CRT_NONSTDC_NO_DEPRECATE
+      _CRT_NONSTDC_NO_WARNINGS
+      _CRT_SECURE_NO_WARNINGS
+      )
+endif()
+
 add_executable(
   eritest-libint2
   EXCLUDE_FROM_ALL

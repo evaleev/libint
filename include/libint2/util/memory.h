@@ -26,12 +26,6 @@
 #include <cerrno>
 #include <cstdlib>
 
-#ifdef _WIN32
-#include <malloc.h>
-#define posix_memalign(p, a, s) \
-  (((*(p)) = _aligned_malloc((s), (a))), *(p) ? 0 : errno)
-#endif
-
 namespace libint2 {
 
 /// Aligned version of malloc().
@@ -43,9 +37,9 @@ inline void* malloc(size_t nbytes) {
   void* result;
 #if (LIBINT2_ALIGN_SIZE == 0)
   result = ::malloc(nbytes);
-#elif defined(HAVE_POSIX_MEMALIGN)
-  posix_memalign(&result, LIBINT2_ALIGN_SIZE * sizeof(LIBINT2_REALTYPE),
-                 nbytes);
+#elif defined(LIBINT_HAVE_POSIX_MEMALIGN)
+  ::posix_memalign(&result, LIBINT2_ALIGN_SIZE * sizeof(LIBINT2_REALTYPE),
+                   nbytes);
 #else
 #error "LIBINT2_ALIGN_SIZE!=0 but posix_memalign is not available"
 #endif

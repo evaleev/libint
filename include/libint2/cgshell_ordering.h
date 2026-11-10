@@ -118,16 +118,16 @@ inline int INT_CARTINDEX(unsigned int am, int i, int j) {
 
 /* This sets up the above loop over cartesian exponents as follows
  * int i, j, k;
- * FOR_CART(i,j,k,am)
+ * LIBINT2_FOR_CART(i,j,k,am)
  *   Stuff using i,j,k.
- *   END_FOR_CART
+ *   LIBINT2_END_FOR_CART
  */
-#define FOR_CART(i, j, k, am)                 \
+#define LIBINT2_FOR_CART(i, j, k, am)         \
   for ((i) = (am); (i) >= 0; (i)--) {         \
     for ((j) = (am) - (i); (j) >= 0; (j)--) { \
       (k) = (am) - (i) - (j);
-#define END_FOR_CART \
-  }                  \
+#define LIBINT2_END_FOR_CART \
+  }                          \
   }
 
 // end of code from
@@ -156,7 +156,7 @@ inline int INT_CARTINDEX(unsigned int am, int i, int j) {
  */
 namespace libint2 {
 inline int INT_CARTINDEX(unsigned int am, int i, int j) {
-  return ((((am + 1) << 1) - i) * (i + 1)) >> 1 - j - 1;
+  return (((((am + 1) << 1) - i) * (i + 1)) >> 1) - j - 1;
 }
 }  // namespace libint2
 LIBINT_DEPRECATED("please use libint2::INT_CARTINDEX instead")
@@ -165,16 +165,16 @@ inline int INT_CARTINDEX(unsigned int am, int i, int j) {
 }
 
 /* This sets up the above loop over cartesian exponents as follows
- * FOR_CART(i,j,k,am)
+ * LIBINT2_FOR_CART(i,j,k,am)
  *   Stuff using i,j,k.
- *   END_FOR_CART
+ *   LIBINT2_END_FOR_CART
  */
-#define FOR_CART(i, j, k, am)                 \
+#define LIBINT2_FOR_CART(i, j, k, am)         \
   for ((i) = 0; (i) <= (am); (i)++) {         \
     for ((k) = 0; (k) <= (am) - (i); (k)++) { \
       (j) = (am) - (i) - (k);
-#define END_FOR_CART \
-  }                  \
+#define LIBINT2_END_FOR_CART \
+  }                          \
   }
 
 #endif  // INTV3 ordering
@@ -200,18 +200,17 @@ inline int INT_CARTINDEX(unsigned int am, int i, int j) {
 }
 
 /* This sets up the above loop over cartesian exponents as follows
- * FOR_CART(i,j,k,am)
+ * LIBINT2_FOR_CART(i,j,k,am)
  *   Stuff using i,j,k.
- *   END_FOR_CART
+ *   LIBINT2_END_FOR_CART
  */
-#define FOR_CART(i, j, k, am)                                                 \
-  for (int __xyz = 0; __xyz < INT_NCART(am); ++__xyz) {                       \
-    CGShellInfo<                                                              \
-        CGShellOrderingData<CGShellOrdering_GAMESS>>::cartindex_to_ijk(am,    \
-                                                                       __xyz, \
-                                                                       i, j,  \
-                                                                       k);
-#define END_FOR_CART }
+#define LIBINT2_FOR_CART(i, j, k, am)                                         \
+  for (int libint2_cartindex_ = 0;                                            \
+       libint2_cartindex_ < ::libint2::INT_NCART(am); ++libint2_cartindex_) { \
+    ::libint2::CGShellInfo<                                                   \
+        ::libint2::CGShellOrderingData<::libint2::CGShellOrdering_GAMESS>>::  \
+        cartindex_to_ijk(am, libint2_cartindex_, i, j, k);
+#define LIBINT2_END_FOR_CART }
 
 #endif  // GAMESS ordering
 
@@ -236,15 +235,17 @@ inline int INT_CARTINDEX(unsigned int am, int i, int j) {
 }
 
 /* This sets up the above loop over cartesian exponents as follows
- * FOR_CART(i,j,k,am)
+ * LIBINT2_FOR_CART(i,j,k,am)
  *   Stuff using i,j,k.
- *   END_FOR_CART
+ *   LIBINT2_END_FOR_CART
  */
-#define FOR_CART(i, j, k, am)                                                 \
-  for (int __xyz = 0; __xyz < INT_NCART(am); ++__xyz) {                       \
-    CGShellInfo<CGShellOrderingData<CGShellOrdering_ORCA>>::cartindex_to_ijk( \
-        am, __xyz, i, j, k);
-#define END_FOR_CART }
+#define LIBINT2_FOR_CART(i, j, k, am)                                         \
+  for (int libint2_cartindex_ = 0;                                            \
+       libint2_cartindex_ < ::libint2::INT_NCART(am); ++libint2_cartindex_) { \
+    ::libint2::CGShellInfo<                                                   \
+        ::libint2::CGShellOrderingData<::libint2::CGShellOrdering_ORCA>>::    \
+        cartindex_to_ijk(am, libint2_cartindex_, i, j, k);
+#define LIBINT2_END_FOR_CART }
 
 #endif  // ORCA ordering
 
@@ -278,16 +279,16 @@ inline int INT_CARTINDEX(unsigned int am, int i, int j) {
 }
 
 /* This sets up the above loop over cartesian exponents as follows
- * FOR_CART(i,j,k,am)
+ * LIBINT2_FOR_CART(i,j,k,am)
  *   Stuff using i,j,k.
- *   END_FOR_CART
+ *   LIBINT2_END_FOR_CART
  */
-#define FOR_CART(i, j, k, am)                 \
+#define LIBINT2_FOR_CART(i, j, k, am)         \
   for ((k) = 0; (k) <= (am); (k)++) {         \
     for ((j) = 0; (j) <= (am) - (k); (j)++) { \
       (i) = (am) - (j) - (k);
-#define END_FOR_CART \
-  }                  \
+#define LIBINT2_END_FOR_CART \
+  }                          \
   }
 
 #endif  // Bagel ordering
@@ -305,13 +306,54 @@ inline int INT_CARTINDEX_MOLDEN(unsigned int am, int i, int j) {
   return libint2::INT_CARTINDEX_MOLDEN(am, i, j);
 }
 
-/* FOR_CART_MOLDEN(i,j,k,am)
- *   END_FOR_CART_MOLDEN
+/* LIBINT2_FOR_CART_MOLDEN(i,j,k,am)
+ *   LIBINT2_END_FOR_CART_MOLDEN
  */
-#define FOR_CART_MOLDEN(i, j, k, am)                               \
-  for (int __xyz = 0; __xyz < INT_NCART(am); ++__xyz) {            \
-    CGShellInfo<CGShellOrderingData<CGShellOrdering_MOLDEN, 4u>>:: \
-        cartindex_to_ijk(am, __xyz, i, j, k);
-#define END_FOR_CART_MOLDEN }
+#define LIBINT2_FOR_CART_MOLDEN(i, j, k, am)                                  \
+  for (int libint2_cartindex_ = 0;                                            \
+       libint2_cartindex_ < ::libint2::INT_NCART(am); ++libint2_cartindex_) { \
+    ::libint2::CGShellInfo<::libint2::CGShellOrderingData<                    \
+        ::libint2::CGShellOrdering_MOLDEN,                                    \
+        4u>>::cartindex_to_ijk(am, libint2_cartindex_, i, j, k);
+#define LIBINT2_END_FOR_CART_MOLDEN }
+
+//
+// Deprecated unprefixed aliases of the loop macros (see issue #376).
+// Each opening macro calls a [[deprecated]] constexpr no-op so that the
+// compiler warns at the point of use (constexpr keeps the macros usable in
+// constexpr functions). A macro that is already defined (e.g., by the user's
+// own code) is not redefined. Define LIBINT2_DISABLE_DEPRECATED_MACROS before
+// including Libint headers to not define these at all.
+//
+namespace libint2 {
+namespace detail {
+LIBINT_DEPRECATED(
+    "FOR_CART/END_FOR_CART are deprecated, use "
+    "LIBINT2_FOR_CART/LIBINT2_END_FOR_CART instead")
+constexpr int deprecated_FOR_CART() { return 0; }
+LIBINT_DEPRECATED(
+    "FOR_CART_MOLDEN/END_FOR_CART_MOLDEN are deprecated, use "
+    "LIBINT2_FOR_CART_MOLDEN/LIBINT2_END_FOR_CART_MOLDEN instead")
+constexpr int deprecated_FOR_CART_MOLDEN() { return 0; }
+}  // namespace detail
+}  // namespace libint2
+
+#ifndef LIBINT2_DISABLE_DEPRECATED_MACROS
+#ifndef FOR_CART
+#define FOR_CART(i, j, k, am) \
+  LIBINT2_FOR_CART(i, j, k, am)(void)::libint2::detail::deprecated_FOR_CART();
+#endif
+#ifndef END_FOR_CART
+#define END_FOR_CART LIBINT2_END_FOR_CART
+#endif
+#ifndef FOR_CART_MOLDEN
+#define FOR_CART_MOLDEN(i, j, k, am)   \
+  LIBINT2_FOR_CART_MOLDEN(i, j, k, am) \
+  (void)::libint2::detail::deprecated_FOR_CART_MOLDEN();
+#endif
+#ifndef END_FOR_CART_MOLDEN
+#define END_FOR_CART_MOLDEN LIBINT2_END_FOR_CART_MOLDEN
+#endif
+#endif  // !defined(LIBINT2_DISABLE_DEPRECATED_MACROS)
 
 #endif  // header guard

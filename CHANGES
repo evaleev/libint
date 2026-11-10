@@ -13,6 +13,38 @@ Following is a brief summary of changes made in each release of Libint.
              stack memory)
   - LIBINT2_ACCUM_INTS=ON: the generated library compiles again (the kernels reset
              zero_out_targets through the pointer to const Libint_t)
+  - PR #459 (issue #376): Libint headers and CMake targets no longer leak unscoped names into
+             the code of their consumers:
+             - the loop macros FOR_CART, FOR_CART_MOLDEN, FOR_SOLIDHARM, FOR_SOLIDHARM_STANDARD,
+               FOR_SOLIDHARM_GAUSSIAN, FOR_SOLIDHARM_MOLDEN and their END_ counterparts are
+               deprecated in favor of their LIBINT2_-prefixed versions (e.g. LIBINT2_FOR_CART and
+               LIBINT2_END_FOR_CART); the unprefixed macros still work but emit a deprecation
+               warning where used, and are not defined at all if LIBINT2_DISABLE_DEPRECATED_MACROS
+               is defined (an unprefixed macro already defined, e.g. by the user, is not redefined).
+               The macros for the GAMESS, ORCA and Molden orderings are usable outside of namespace
+               libint2
+             - removed macros PATH_SEPARATOR, S_ISDIR (Windows), posix_memalign (Windows),
+               posix_memfree and STATIC_OON; ULLONG_MAX is no longer defined
+             - renamed config macros HAVE_STDINT_H -> LIBINT_HAVE_STDINT_H,
+               HAVE_POSIX_MEMALIGN -> LIBINT_HAVE_POSIX_MEMALIGN, and the opt-in
+               HAVE_LAPACK -> LIBINT_HAS_LAPACK
+             - renamed the engine preprocessor metaprogramming macros BOOST_PP_NBODY* and
+               BOOST_PP_MAKE_TUPLE* to LIBINT2_PP_*; all are #undef'ed after use
+             - the C++ API headers no longer use M_PI and M_SQRT2 (see libint2::math::pi and
+               libint2::math::sqrt2), and Libint2 targets no longer add the _CRT_* definitions to the
+               compile line of their MSVC consumers (_USE_MATH_DEFINES is still added, for consumers
+               that rely on it for M_PI etc.)
+             - find_package(Libint2) no longer sets variables pnv, L2 and _eri in the caller's
+               scope, no longer sets Eigen3_DIR, Eigen3_CONFIG, Boost_DIR and Boost_CONFIG to the
+               locations used to build Libint2 (hence a consumer's Eigen3_DIR/Boost_DIR now take
+               precedence), and restores CMAKE_MODULE_PATH, also if a dependency is not found (which
+               no longer is a fatal error unless Libint2 is REQUIRED); it also no longer warns that the
+               Eigen3Config.cmake/BoostConfig.cmake path "is no longer valid" if Libint2 was built
+               with Eigen3/Boost found without their config files (e.g. via FindEigen3.cmake), and
+               warns if the Eigen3 it finds differs from the one Libint2 was built with
+             - libint2::INT_CARTINDEX for the IntV3 Cartesian ordering returned wrong indices
+               (operator precedence)
+             (the DATADIR macros were already prefixed with LIBINT_ in v2.12.0)
   - PR #451: LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS (ON by default) no longer disables the
              geometric derivatives of the σ·pVσ·p integrals (Operator::opVop and
              Operator::op_q_gau_op, which share the generated code), needed for X2C nuclear

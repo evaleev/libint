@@ -38,6 +38,7 @@
 #include <libint2/cgshell_ordering.h>
 #include <libint2/initialize.h>
 #include <libint2/shell.h>
+#include <libint2/util/math_constants.h>
 
 namespace libint2 {
 
@@ -174,7 +175,7 @@ class SolidHarmonicsCoefficients {
                 (df_Kminus1_real<Real>(2 * lx) * df_Kminus1_real<Real>(2 * ly) *
                  df_Kminus1_real<Real>(2 * lz)));
 
-    Real result = (m == 0) ? pfac * sum : M_SQRT2 * pfac * sum;
+    Real result = (m == 0) ? pfac * sum : math::sqrt2 * pfac * sum;
     return result;
   }
 
@@ -209,13 +210,13 @@ class SolidHarmonicsCoefficients {
       int m = shg_indices[pure_idx];
       int cart_idx = 0;
       int lx, ly, lz;
-      FOR_CART(lx, ly, lz, l_)
+      LIBINT2_FOR_CART(lx, ly, lz, l_)
       full_coeff[pure_idx * ncart + cart_idx] = coeff(l_, m, lx, ly, lz);
       // std::cout << "Solid(" << (int)l_ << "," << (int)m << ") += Cartesian("
       // << (int)lx << "," << (int)ly << "," << (int)lz << ") * " <<
       // full_coeff[pure_idx * ncart + cart_idx] << std::endl;
       ++cart_idx;
-      END_FOR_CART
+      LIBINT2_END_FOR_CART
     }
 
     // compress rows

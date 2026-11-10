@@ -580,13 +580,13 @@ int main(int argc, char** argv) {
     double new_eri_double = 0;
     while (int_num < 1) {
       int x0, y0, z0;
-      FOR_CART(x0, y0, z0, am0)
+      LIBINT2_FOR_CART(x0, y0, z0, am0)
       int x1, y1, z1;
-      FOR_CART(x1, y1, z1, am1)
+      LIBINT2_FOR_CART(x1, y1, z1, am1)
       int x2, y2, z2;
-      FOR_CART(x2, y2, z2, am2)
+      LIBINT2_FOR_CART(x2, y2, z2, am2)
       int x3, y3, z3;
-      FOR_CART(x3, y3, z3, am3)
+      LIBINT2_FOR_CART(x3, y3, z3, am3)
       // std::cout<<x0<<y1<<z1<<" "<<x1<<y1<<z1<<" "<<x2<<y2<<z2<<"
       //"<<x3<<y3<<z3<<std::endl;
       auto l0 = static_cast<unsigned int>(x0);
@@ -637,10 +637,10 @@ int main(int argc, char** argv) {
 
       */
       std::cout << "new eri = " << new_eri_double << std::endl;
-      END_FOR_CART
-      END_FOR_CART
-      END_FOR_CART
-      END_FOR_CART
+      LIBINT2_END_FOR_CART
+      LIBINT2_END_FOR_CART
+      LIBINT2_END_FOR_CART
+      LIBINT2_END_FOR_CART
       int_num++;
     }
     timers.stop(2);

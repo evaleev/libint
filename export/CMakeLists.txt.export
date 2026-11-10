@@ -59,8 +59,8 @@ option_with_print(LIBINT2_LOCAL_Eigen3_INSTALL
 option_with_print(CMAKE_DISABLE_FIND_PACKAGE_Boost
   "When Boost required for C++11 API, disable its detection, thereby forcing use of bundled Boost (Standard CMake variable: https://cmake.org/cmake/help/latest/variable/CMAKE_DISABLE_FIND_PACKAGE_PackageName.html)" OFF)
 
-check_function_exists(posix_memalign HAVE_POSIX_MEMALIGN)
-if (HAVE_POSIX_MEMALIGN)
+check_function_exists(posix_memalign LIBINT_HAVE_POSIX_MEMALIGN)
+if (LIBINT_HAVE_POSIX_MEMALIGN)
     option_with_default(LIBINT2_ALIGN_SIZE
       "(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics." 0)
     mark_as_advanced(LIBINT2_ALIGN_SIZE)
@@ -277,6 +277,10 @@ message(DEBUG "LIBINT2_LIBRARY_CXX_SRC=${LIBINT2_LIBRARY_CXX_SRC}")
 # * MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined
 # * /EHsc sets the exception handling model (allows "throw")
 # * _CRT_* squashs some getenv, strdup, strncpy, ctime, fopen warnings
+# * public headers must not depend on _USE_MATH_DEFINES or _CRT_*; the _CRT_*
+#   definitions are not exported to Libint2 consumers (see issue #376), but
+#   _USE_MATH_DEFINES still is, for backward compatibility of MSVC consumers
+#   that use M_PI etc. without defining it themselves
 
 # ====  pre-user-targets: plain/C++(compiled)  ==================================
 
@@ -415,11 +419,7 @@ if (L2_BUILD_SHARED_LIBS)
       int-shared
       INTERFACE
         $<BUILD_INTERFACE:__COMPILING_LIBINT2=1>
-      PUBLIC
-        $<$<BOOL:${MSVC}>:_USE_MATH_DEFINES>
-        $<$<BOOL:${MSVC}>:_CRT_NONSTDC_NO_DEPRECATE>
-        $<$<BOOL:${MSVC}>:_CRT_NONSTDC_NO_WARNINGS>
-        $<$<BOOL:${MSVC}>:_CRT_SECURE_NO_WARNINGS>
+        $<$<BOOL:${MSVC}>:_USE_MATH_DEFINES>  # see Notes above
       )
     target_compile_options(
       int-shared
@@ -500,7 +500,6 @@ if (L2_BUILD_SHARED_LIBS)
               PUBLIC
                 LIBINT2_DOES_NOT_INLINE_ENGINE=1
                 LIBINT2_CONSTEXPR_STATICS=1  # LAB: needed for tests, but correct in general, EFV?
-                $<$<BOOL:${MSVC}>:_USE_MATH_DEFINES>
               )
             target_compile_options(
               int-cxx-shared
@@ -548,11 +547,7 @@ if (L2_BUILD_STATIC_LIBS)
       int-static
       INTERFACE
         $<BUILD_INTERFACE:__COMPILING_LIBINT2=1>
-      PUBLIC
-        $<$<BOOL:${MSVC}>:_USE_MATH_DEFINES>
-        $<$<BOOL:${MSVC}>:_CRT_NONSTDC_NO_DEPRECATE>
-        $<$<BOOL:${MSVC}>:_CRT_NONSTDC_NO_WARNINGS>
-        $<$<BOOL:${MSVC}>:_CRT_SECURE_NO_WARNINGS>
+        $<$<BOOL:${MSVC}>:_USE_MATH_DEFINES>  # see Notes above
       )
     target_compile_options(
       int-static
@@ -622,7 +617,6 @@ if (L2_BUILD_STATIC_LIBS)
               PUBLIC
                 LIBINT2_DOES_NOT_INLINE_ENGINE=1
                 LIBINT2_CONSTEXPR_STATICS=1  # LAB: needed for tests, but correct in general, EFV?
-                $<$<BOOL:${MSVC}>:_USE_MATH_DEFINES>
               )
             target_compile_options(
               int-cxx-static

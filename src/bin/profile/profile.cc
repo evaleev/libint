@@ -513,7 +513,7 @@ void do_stg6g(int mmax, double T, double rho, int nrepeats) {
   std::vector<std::pair<double, double> > stg_ng(ng);
   // stg_ng[0] = make_pair(4.0001, 1.0);
 #if 1
-#if HAVE_LAPACK
+#if LIBINT_HAS_LAPACK
   libint2::stg_ng_fit(ng, stg_zeta, stg_ng);
 #else
   if (stg_zeta != 1.0) {

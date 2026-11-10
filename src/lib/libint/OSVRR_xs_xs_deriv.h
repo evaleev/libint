@@ -107,7 +107,7 @@ struct OSVRR_xs_xs_deriv<0, La, Lc, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
     const unsigned int NcV = Nc * veclen;
 
     int ax, ay, az;
-    FOR_CART(ax, ay, az, La)
+    LIBINT2_FOR_CART(ax, ay, az, La)
 
     int a[3];
     a[0] = ax;
@@ -196,7 +196,7 @@ struct OSVRR_xs_xs_deriv<0, La, Lc, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
 
       // loop over c-1 shell and include (a-1_xyz 0 | c-1_xyz 0) to (a 0 | c 0)
       int cx, cy, cz;
-      FOR_CART(cx, cy, cz, Lc - 1)
+      LIBINT2_FOR_CART(cx, cy, cz, Lc - 1)
 
       int c[3];
       c[0] = cx;
@@ -216,7 +216,7 @@ struct OSVRR_xs_xs_deriv<0, La, Lc, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
 #endif
       src4_ptr += veclen;
 
-      END_FOR_CART  // end of loop over c-1
+      LIBINT2_END_FOR_CART  // end of loop over c-1
     }
 
 // see vrr_11_twoprep_11.h for the has_unit logic
@@ -379,7 +379,7 @@ struct OSVRR_xs_xs_deriv<0, La, Lc, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
 
     target += NcV;
 
-    END_FOR_CART  // end of loop over a-1
+    LIBINT2_END_FOR_CART  // end of loop over a-1
 
     /** Number of flops = ??? */
     // inteval->nflops[0] = inteval->nflops[0] + 222 * 1 * 1 * veclen;
@@ -459,7 +459,7 @@ struct OSAVRR_xs_xs_deriv<0, La, Lc, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
     const unsigned int NcV = Nc * veclen;
 
     int ax, ay, az;
-    FOR_CART(ax, ay, az, La)
+    LIBINT2_FOR_CART(ax, ay, az, La)
 
     int a[3];
     a[0] = ax;
@@ -511,7 +511,7 @@ struct OSAVRR_xs_xs_deriv<0, La, Lc, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
 
       // loop over c-1 shell and include (a-1_xyz 0 | c-1_xyz 0) to (a 0 | c 0)
       int cx, cy, cz;
-      FOR_CART(cx, cy, cz, Lc - 1)
+      LIBINT2_FOR_CART(cx, cy, cz, Lc - 1)
 
       int c[3];
       c[0] = cx;
@@ -531,7 +531,7 @@ struct OSAVRR_xs_xs_deriv<0, La, Lc, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
 #endif
       src4_ptr += veclen;
 
-      END_FOR_CART  // end of loop over c-1
+      LIBINT2_END_FOR_CART  // end of loop over c-1
     }
 
     // if Da_x-1 exists
@@ -634,7 +634,7 @@ struct OSAVRR_xs_xs_deriv<0, La, Lc, Da_x, Da_y, Da_z, Db_x, Db_y, Db_z, Dc_x,
 
     target += NcV;
 
-    END_FOR_CART  // end of loop over a-1
+    LIBINT2_END_FOR_CART  // end of loop over a-1
 
     /** Number of flops = ??? */
     // inteval->nflops[0] = inteval->nflops[0] + 222 * 1 * 1 * veclen;

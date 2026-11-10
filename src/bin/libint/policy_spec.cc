@@ -45,7 +45,7 @@ void StdLibintTDPolicy<CGShell>::init_subobj(
     unsigned int am = TypeTraits<CGShell>::const_ref(cgshell).qn();
     unsigned int qn[3] = {0, 0, 0};
     int lx, ly, lz;
-    FOR_CART(lx, ly, lz, am)
+    LIBINT2_FOR_CART(lx, ly, lz, am)
     qn[0] = lx;
     qn[1] = ly;
     qn[2] = lz;
@@ -53,7 +53,7 @@ void StdLibintTDPolicy<CGShell>::init_subobj(
     cgf.deriv() = cgshell.deriv();
     if (cgshell.contracted()) cgf.contract();
     cgfs.push_back(cgf);
-    END_FOR_CART
+    LIBINT2_END_FOR_CART
   }
 }
 

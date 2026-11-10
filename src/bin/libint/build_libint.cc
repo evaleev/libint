@@ -453,9 +453,9 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
              ++multipole_order) {
           // we iterate over them same way as over cartesian Gaussian shells
           int x, y, z;
-          FOR_CART(x, y, z, multipole_order)
+          LIBINT2_FOR_CART(x, y, z, multipole_order)
           descrs.push_back(make_descr<OperDescrType>(x, y, z));
-          END_FOR_CART
+          LIBINT2_END_FOR_CART
         }
       }
       if (std::is_same<_OperType, SphericalMultipoleOper>::value) {
@@ -466,9 +466,9 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
           // we iterate over them using the *standard* solid harmonic Gaussian
           // ordering
           int m;
-          FOR_SOLIDHARM_STANDARD(l, m)
+          LIBINT2_FOR_SOLIDHARM_STANDARD(l, m)
           descrs.push_back(make_descr<OperDescrType>(l, m));
-          END_FOR_SOLIDHARM
+          LIBINT2_END_FOR_SOLIDHARM
         }
       }
       if (std::is_same<_OperType, σpVσpOper>::value) {
@@ -676,7 +676,7 @@ void try_main(int argc, char* argv[]) {
 #ifdef LIBINT_INCLUDE_RKB_ERI3
   // 3-center RKB ERIs. σ·p acts on the AO pair (ket); the fitting center is a
   // spectator. Task labels are namespaced with the "3" ncenter prefix so they
-  // match the BOOST_PP_NBODYENGINE_MCR3_task expansion in engine.impl.h:
+  // match the LIBINT2_PP_NBODYENGINE_MCR3_task expansion in engine.impl.h:
   //   ncenter("3") + oper("coulomb_opop") + deriv("") = "3coulomb_opop".
   // The macro tuples mirror BOOST_PP_RKB_ERI_TASK_TUPLE but only the operators
   // that make sense in xs_xx geometry are listed (opop_coulomb_opop requires
