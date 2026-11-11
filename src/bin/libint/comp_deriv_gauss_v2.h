@@ -29,6 +29,7 @@
 #include <dims.h>
 #include <integral.h>
 #include <prefactors.h>
+#include <rkb_fold_codegen.h>  // rkb_fold_adapt_dims, rkb_fold_generate_code
 #include <rr.h>
 #include <task.h>
 
@@ -102,13 +103,39 @@ class DerivGaussV2 : public RecurrenceRelation {
       const std::shared_ptr<CodeContext>& context,
       const std::shared_ptr<ImplicitDimensions>& dims) const override;
 
+  /// With translational invariance a shell set is computed by an element-wise
+  /// fold, target = -(sum of the terms), whose code depends only on the number
+  /// of terms and their multiplicities (see generate_label()), hence is shared
+  /// by all shell sets, with the number of elements passed at runtime (as by
+  /// the RKB fold relations, see rkb_fold_codegen.h). Otherwise as
+  /// RecurrenceRelation::generate_code().
+  void generate_code(const std::shared_ptr<CodeContext>& context,
+                     const std::shared_ptr<ImplicitDimensions>& dims,
+                     const std::string& funcname, std::ostream& decl,
+                     std::ostream& def) override;
+
  private:
+  /// true if this is computed by the shared element-wise fold (see
+  /// generate_code())
+  static constexpr bool ti_fold() {
+    return using_trans_inv && !TrivialBFSet<BasisFunctionType>::result;
+  }
+  /// @return the multiplicity of each child among the terms of the fold
+  std::vector<unsigned int> ti_multiplicities() const {
+    std::vector<unsigned int> m(children_.size(), 0);
+    for (auto c : ti_terms_) ++m.at(c);
+    return m;
+  }
+
   DerivGaussV2(const std::shared_ptr<TargetType>& Tint, unsigned int dir);
 
   unsigned int dir_;
   std::shared_ptr<TargetType> target_;
   std::vector<std::shared_ptr<DGVertex>> children_;
   unsigned int nchildren_;
+  /// translational invariance: the child of each term of
+  /// target = -(sum of the terms), in the order of the terms
+  std::vector<unsigned int> ti_terms_;
 
   std::string generate_label() const override;
   std::shared_ptr<ImplicitDimensions> adapt_dims_(
@@ -122,7 +149,9 @@ class DerivGaussV2 : public RecurrenceRelation {
   /// (runtime-dimensioned) GenericGaussDeriv kernel replaces the explicit code
   /// of the code-shared function when the differentiated shell is beyond the
   /// optimized AM range (the spectator dimensions are runtime arguments of the
-  /// shared function anyway, so only the differentiated shell matters here)
+  /// shared function anyway, so only the differentiated shell matters here).
+  /// N.B. not used with translational invariance, whose code is shared anyway
+  /// (see generate_code()).
   bool has_generic(
       const std::shared_ptr<CompilationParameters>& cparams) const override;
   /// Implementation of RecurrenceRelation::generic_header()
@@ -136,12 +165,17 @@ class DerivGaussV2 : public RecurrenceRelation {
   /// add child, deduplicating
   const std::shared_ptr<DGVertex>& add_child(
       const std::shared_ptr<DGVertex>& child) {
-    for (auto& c : children_) {
-      if (c == child) return c;
+    return children_.at(add_child_idx(child));
+  }
+  /// add child, deduplicating
+  /// @return its index
+  unsigned int add_child_idx(const std::shared_ptr<DGVertex>& child) {
+    for (unsigned int c = 0; c != children_.size(); ++c) {
+      if (children_[c] == child) return c;
     }
     children_.push_back(child);
     ++nchildren_;
-    return children_.back();
+    return children_.size() - 1;
   }
 };
 
@@ -279,7 +313,10 @@ DerivGaussV2<IntType, part, where, trans_inv_part, trans_inv_where>::
           F da(a);
           da.deriv().inc(dir);
           bra->set_member(da, p, 0);
-          auto int_da = add_child(IntType::Instance(*bra, *ket, aux, oper));
+          const auto ida =
+              add_child_idx(IntType::Instance(*bra, *ket, aux, oper));
+          const auto& int_da = children_[ida];
+          ti_terms_.push_back(ida);
           bra->set_member(a, p, 0);
           if (is_simple()) {
             if (term_count == 0)
@@ -297,7 +334,10 @@ DerivGaussV2<IntType, part, where, trans_inv_part, trans_inv_where>::
           F da(a);
           da.deriv().inc(dir);
           ket->set_member(da, p, 0);
-          auto int_da = add_child(IntType::Instance(*bra, *ket, aux, oper));
+          const auto ida =
+              add_child_idx(IntType::Instance(*bra, *ket, aux, oper));
+          const auto& int_da = children_[ida];
+          ti_terms_.push_back(ida);
           ket->set_member(a, p, 0);
           if (is_simple()) {
             if (term_count == 0)
@@ -433,6 +473,13 @@ std::string DerivGaussV2<IntType, part, where, trans_inv_part,
   // derivative quanta in two directions is a valid target for two instances
   // whose children and coefficients (a[dir]) differ, and the RRStack
   // deduplicates generated functions by this label.
+  if constexpr (ti_fold()) {
+    // the code of the fold depends only on the multiplicities of the children
+    // among its terms (see generate_code())
+    os << "DerivGaussV2TIFold";
+    for (auto m : ti_multiplicities()) os << "_" << m;
+    return os.str();
+  }
   if constexpr (using_trans_inv) {
     typedef typename TargetType::AuxIndexType mType;
     static std::shared_ptr<mType> aux0(new mType(0u));
@@ -475,6 +522,13 @@ DerivGaussV2<IntType, part, where, trans_inv_part, trans_inv_where>::
   const unsigned int nc = num_children();
   for (unsigned int c = 0; c < nc; c++) {
     os << ", " << context->value_to_pointer(rr_child(c)->symbol());
+  }
+
+  // the fold of translational invariance loops over all elements of the set
+  // (see generate_code())
+  if constexpr (ti_fold()) {
+    os << "," << target_->size() << ")" << context->end_of_stat() << std::endl;
+    return os.str();
   }
 
   // compute hsr and lsr — dimensions of spectator shells
@@ -539,6 +593,9 @@ template <class IntType, int part, FunctionPosition where, int trans_inv_part,
 std::shared_ptr<ImplicitDimensions>
 DerivGaussV2<IntType, part, where, trans_inv_part, trans_inv_where>::
     adapt_dims_(const std::shared_ptr<ImplicitDimensions>& dims) const {
+  // the fold of translational invariance: the number of elements is the
+  // runtime high dimension (see generate_code())
+  if constexpr (ti_fold()) return rkb_fold_adapt_dims(dims);
   bool high_rank = expl_high_dim();
   bool low_rank = expl_low_dim();
 
@@ -561,23 +618,51 @@ DerivGaussV2<IntType, part, where, trans_inv_part, trans_inv_where>::
   return localdims;
 }
 
+template <class IntType, int part, FunctionPosition where, int trans_inv_part,
+          FunctionPosition trans_inv_where>
+void DerivGaussV2<IntType, part, where, trans_inv_part, trans_inv_where>::
+    generate_code(const std::shared_ptr<CodeContext>& context,
+                  const std::shared_ptr<ImplicitDimensions>& dims,
+                  const std::string& funcname, std::ostream& decl,
+                  std::ostream& def) {
+  if constexpr (ti_fold()) {
+    // target = -(sum of the terms) = -sum_c m_c src_c, element-wise
+    const auto mult = ti_multiplicities();
+    std::ostringstream rhs;
+    unsigned int nflops = 0;
+    for (unsigned int c = 0; c != mult.size(); ++c) {
+      rhs << (c == 0 ? "-" : " - ");
+      if (mult[c] != 1) {
+        rhs << mult[c] << ".0*";
+        ++nflops;
+      }
+      rhs << "src" << c << "[hsi]";
+      ++nflops;
+    }
+    rkb_fold_generate_code(*this, context, dims, funcname, decl, def, rhs.str(),
+                           nflops);
+  } else
+    RecurrenceRelation::generate_code(context, dims, funcname, decl, def);
+}
+
 #if LIBINT_ENABLE_GENERIC_CODE
 template <class IntType, int part, FunctionPosition where, int trans_inv_part,
           FunctionPosition trans_inv_where>
 bool DerivGaussV2<IntType, part, where, trans_inv_part, trans_inv_where>::
     has_generic(const std::shared_ptr<CompilationParameters>& cparams) const {
-  // no generic relation for translational invariance (as in CR_DerivGauss)
+  // translational invariance: see generate_code()
   if (using_trans_inv) return false;
   // generic code applies to shell sets only
   if (TrivialBFSet<BasisFunctionType>::result) return false;
+  // the OPT_AM of the current task (the per-class value, e.g.
+  // LIBINT2_ERI_OPT_AM), not that of the default task
+  const auto opt_am =
+      cparams->max_am_opt(LibraryTaskManager::Instance().current().label());
   // the function is shared by all shell sets with the same differentiated
   // shell, hence base the decision on that shell alone
   const BasisFunctionType& sh =
       where == InBra ? target_->bra(part, 0) : target_->ket(part, 0);
-  // the OPT_AM of the current task (the per-class value, e.g.
-  // LIBINT2_ERI_OPT_AM), not that of the default task
-  return sh.norm() >
-         cparams->max_am_opt(LibraryTaskManager::Instance().current().label());
+  return sh.norm() > opt_am;
 }
 
 template <class IntType, int part, FunctionPosition where, int trans_inv_part,
@@ -597,11 +682,12 @@ DerivGaussV2<IntType, part, where, trans_inv_part, trans_inv_where>::
 
   oss << "using namespace libint2;" << std::endl;
 
+  const bool vectorize = context->cparams()->max_vector_length() != 1;
+
   BasisFunctionType sh(where == InBra ? target_->bra(part, 0)
                                       : target_->ket(part, 0));
 
   const unsigned int L = sh.norm();
-  const bool vectorize = context->cparams()->max_vector_length() != 1;
   oss << "libint2::GenericGaussDeriv<" << L << ","
       << (vectorize ? "true" : "false") << ">::compute(inteval";
 
