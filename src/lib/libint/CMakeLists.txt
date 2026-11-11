@@ -200,6 +200,10 @@ else()
         -DLIBINT2_ENABLE_PYTHON=${LIBINT2_ENABLE_PYTHON}
         -DLIBINT2_PREFIX_PYTHON_INSTALL=${LIBINT2_PREFIX_PYTHON_INSTALL}
       )
+    # forward only when set, so that the library keeps CMake's default otherwise
+    if (DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
+        list(APPEND library_CMAKE_ARGS "-DCMAKE_POSITION_INDEPENDENT_CODE=${CMAKE_POSITION_INDEPENDENT_CODE}")
+    endif()
     if (Multiprecision_ROOT)
         list(APPEND library_CMAKE_ARGS "-DMultiprecision_ROOT=${Multiprecision_ROOT}")
     endif()

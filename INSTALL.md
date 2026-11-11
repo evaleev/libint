@@ -288,6 +288,7 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 * `CMAKE_BUILD_TYPE` — G L — [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) [Default=Release]
 * `BUILD_SHARED_LIBS` — L — Build Libint library as shared, not static. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/BUILD_SHARED_LIBS.html) [Default=OFF]
 * `LIBINT2_BUILD_SHARED_AND_STATIC_LIBS` — L — Build both shared and static Libint libraries in one shot. Uses `-fPIC`. [Default=OFF]
+* `CMAKE_POSITION_INDEPENDENT_CODE` — L — Compile the static library as position-independent code, e.g. to link it into a shared library or a Python extension module. Shared libraries (and the Python module) always use position-independent code. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_POSITION_INDEPENDENT_CODE.html) [Default=OFF]
 * `LIBINT2_BUILD_LIBRARY_AS_SUBPROJECT` — G — If building compiler and library in continuous command, build generated library as a subproject (FetchContent); if OFF will configure and build separately (ExternalProject) (expert only). [Default=OFF]
 
 ### Detecting Dependencies (G L C) (TARBALL)
@@ -468,6 +469,7 @@ The deprecated macros emit a deprecation warning where used; define `LIBINT2_DIS
 * `--enable-shared` --> `-D BUILD_SHARED=ON` --> `-D BUILD_SHARED_LIBS=ON` (standard CMake variable)
 * `--enable-static` --> `-D BUILD_STATIC=ON` --> `-D BUILD_SHARED_LIBS=OFF` (standard CMake variable)
 * `--enable-shared --enable-static` --> `-D BUILD_SHARED=ON -D BUILD_STATIC=ON` --> `-D LIBINT2_BUILD_SHARED_AND_STATIC_LIBS=ON`
+* `--with-pic` --> `-D BUILD_FPIC=ON` --> `-D CMAKE_POSITION_INDEPENDENT_CODE=ON` (standard CMake variable)
 * `-D REQUIRE_CXX_API=ON` --> `-D ENABLE_CXX11API=ON` --> `-D LIBINT2_REQUIRE_CXX_API=ON`
 * `--enable-mpfr` --> assumed present --> `-D ENABLE_MPFR=ON` --> `-D LIBINT2_ENABLE_MPFR=ON`
 
