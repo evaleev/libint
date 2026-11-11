@@ -3,11 +3,11 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2.14.1 (unreleased)
+- 2026-11-10: 2.14.1
   - PR #467: shared code for derivatives via translational invariance (smaller geometric-derivative
     and RKB code, e.g. half the compiled code of RKB 3-center ERIs with L=6)
-  - CMAKE_POSITION_INDEPENDENT_CODE is forwarded to the library when the compiler builds it as an
-    ExternalProject, so that -DCMAKE_POSITION_INDEPENDENT_CODE=ON gives a PIC static library
+  - PR #468: CMAKE_POSITION_INDEPENDENT_CODE is forwarded to the library when the compiler builds
+    it as an ExternalProject, so that -DCMAKE_POSITION_INDEPENDENT_CODE=ON gives a PIC static library
 
 - 2026-11-10: 2.14.0
   N.B. compatibility notes:

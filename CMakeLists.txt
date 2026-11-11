@@ -40,7 +40,7 @@ set(${PROJECT_NAME}_LICENSE "GPL-3.0-only for generator; LGPL-3.0-only for gener
 # along with project(... VERSION) above scanned by dynamic_version() from `git
 #   describe`, these are the authoritative version source (formerly in configure.ac)
 set(LIBINT_BUILDID "post999" CACHE STRING "Custom build ID suffix for the exported tarball")
-set(LIBINT_SO_VERSION "3:0:0")
+set(LIBINT_SO_VERSION "3:1:0")
 set(LIBINT_DOI "10.5281/zenodo.10369117")  # 2.8.0
 
 include(int_versions)

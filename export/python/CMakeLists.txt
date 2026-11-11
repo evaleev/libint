@@ -11,7 +11,7 @@ if(NOT DEFINED LIBINT_VERSION)
     include(int_computed OPTIONAL)  # cmake+cmake
 
     if(NOT DEFINED LIBINT_VERSION)
-        set(LIBINT_VERSION "2.14.0")
+        set(LIBINT_VERSION "2.14.1")
     endif()
 endif()
 
