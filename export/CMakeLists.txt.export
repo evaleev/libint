@@ -300,6 +300,14 @@ target_compile_definitions(
   PRIVATE
     __COMPILING_LIBINT2=1
   )
+# /EHsc is in CMake's default CMAKE_CXX_FLAGS for MSVC, but is lost when the user
+#   sets CMAKE_CXX_FLAGS; int-obj needs it (truncated_coulomb.cc, boys.h throw)
+#   and, being an OBJECT library, does not get it from int-shared/int-static
+target_compile_options(
+  int-obj
+  PRIVATE
+    $<$<BOOL:${MSVC}>:/EHsc>
+  )
 set_target_properties(
   int-obj
   PROPERTIES
@@ -341,6 +349,7 @@ if (LIBINT2_REQUIRE_CXX_API_COMPILED)
       int-cxx-obj
       PRIVATE
         ${_l2_cxx_static_local_visibility}
+        $<$<BOOL:${MSVC}>:/EHsc>  # see int-obj
       )
     target_compile_features(
       int-cxx-obj
