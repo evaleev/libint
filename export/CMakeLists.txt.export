@@ -846,9 +846,6 @@ endif()
 if (L2_BUILD_STATIC_LIBS)
     list(APPEND _libint2_install_targets int-static)
 endif()
-if (LIBINT2_ENABLE_FORTRAN)
-    list(APPEND _libint2_install_targets int_f)
-endif()
 
 install(
   TARGETS ${_libint2_install_targets}
@@ -857,6 +854,21 @@ install(
   LIBRARY DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
   ARCHIVE DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
   )
+
+# the Fortran library goes in its own export set (and so its own targets file)
+#   so that C/C++ and Fortran can be packaged separately (e.g., conda), with
+#   the config file loading the Fortran targets only if present. int_f depends
+#   on int-shared/int-static from the ${pnv}-targets export set, which the
+#   generated Fortran targets file checks are already imported.
+if (LIBINT2_ENABLE_FORTRAN)
+    install(
+      TARGETS int_f
+      EXPORT ${pnv}-targets-fortran
+      RUNTIME DESTINATION "${LIBINT2_INSTALL_BINDIR}"
+      LIBRARY DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
+      ARCHIVE DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
+      )
+endif()
 
 # install public API headers from source tree
 # only install libint2.h, libint2.hpp at include/ root
@@ -1035,12 +1047,24 @@ write_basic_package_version_file(
   )
 
 # Install export targets
+# * C/C++ (and Eigen) targets and Fortran targets to separate files so they can
+#   be packaged separately; ${pnv}-config.cmake always loads the former and loads
+#   the latter only if it exists. N.B. keep the "-C"/"-Fortran" names distinct
+#   so that neither's per-config glob (<file>-*.cmake) matches the other.
 install(
   EXPORT ${pnv}-targets
-  FILE "${pnv}-targets.cmake"
+  FILE "${pnv}-targets-C.cmake"
   NAMESPACE "${L2}::"
   DESTINATION "${LIBINT2_INSTALL_CMAKEDIR}"
   )
+if (LIBINT2_ENABLE_FORTRAN)
+    install(
+      EXPORT ${pnv}-targets-fortran
+      FILE "${pnv}-targets-Fortran.cmake"
+      NAMESPACE "${L2}::"
+      DESTINATION "${LIBINT2_INSTALL_CMAKEDIR}"
+      )
+endif()
 
 # Install config and version files
 install(
@@ -1061,5 +1085,12 @@ install(
 export(
   EXPORT ${pnv}-targets
   NAMESPACE "${L2}::"
-  FILE "${CMAKE_CURRENT_BINARY_DIR}/${pnv}-targets.cmake"
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/${pnv}-targets-C.cmake"
   )
+if (LIBINT2_ENABLE_FORTRAN)
+    export(
+      EXPORT ${pnv}-targets-fortran
+      NAMESPACE "${L2}::"
+      FILE "${CMAKE_CURRENT_BINARY_DIR}/${pnv}-targets-Fortran.cmake"
+      )
+endif()
