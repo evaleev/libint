@@ -306,7 +306,7 @@ target_compile_definitions(
 target_compile_options(
   int-obj
   PRIVATE
-    $<$<BOOL:${MSVC}>:/EHsc>
+    $<$<AND:$<BOOL:${MSVC}>,$<COMPILE_LANGUAGE:CXX>>:/EHsc>
   )
 set_target_properties(
   int-obj
@@ -349,7 +349,7 @@ if (LIBINT2_REQUIRE_CXX_API_COMPILED)
       int-cxx-obj
       PRIVATE
         ${_l2_cxx_static_local_visibility}
-        $<$<BOOL:${MSVC}>:/EHsc>  # see int-obj
+        $<$<AND:$<BOOL:${MSVC}>,$<COMPILE_LANGUAGE:CXX>>:/EHsc>  # see int-obj
       )
     target_compile_features(
       int-cxx-obj
@@ -780,7 +780,18 @@ if (LIBINT2_ENABLE_FORTRAN)
     #   BUILD_SHARED_LIBS; it links PUBLIC to libint2 since libint_f.F90 references
     #   libint2 symbols, so a shared libint2_f must record that dependency itself.
     add_library(int_f $<TARGET_OBJECTS:libint_f>)
-    set_target_properties(int_f PROPERTIES OUTPUT_NAME "int2_f")
+    # Libint2_VERSION and Libint2_CONFIGURATION let libint2-config.cmake detect a
+    #   Fortran library that does not match the C library (e.g., left over from an
+    #   earlier installation, as the two can be packaged separately)
+    set_target_properties(
+      int_f
+      PROPERTIES
+        OUTPUT_NAME "int2_f"
+        Libint2_VERSION "${LIBINT_VERSION}"
+        Libint2_MAX_AM_ERI "${Libint2_MAX_AM_ERI}"
+        Libint2_CONFIGURATION "${Libint2_CONFIG_COMPONENTS}"
+      )
+    set_property(TARGET int_f APPEND PROPERTY EXPORT_PROPERTIES "${export_properties}")
     get_target_property(_int_f_type int_f TYPE)
     if (_int_f_type STREQUAL "SHARED_LIBRARY")
         set_target_properties(int_f PROPERTIES SOVERSION "${LIBINT_MAJOR_SO_VERSION}")
@@ -872,7 +883,7 @@ install(
 if (LIBINT2_ENABLE_FORTRAN)
     install(
       TARGETS int_f
-      EXPORT ${pnv}-targets-fortran
+      EXPORT ${pnv}-targets-Fortran
       RUNTIME DESTINATION "${LIBINT2_INSTALL_BINDIR}"
       LIBRARY DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
       ARCHIVE DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
@@ -1068,7 +1079,7 @@ install(
   )
 if (LIBINT2_ENABLE_FORTRAN)
     install(
-      EXPORT ${pnv}-targets-fortran
+      EXPORT ${pnv}-targets-Fortran
       FILE "${pnv}-targets-Fortran.cmake"
       NAMESPACE "${L2}::"
       DESTINATION "${LIBINT2_INSTALL_CMAKEDIR}"
@@ -1098,8 +1109,12 @@ export(
   )
 if (LIBINT2_ENABLE_FORTRAN)
     export(
-      EXPORT ${pnv}-targets-fortran
+      EXPORT ${pnv}-targets-Fortran
       NAMESPACE "${L2}::"
       FILE "${CMAKE_CURRENT_BINARY_DIR}/${pnv}-targets-Fortran.cmake"
       )
+else()
+    # a build tree reconfigured with LIBINT2_ENABLE_FORTRAN=OFF must not keep
+    #   offering the Fortran targets of its earlier configuration
+    file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/${pnv}-targets-Fortran.cmake")
 endif()

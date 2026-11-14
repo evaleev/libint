@@ -3,6 +3,18 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- unreleased
+  N.B. compatibility notes:
+    - the installed CMake targets file libint2-targets.cmake is split into libint2-targets-C.cmake
+      (C and C++ targets) and libint2-targets-Fortran.cmake (Libint2::fortran, if
+      LIBINT2_ENABLE_FORTRAN=ON), so that C and Fortran can be packaged separately; update explicit
+      lists of installed files and any direct include() of libint2-targets.cmake (use
+      find_package(Libint2) instead)
+  - PR #470: CMake components C and Fortran (fortran remains an alias); libint2-config.cmake loads
+    the Fortran targets only if present and ignores, with a warning unless Fortran is required, a
+    Fortran targets file that does not match the C library
+  - PR #470: fixed MSVC/clang-cl build of the library with a user-set CMAKE_CXX_FLAGS lacking /EHsc
+
 - 2026-11-10: 2.14.1
   - PR #467: shared code for derivatives via translational invariance (smaller geometric-derivative
     and RKB code, e.g. half the compiled code of RKB 3-center ERIs with L=6)
