@@ -272,6 +272,44 @@ jobs:
         cmake --build build
         ./build/fortran_example
 
+    - name: Test installed Libint library (separately packaged C and Fortran targets)
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.do_fortran == 'ON' }}
+      shell: bash
+      working-directory: ${{github.workspace}}/build/library_test
+      run: |
+        # libint2-config.cmake loads libint2-targets-Fortran.cmake only if present (a C-only
+        #   package), and ignores it if it references C library targets that are not installed
+        #   (left over next to a C library of other type), unless the Fortran component is required
+        f_targets=$(find "${{github.workspace}}/build/library" -name libint2-targets-Fortran.cmake)
+        test -n "$f_targets"
+        f_dir=$(dirname "$f_targets")
+        mkdir split && cd split
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.16)
+        project(libint2-split-consumer C CXX)
+        find_package(Libint2 REQUIRED)
+        if (TARGET Libint2::fortran)
+          message(FATAL_ERROR "Libint2::fortran must not exist for ${CASE}")
+        endif()
+        find_package(Libint2 QUIET COMPONENTS Fortran)
+        if (Libint2_FOUND)
+          message(FATAL_ERROR "find_package(Libint2 COMPONENTS Fortran) must fail for ${CASE}")
+        endif()
+        message(STATUS "Libint2_NOT_FOUND_MESSAGE: ${Libint2_NOT_FOUND_MESSAGE}")
+        EOF
+        mkdir aside && cp "$f_dir"/libint2-targets-Fortran*.cmake aside/
+        prefix="${{github.workspace}}/build/library;/opt/homebrew/opt/eigen@3"
+        # C-only: Fortran targets not installed
+        rm "$f_dir"/libint2-targets-Fortran*.cmake
+        cmake -S . -B build-c-only -D CASE=c-only -D CMAKE_PREFIX_PATH="$prefix" 2>&1 | tee c-only.out
+        grep -q "Fortran targets file .* not found" c-only.out
+        # stale: references a C library target that is not installed (other library type)
+        cp aside/libint2-targets-Fortran*.cmake "$f_dir"/
+        perl -pi -e 's/Libint2::int-(shared|static)\b/Libint2::int-bogus/g' "$f_targets"
+        cmake -S . -B build-stale-type -D CASE=stale-type -D CMAKE_PREFIX_PATH="$prefix" 2>&1 | tee stale-type.out
+        grep -q "does not match the Libint2 C library" stale-type.out
+        cp aside/libint2-targets-Fortran*.cmake "$f_dir"/
+
   # a library without contracted integrals (C API only, since the C++ API
   # requires contracted integrals), with and without accumulated targets
   # N.B. with accumulated targets only nondifferentiated ERIs are generated,
@@ -356,6 +394,10 @@ jobs:
               -D BUILD_SHARED_LIBS=OFF
               -D CMAKE_CXX_COMPILER=clang-cl
               -D CMAKE_C_COMPILER=clang-cl
+              -D CMAKE_CXX_FLAGS="-wd4996"
+            # a user-set CMAKE_CXX_FLAGS replaces CMake's default for MSVC-like compilers,
+            #   including /EHsc, which the library targets must then add themselves
+            #   (dash form, so that MSYS bash does not take /wd4996 for a path)
             testargs: >
               -G Ninja
               -D CMAKE_BUILD_TYPE=Release
