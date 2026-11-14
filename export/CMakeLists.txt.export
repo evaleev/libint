@@ -780,18 +780,7 @@ if (LIBINT2_ENABLE_FORTRAN)
     #   BUILD_SHARED_LIBS; it links PUBLIC to libint2 since libint_f.F90 references
     #   libint2 symbols, so a shared libint2_f must record that dependency itself.
     add_library(int_f $<TARGET_OBJECTS:libint_f>)
-    # Libint2_VERSION and Libint2_CONFIGURATION let libint2-config.cmake detect a
-    #   Fortran library that does not match the C library (e.g., left over from an
-    #   earlier installation, as the two can be packaged separately)
-    set_target_properties(
-      int_f
-      PROPERTIES
-        OUTPUT_NAME "int2_f"
-        Libint2_VERSION "${LIBINT_VERSION}"
-        Libint2_MAX_AM_ERI "${Libint2_MAX_AM_ERI}"
-        Libint2_CONFIGURATION "${Libint2_CONFIG_COMPONENTS}"
-      )
-    set_property(TARGET int_f APPEND PROPERTY EXPORT_PROPERTIES "${export_properties}")
+    set_target_properties(int_f PROPERTIES OUTPUT_NAME "int2_f")
     get_target_property(_int_f_type int_f TYPE)
     if (_int_f_type STREQUAL "SHARED_LIBRARY")
         set_target_properties(int_f PROPERTIES SOVERSION "${LIBINT_MAJOR_SO_VERSION}")
@@ -1083,6 +1072,23 @@ if (LIBINT2_ENABLE_FORTRAN)
       FILE "${pnv}-targets-Fortran.cmake"
       NAMESPACE "${L2}::"
       DESTINATION "${LIBINT2_INSTALL_CMAKEDIR}"
+      )
+else()
+    # an install without Fortran over an earlier one with Fortran must not leave
+    #   behind Fortran targets that reference the earlier C library targets
+    #   (libint2-config.cmake loads libint2-targets-Fortran.cmake if present)
+    install(CODE "
+  set(_libint2_cmakedir [==[${LIBINT2_INSTALL_CMAKEDIR}]==])
+  if (NOT IS_ABSOLUTE \"\${_libint2_cmakedir}\")
+    set(_libint2_cmakedir \"\${CMAKE_INSTALL_PREFIX}/\${_libint2_cmakedir}\")
+  endif()
+  file(GLOB _libint2_stale \"\$ENV{DESTDIR}\${_libint2_cmakedir}/${pnv}-targets-Fortran*.cmake\")
+  if (_libint2_stale)
+    message(STATUS \"Removing stale Fortran targets: \${_libint2_stale}\")
+    file(REMOVE \${_libint2_stale})
+  endif()
+"
+      COMPONENT ${L2}_Development
       )
 endif()
 

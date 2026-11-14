@@ -278,8 +278,8 @@ jobs:
       working-directory: ${{github.workspace}}/build/library_test
       run: |
         # libint2-config.cmake loads libint2-targets-Fortran.cmake only if present (a C-only
-        #   package), and ignores it if it does not match the C library (left over from another
-        #   installation), unless the Fortran component is required
+        #   package), and ignores it if it references C library targets that are not installed
+        #   (left over next to a C library of other type), unless the Fortran component is required
         f_targets=$(find "${{github.workspace}}/build/library" -name libint2-targets-Fortran.cmake)
         test -n "$f_targets"
         f_dir=$(dirname "$f_targets")
@@ -308,12 +308,6 @@ jobs:
         perl -pi -e 's/Libint2::int-(shared|static)\b/Libint2::int-bogus/g' "$f_targets"
         cmake -S . -B build-stale-type -D CASE=stale-type -D CMAKE_PREFIX_PATH="$prefix" 2>&1 | tee stale-type.out
         grep -q "does not match the Libint2 C library" stale-type.out
-        # stale: same library type, other version
-        cp aside/libint2-targets-Fortran.cmake "$f_targets"
-        perl -pi -e 's/Libint2_VERSION "[^"]*"/Libint2_VERSION "0.0.0"/' "$f_targets"
-        grep -q 'Libint2_VERSION "0.0.0"' "$f_targets"
-        cmake -S . -B build-stale-version -D CASE=stale-version -D CMAKE_PREFIX_PATH="$prefix" 2>&1 | tee stale-version.out
-        grep -q "Fortran library is version 0.0.0" stale-version.out
         cp aside/libint2-targets-Fortran*.cmake "$f_dir"/
 
   # a library without contracted integrals (C API only, since the C++ API

@@ -84,10 +84,6 @@ macro(_libint2_cleanup)
   unset(_libint2_saved_found)
   unset(_libint2_saved_found_defined)
   unset(_libint2_saved_not_found_message)
-  unset(_libint2_c_target)
-  unset(_libint2_f_prop)
-  unset(_libint2_c_prop)
-  unset(_libint2_prop)
 endmacro()
 
 # appends to, rather than overwrites, Libint2_NOT_FOUND_MESSAGE, so that the
@@ -194,13 +190,15 @@ if(NOT TARGET Libint2::int-shared AND NOT TARGET Libint2::int-static)
 endif()
 set(Libint2_C_FOUND 1)
 
-# The Fortran targets file may be unusable, e.g. left behind by an earlier
-#   install (or build-tree export) into the same location by a build of
-#   different library type (it then references Libint2::int-shared, but only
-#   Libint2::int-static is present, or vice versa) or of different version or
-#   configuration. The targets file then sets Libint2_FOUND to FALSE; since that
-#   must not take down consumers that don't need Fortran, the Fortran component
-#   is just reported missing (fatal only if required, else a warning).
+# The Fortran targets file is unusable if left behind (e.g., by a manual copy or
+#   another package) next to a C library of different type: it then references
+#   Libint2::int-shared, but only Libint2::int-static is present, or vice versa,
+#   and sets Libint2_FOUND to FALSE. Since that must not take down consumers that
+#   don't need Fortran, the Fortran component is just reported missing (fatal only
+#   if required, else a warning). Libint2::fortran is created only for a usable
+#   file, so a repeated find_package(Libint2) reports the same.
+# N.B. a C-only build removes stale Fortran targets files from its build tree and
+#   install tree, so only files placed otherwise are expected here
 set(_libint2_fortran_problem "")
 if(NOT TARGET Libint2::int_f AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/libint2-targets-Fortran.cmake")
   set(_libint2_saved_found_defined 0)
@@ -218,40 +216,9 @@ if(NOT TARGET Libint2::int_f AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/libint2-targe
       unset(Libint2_FOUND)
     endif()
     set(Libint2_NOT_FOUND_MESSAGE "${_libint2_saved_not_found_message}")
+  elseif (TARGET Libint2::int_f AND NOT TARGET Libint2::fortran)
+    add_library(Libint2::fortran ALIAS Libint2::int_f)
   endif()
-endif()
-# * check the link dependencies (again) directly, as the targets file is not
-#   re-included by a repeated find_package(Libint2)
-# * a stale Fortran library of the same library type: compare with the C library
-# N.B. test the problem strings with STREQUAL, as if(<var>) is false for strings
-#   ending in -NOTFOUND
-if (TARGET Libint2::int_f AND _libint2_fortran_problem STREQUAL "")
-  get_target_property(_libint2_f_prop Libint2::int_f INTERFACE_LINK_LIBRARIES)
-  foreach(_libint2_prop IN LISTS _libint2_f_prop)
-    if (_libint2_prop MATCHES "^Libint2::" AND NOT TARGET "${_libint2_prop}")
-      set(_libint2_fortran_problem "the Fortran library links ${_libint2_prop}, which is not available")
-      break()
-    endif()
-  endforeach()
-endif()
-if (TARGET Libint2::int_f AND _libint2_fortran_problem STREQUAL "")
-  if (TARGET Libint2::int-shared)
-    set(_libint2_c_target Libint2::int-shared)
-  else()
-    set(_libint2_c_target Libint2::int-static)
-  endif()
-  foreach(_libint2_prop Libint2_VERSION Libint2_CONFIGURATION)
-    get_target_property(_libint2_f_prop Libint2::int_f ${_libint2_prop})
-    get_target_property(_libint2_c_prop ${_libint2_c_target} ${_libint2_prop})
-    if (NOT "${_libint2_f_prop}" STREQUAL "${_libint2_c_prop}")
-      if (_libint2_prop STREQUAL "Libint2_VERSION")
-        set(_libint2_fortran_problem "the Fortran library is version ${_libint2_f_prop} but the C library is version ${_libint2_c_prop}")
-      else()
-        set(_libint2_fortran_problem "the Fortran and C libraries differ in ${_libint2_prop} (integral classes, AM, derivative orders, or orderings)")
-      endif()
-      break()
-    endif()
-  endforeach()
 endif()
 
 # Create convenience aliases matching the build-tree names
@@ -275,21 +242,20 @@ elseif (TARGET Libint2::int-cxx-headeronly-static)
     endif()
 endif()
 
-if (NOT _libint2_fortran_problem STREQUAL "")
+# N.B. test the problem string with STREQUAL, as if(<var>) is false for strings
+#   ending in -NOTFOUND
+if (TARGET Libint2::fortran)
+    set(Libint2_fortran_FOUND 1)
+    set(Libint2_Fortran_FOUND 1)
+elseif (NOT _libint2_fortran_problem STREQUAL "")
     set(_libint2_fortran_problem "Libint2 Fortran targets file ${CMAKE_CURRENT_LIST_DIR}/libint2-targets-Fortran.cmake does not match the Libint2 C library, perhaps left over from an earlier installation; Libint2::fortran is not available: ${_libint2_fortran_problem}")
     if (Libint2_FIND_REQUIRED_Fortran OR Libint2_FIND_REQUIRED_fortran)
         _libint2_append_not_found_message("${_libint2_fortran_problem}")
     elseif (NOT Libint2_FIND_QUIETLY)
         message(WARNING "${_libint2_fortran_problem}")
     endif()
-elseif (TARGET Libint2::int_f)
-    if (NOT TARGET Libint2::fortran)
-        add_library(Libint2::fortran ALIAS Libint2::int_f)
-    endif()
-    set(Libint2_fortran_FOUND 1)
-    set(Libint2_Fortran_FOUND 1)
 elseif (Libint2_FIND_REQUIRED_Fortran OR Libint2_FIND_REQUIRED_fortran)
-    _libint2_append_not_found_message("Libint2 Fortran component requested, but Fortran targets file ${CMAKE_CURRENT_LIST_DIR}/libint2-targets-Fortran.cmake not found; Libint2 was built without LIBINT2_ENABLE_FORTRAN=ON or the Fortran package is not installed")
+    _libint2_append_not_found_message("Libint2 Fortran component requested, but Fortran targets file ${CMAKE_CURRENT_LIST_DIR}/libint2-targets-Fortran.cmake not found or not usable; Libint2 was built without LIBINT2_ENABLE_FORTRAN=ON or the Fortran package is not installed")
 endif()
 
 check_required_components(Libint2)

@@ -12,7 +12,8 @@ Following is a brief summary of changes made in each release of Libint.
       find_package(Libint2) instead)
   - PR #470: CMake components C and Fortran (fortran remains an alias); libint2-config.cmake loads
     the Fortran targets only if present and ignores, with a warning unless Fortran is required, a
-    Fortran targets file that does not match the C library
+    Fortran targets file that references C library targets that are not installed; a build without
+    Fortran removes stale Fortran targets files from its build and install trees
   - PR #470: fixed MSVC/clang-cl build of the library with a user-set CMAKE_CXX_FLAGS lacking /EHsc
 
 - 2026-11-10: 2.14.1
