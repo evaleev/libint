@@ -278,8 +278,8 @@ jobs:
       working-directory: ${{github.workspace}}/build/library_test
       run: |
         # libint2-config.cmake loads libint2-targets-Fortran.cmake only if present (a C-only
-        #   package), and ignores it if it references C library targets that are not installed
-        #   (left over next to a C library of other type), unless the Fortran component is required
+        #   package), and ignores it if it does not match the C library (left over from another
+        #   installation), unless the Fortran component is required
         f_targets=$(find "${{github.workspace}}/build/library" -name libint2-targets-Fortran.cmake)
         test -n "$f_targets"
         f_dir=$(dirname "$f_targets")
@@ -308,6 +308,16 @@ jobs:
         perl -pi -e 's/Libint2::int-(shared|static)\b/Libint2::int-bogus/g' "$f_targets"
         cmake -S . -B build-stale-type -D CASE=stale-type -D CMAKE_PREFIX_PATH="$prefix" 2>&1 | tee stale-type.out
         grep -q "does not match the Libint2 C library" stale-type.out
+        # a repeated find_package(Libint2), which does not re-include the targets file, reports the cause too
+        grep -q "Libint2_NOT_FOUND_MESSAGE: .*does not match the Libint2 C library" stale-type.out
+        # stale: same library type, other version
+        cp aside/libint2-targets-Fortran.cmake "$f_targets"
+        perl -pi -e 's/Libint2_VERSION "[^"]*"/Libint2_VERSION "0.0.0"/' "$f_targets"
+        grep -q 'Libint2_VERSION "0.0.0"' "$f_targets"
+        cmake -S . -B build-stale-version -D CASE=stale-version -D CMAKE_PREFIX_PATH="$prefix" 2>&1 | tee stale-version.out
+        grep -q "Fortran library is version 0.0.0" stale-version.out
+        # a repeated find_package(Libint2), which does not re-include the targets file, reports the cause too
+        grep -q "Libint2_NOT_FOUND_MESSAGE: .*does not match the Libint2 C library" stale-version.out
         cp aside/libint2-targets-Fortran*.cmake "$f_dir"/
 
   # a library without contracted integrals (C API only, since the C++ API
@@ -571,6 +581,26 @@ jobs:
         if [[ "${{ matrix.cfg.c_only }}" != "true" ]]; then
           grep -rqF 'LIBINT_DATADIR=\"/opt/libint2-data\"' build-absdata/CMakeFiles/Export || { echo "exported LIBINT_DATADIR does not use the absolute data dir"; exit 1; }
         fi
+
+    - name: Test Libint library - build tree reconfigured without Fortran drops its Fortran targets
+      if: ${{ contains(matrix.cfg.libargs, 'LIBINT2_ENABLE_FORTRAN=ON') }}
+      shell: bash -l {0}
+      working-directory: ${{github.workspace}}/libint
+      run: |
+        # libint2-config.cmake loads libint2-targets-Fortran.cmake if present, so a build tree
+        #   reconfigured with LIBINT2_ENABLE_FORTRAN=OFF must remove the one export() wrote
+        #   earlier (configure only: export() writes the targets files at generate time)
+        source "${{github.workspace}}/compilers.sh"
+        cmake \
+          -S . \
+          -B build-refortran \
+          -G Ninja \
+          -D CMAKE_CXX_COMPILER=${CXX} \
+          -D CMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
+          ${{ matrix.cfg.libargs }}
+        test -f build-refortran/libint2-targets-Fortran.cmake || { echo "Fortran build tree has no libint2-targets-Fortran.cmake"; exit 1; }
+        cmake -S . -B build-refortran -D LIBINT2_ENABLE_FORTRAN=OFF
+        if [[ -e build-refortran/libint2-targets-Fortran.cmake ]]; then echo "stale libint2-targets-Fortran.cmake kept in build tree"; exit 1; fi
 
     - name: Test Libint library - unit tests
       shell: bash -l {0}
