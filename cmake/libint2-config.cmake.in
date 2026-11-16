@@ -88,6 +88,10 @@ macro(_libint2_cleanup)
   unset(_libint2_f_prop)
   unset(_libint2_c_prop)
   unset(_libint2_prop)
+  unset(_libint2_comp)
+  unset(_libint2_missing)
+  unset(_libint2_missing_other)
+  unset(_libint2_available)
 endmacro()
 
 # appends to, rather than overwrites, Libint2_NOT_FOUND_MESSAGE, so that the
@@ -181,9 +185,42 @@ foreach(_libint2_eri @Libint2_CONFIG_COMPONENTS@)  # Libint2_CONFIG_COMPONENTS
     set(Libint2_${_libint2_eri}_FOUND 1)
 endforeach()
 
-# N.B. check_required_components() is deferred to the end of this file so that
-# the language components can be resolved from the imported targets below
-# rather than from configure-time options
+# Fail before importing any targets if a required component is known to be
+#   missing without them (integral classes, orderings, CXX, and a Fortran targets
+#   file that is not there), so that a failed find_package(Libint2) does not leave
+#   Libint2 targets behind
+# N.B. check_required_components() is still deferred to the end of this file, as
+#   whether a present Fortran targets file is usable can only be told from the
+#   imported targets, not from configure-time options (C and Fortran may be
+#   packaged separately); only that failure leaves the (valid) C targets behind
+set(_libint2_missing "")
+foreach(_libint2_comp IN LISTS Libint2_FIND_COMPONENTS)
+  if (Libint2_FIND_REQUIRED_${_libint2_comp}
+      AND NOT _libint2_comp MATCHES "^(C|Fortran|fortran)$"
+      AND NOT Libint2_${_libint2_comp}_FOUND)
+    list(APPEND _libint2_missing ${_libint2_comp})
+  endif()
+endforeach()
+# CXX has its own not-found message, above
+set(_libint2_missing_other ${_libint2_missing})
+list(REMOVE_ITEM _libint2_missing_other CXX)
+if (_libint2_missing_other)
+  string(REPLACE ";" ", " _libint2_missing_other "${_libint2_missing_other}")
+  set(_libint2_available "@Libint2_CONFIG_COMPONENTS@")
+  string(REPLACE ";" ", " _libint2_available "${_libint2_available}")
+  _libint2_append_not_found_message("Libint2 was built without the requested component(s) ${_libint2_missing_other} (available: ${_libint2_available})")
+endif()
+if ((Libint2_FIND_REQUIRED_Fortran OR Libint2_FIND_REQUIRED_fortran)
+    AND NOT TARGET Libint2::int_f
+    AND NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/libint2-targets-Fortran.cmake")
+  list(APPEND _libint2_missing Fortran)
+  _libint2_append_not_found_message("Libint2 Fortran component requested, but Fortran targets file ${CMAKE_CURRENT_LIST_DIR}/libint2-targets-Fortran.cmake not found; Libint2 was built without LIBINT2_ENABLE_FORTRAN=ON or the Fortran package is not installed")
+endif()
+if (_libint2_missing)
+  set(Libint2_FOUND FALSE)
+  _libint2_cleanup()
+  return()
+endif()
 
 # Import library targets
 # * C/C++ targets always; Fortran targets only if separately installed. Using

@@ -14,6 +14,8 @@ Following is a brief summary of changes made in each release of Libint.
     the Fortran targets only if present and ignores, with a warning unless Fortran is required, a
     Fortran targets file that does not match the C library (other version, configuration, or
     library type); a build tree reconfigured without Fortran removes its Fortran targets file
+  - PR #470: find_package(Libint2) checks the requested components before importing targets, so that
+    it does not leave Libint2 targets behind when it fails
   - PR #470: fixed MSVC/clang-cl build of the library with a user-set CMAKE_CXX_FLAGS lacking /EHsc
 
 - 2026-11-10: 2.14.1
