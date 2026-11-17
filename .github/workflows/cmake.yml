@@ -569,7 +569,11 @@ jobs:
           ${{ matrix.cfg.c_only && '-D LIBINT2_REQUIRE_CXX_API=OFF' || '-D LIBINT2_REQUIRE_CXX_API_COMPILED=ON -D LIBINT2_ENABLE_PYTHON=ON' }} \
           -D CMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
           ${{ matrix.cfg.libargs }}
-        cmake --build build --target install ${{ !matrix.cfg.c_only && 'libint2-python-test' || '' }}
+        # build the Python module only after the library: in one build, g++ compiles
+        #   src/engine.cpp (~6.5 GB) alongside the module's two sources (~5.5 GB each),
+        #   which exhausts the 16 GB of a Linux runner and kills it
+        cmake --build build --target install
+        ${{ !matrix.cfg.c_only && 'cmake --build build --target libint2-python-test' || '' }}
 
     - name: Test Libint library - DESTDIR install and absolute data dir
       if: ${{ runner.os != 'Windows' }}
