@@ -1196,10 +1196,13 @@ class Engine {
       const Shell& bra1, const Shell& bra2, const Shell& ket1,
       const Shell& ket2, const ShellPair* spbra, const ShellPair* spket);
 
-  /// Physical inputs for one externally prepared four-center ERI primitive.
+  /// Physical inputs for one externally prepared ERI primitive.
   /// Center order is (A,B|C,D). p=alpha_A+alpha_B, q=alpha_C+alpha_D,
   /// and rho=p*q/(p+q). P and Q are the pair centers and W=(p*P+q*Q)/(p+q).
-  struct Eri4Primitive {
+  /// For a reduced-center kernel the omitted slots represent unit functions
+  /// with zero exponent. Libint ignores their supplied centers and exponents.
+  /// The product centers and inverse exponents must describe the active shells.
+  struct EriPrimitive {
     std::array<std::array<value_type, 3>, 4> centers;
     std::array<value_type, 4> exponents;
     std::array<value_type, 3> P, Q, W;
@@ -1210,8 +1213,8 @@ class Engine {
     std::size_t seed_count;
   };
 
-  /// Owns the packed inputs and scratch for one batch of four-center ERIs.
-  class PreparedEri4 {
+  /// Owns the packed inputs and scratch for one batch of ERIs.
+  class PreparedEri {
    public:
     /// A kernel borrowing this batch's storage. The owning batch must outlive
     /// all calls through the handle.
@@ -1228,7 +1231,7 @@ class Engine {
       }
 
      private:
-      friend class PreparedEri4;
+      friend class PreparedEri;
       Kernel(Libint_t* data, void (*build)(const Libint_t*))
           : data_(data), build_(build) {}
       Libint_t* data_;
@@ -1236,14 +1239,15 @@ class Engine {
     };
 
     /// Bind angular momenta (l_A,l_B,l_C,l_D) in the generated kernel's
-    /// native center order. The batch must use this same order. Results are
+    /// native center order, with angular momentum zero in unit slots. The
+    /// batch must use this same order. Results are
     /// row major with the last center varying fastest and use the generated
     /// Cartesian component order. Reuse the handle for repeated calls.
     __libint2_engine_inline Kernel kernel(const std::array<int, 4>& l) &;
     Kernel kernel(const std::array<int, 4>&) && = delete;
 
-    PreparedEri4(PreparedEri4&&) noexcept = default;
-    PreparedEri4& operator=(PreparedEri4&&) noexcept = default;
+    PreparedEri(PreparedEri&&) noexcept = default;
+    PreparedEri& operator=(PreparedEri&&) noexcept = default;
 
    private:
     friend class Engine;
@@ -1254,27 +1258,41 @@ class Engine {
         delete[] data;
       }
     };
-    PreparedEri4(std::size_t count, int lmax, int mmax, int table_extent,
-                 void (**build)(const Libint_t*))
-        : data_(new Libint_t[count]{}), lmax_(lmax), mmax_(mmax),
-          table_extent_(table_extent), build_(build) {}
+    PreparedEri(std::size_t count, int lmax, int mmax, BraKet braket,
+                const std::array<int, 4>& extents, const char* task_name,
+                void (**build)(const Libint_t*))
+        : data_(new Libint_t[count]{}),
+          lmax_(lmax),
+          mmax_(mmax),
+          braket_(braket),
+          extents_(extents),
+          task_name_(task_name),
+          build_(build) {}
 
     std::unique_ptr<Libint_t[], Cleanup> data_;
-    int lmax_, mmax_, table_extent_;
+    int lmax_, mmax_;
+    BraKet braket_;
+    std::array<int, 4> extents_;
+    const char* task_name_;
     void (**build_)(const Libint_t*);
   };
 
-  /// Pack a nonempty batch for a zero-derivative, four-center Coulomb Engine.
-  /// The caller selects the contributing primitives and supplies all seed
-  /// weights. Supply orders zero through mmax for every record, where mmax
-  /// is at least the sum of angular momenta of each kernel to be bound.
-  /// For mmax > 0 the geometry quantities must be mutually consistent and
-  /// all records must share A-B and C-D displacements for horizontal
-  /// recurrence after contraction. For mmax = 0 only the seeds are used.
-  /// The result owns its storage independently of the input and the Engine.
-  /// Engine screening, scale, and output normalization do not apply here.
-  __libint2_engine_inline PreparedEri4 prepare_eri4(
-      const Eri4Primitive* primitives, std::size_t count, int mmax) const;
+  /// Pack a nonempty batch for an Engine using the scalar ERI recurrence
+  /// without geometric derivatives. This includes Coulomb and radial variants
+  /// such as erfc Coulomb. The caller selects the primitives and supplies all
+  /// seed weights and orders through mmax, at least the sum of angular
+  /// momenta of each kernel to be bound.
+  /// Use native kernel order: (A,B|C,D), (A,unit|C,D), or (A,unit|C,unit).
+  /// An xx_xs Engine uses the same native layout as xs_xx. This interface
+  /// supports reduced centers in the standard shell quartet ordering.
+  /// With nonzero mmax, records must share the displacements of each
+  /// active pair for horizontal recurrence after contraction. Kernels
+  /// requiring solid-harmonic projection are outside the Cartesian interface.
+  /// For mmax = 0 only the seeds are used. The result owns its storage
+  /// independently of the input and the Engine. Engine screening, scale,
+  /// and output normalization do not apply here.
+  __libint2_engine_inline PreparedEri prepare_eri(
+      const EriPrimitive* primitives, std::size_t count, int mmax) const;
 
   // clang-format off
  /** this specifies target precision for computing the integrals, i.e.

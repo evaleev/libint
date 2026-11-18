@@ -40,7 +40,7 @@ typedef unsigned int uint;
 #if defined(LIBINT2_SUPPORT_ERI) && LIBINT2_MAX_AM_eri >= 1 && \
     LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD
 TEST_CASE("Reuse externally prepared four-center ERI seeds", "[engine][2-body]") {
-  using Primitive = Engine::Eri4Primitive;
+  using Primitive = Engine::EriPrimitive;
   std::array<Primitive, 2> input{};
   std::array<std::array<double, 2>, 2> seeds{};
   const std::array<std::array<double, 3>, 4> centers{
@@ -82,7 +82,7 @@ TEST_CASE("Reuse externally prepared four-center ERI seeds", "[engine][2-body]")
     for (int xyz = 0; xyz < 3; ++xyz) expected_p[xyz] += values[xyz];
   }
 
-  auto batch = engine.prepare_eri4(input.data(), input.size(), 1);
+  auto batch = engine.prepare_eri(input.data(), input.size(), 1);
   const auto ssss = batch.kernel({{0, 0, 0, 0}});
   const auto ssps = batch.kernel({{0, 0, 1, 0}});
   for (int repeat = 0; repeat < 2; ++repeat) {
@@ -94,7 +94,7 @@ TEST_CASE("Reuse externally prepared four-center ERI seeds", "[engine][2-body]")
   CHECK_THROWS_AS(batch.kernel({{0, 0, 1, 1}}), std::invalid_argument);
   CHECK_THROWS_AS(batch.kernel({{0, 0, -1, 0}}), std::invalid_argument);
   input[1].centers[3][0] += .25;
-  CHECK_THROWS_AS(engine.prepare_eri4(input.data(), input.size(), 1),
+  CHECK_THROWS_AS(engine.prepare_eri(input.data(), input.size(), 1),
                   std::invalid_argument);
 
   // A radial-only batch owns its inputs and needs no Engine after packing.
@@ -104,10 +104,101 @@ TEST_CASE("Reuse externally prepared four-center ERI seeds", "[engine][2-body]")
     Primitive primitive{};
     primitive.seeds = &weighted_seed;
     primitive.seed_count = 1;
-    return radial_engine.prepare_eri4(&primitive, 1, 0);
+    return radial_engine.prepare_eri(&primitive, 1, 0);
   };
   auto radial_only = make_radial_only_batch();
   CHECK(radial_only.kernel({{0, 0, 0, 0}})()[0] == -0.75);
+}
+#endif
+
+#if LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD &&  \
+    (defined(LIBINT2_SUPPORT_ERI) || defined(LIBINT2_SUPPORT_ERI2) || \
+     defined(LIBINT2_SUPPORT_ERI3))
+TEST_CASE("Prepared scalar ERIs share the same input representation",
+          "[engine][2-body]") {
+  auto check = [](Operator op, BraKet braket) {
+    constexpr double omega = .7;
+    const bool paired_bra = braket == BraKet::xx_xx;
+    const bool paired_ket = braket != BraKet::xs_xs;
+    const bool reversed = braket == BraKet::xx_xs;
+    const bool erfc = op == Operator::erfc_coulomb;
+    Engine engine(op, 1, 1, 0, 0., libint2::default_params(op), braket);
+    if (erfc) engine.set_params(omega);
+    Engine::EriPrimitive input{};
+    input.centers = {
+        {{{0., 0., 0.}}, {{.5, 0., 0.}}, {{0., .5, .25}}, {{.5, .5, .25}}}};
+    input.exponents = {{1., paired_bra ? 2. : 0., 3., paired_ket ? 4. : 0.}};
+    const auto& a = input.exponents;
+    const double p = a[0] + a[1], q = a[2] + a[3];
+    input.inverse_p = 1. / p;
+    input.inverse_q = 1. / q;
+    input.inverse_p_plus_q = 1. / (p + q);
+    input.rho = p * q * input.inverse_p_plus_q;
+    double T = 0;
+    for (int xyz = 0; xyz < 3; ++xyz) {
+      const auto& o = input.centers;
+      input.P[xyz] = (a[0] * o[0][xyz] + a[1] * o[1][xyz]) / p;
+      input.Q[xyz] = (a[2] * o[2][xyz] + a[3] * o[3][xyz]) / q;
+      input.W[xyz] = (p * input.P[xyz] + q * input.Q[xyz]) / (p + q);
+      const double delta = input.P[xyz] - input.Q[xyz];
+      T += input.rho * delta * delta;
+    }
+    const auto boys = libint2::FmEval_Chebyshev7<double>::instance(2);
+    std::array<double, 3> seeds;
+    boys->eval(seeds.data(), T, 2);
+    if (erfc) {
+      // The long-range complement rescales both T and each radial order.
+      const double range = omega / std::sqrt(omega * omega + input.rho);
+      std::array<double, 3> long_range;
+      boys->eval(long_range.data(), range * range * T, 2);
+      for (int m = 0; m <= 2; ++m)
+        seeds[m] -= std::pow(range, 2 * m + 1) * long_range[m];
+    }
+    const double prefactor =
+        2. * std::pow(std::acos(-1.), 2.5) / (p * q * std::sqrt(p + q)) *
+        std::exp(-.25 * (a[0] * a[1] / p + a[2] * a[3] / q));
+    for (auto& seed : seeds) seed *= prefactor;
+    input.seeds = seeds.data();
+    input.seed_count = seeds.size();
+
+    auto shell = [&](int i, int l) {
+      return Shell{{a[i]}, {{l, false, {1.}}}, input.centers[i], false};
+    };
+    const auto A = shell(0, 1), C = shell(2, 1);
+    const auto B = paired_bra ? shell(1, 0) : Shell::unit();
+    const auto D = paired_ket ? shell(3, 0) : Shell::unit();
+    const auto* reference = braket == BraKet::xx_xx
+                                ? engine.compute(A, B, C, D)[0]
+                            : reversed   ? engine.compute(C, D, A)[0]
+                            : paired_ket ? engine.compute(A, C, D)[0]
+                                         : engine.compute(A, C)[0];
+    REQUIRE(reference != nullptr);
+    // The caller need not populate inactive slots as unit shells.
+    if (!paired_bra) input.exponents[1] = 100.;
+    if (!paired_ket) input.exponents[3] = 200.;
+    auto prepared = engine.prepare_eri(&input, 1, 2);
+    const auto* values = prepared.kernel({{1, 0, 1, 0}})();
+    for (int i = 0; i < 3; ++i)
+      for (int j = 0; j < 3; ++j)
+        CHECK(
+            values[3 * i + j] ==
+            Approx(reference[reversed ? 3 * j + i : 3 * i + j]).margin(2e-14));
+    if (!paired_bra)
+      CHECK_THROWS_AS(prepared.kernel({{0, 1, 1, 0}}), Engine::lmax_exceeded);
+    if (!paired_ket)
+      CHECK_THROWS_AS(prepared.kernel({{0, 0, 1, 1}}), Engine::lmax_exceeded);
+  };
+#if defined(LIBINT2_SUPPORT_ERI) && LIBINT2_MAX_AM_eri >= 1
+  check(Operator::erfc_coulomb, BraKet::xx_xx);
+#endif
+#if defined(LIBINT2_SUPPORT_ERI3) && LIBINT2_MAX_AM_3eri >= 1 && \
+    LIBINT2_MAX_AM_default >= 1
+  check(Operator::coulomb, BraKet::xs_xx);
+  check(Operator::coulomb, BraKet::xx_xs);
+#endif
+#if defined(LIBINT2_SUPPORT_ERI2) && LIBINT2_MAX_AM_2eri >= 1
+  check(Operator::coulomb, BraKet::xs_xs);
+#endif
 }
 #endif
 

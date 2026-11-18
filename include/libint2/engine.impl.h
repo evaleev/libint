@@ -1525,50 +1525,114 @@ inline void set_eri_recurrence_data(
 #endif
 }
 
-#ifdef LIBINT_INCLUDE_ERI
-inline void build_prepared_ssss(const Libint_t* data) {
+// Table dimensions in native center order. Unit slots have extent one.
+// Three-center generated tasks can have a separate limit on the paired axes.
+inline std::array<int, 4> eri_table_extents(BraKet braket, int extent,
+                                            int paired_extent) {
+  switch (braket) {
+    case BraKet::xx_xx:
+      return {{extent, extent, extent, extent}};
+    case BraKet::xx_xs:  // evaluated in xs_xx order
+    case BraKet::xs_xx: {
+      const int ket_extent = paired_extent == std::numeric_limits<int>::max()
+                                 ? extent
+                                 : paired_extent;
+      return {{extent, 1, ket_extent, ket_extent}};
+    }
+    case BraKet::xs_xs:
+      return {{extent, 1, extent, 1}};
+    default:
+      throw std::logic_error("invalid two-body kernel layout");
+  }
+}
+
+inline std::size_t eri_kernel_index(const std::array<int, 4>& l,
+                                    const std::array<int, 4>& extents, int lmax,
+                                    const char* task) {
+  std::size_t index = 0;
+  for (std::size_t i = 0; i < l.size(); ++i) {
+    if (l[i] < 0) throw std::invalid_argument("negative ERI angular momentum");
+    const int limit = std::min(lmax, extents[i] - 1);
+    if (l[i] > limit) throw Engine::lmax_exceeded(task, limit, l[i]);
+    index = index * extents[i] + l[i];
+  }
+  return index;
+}
+
+inline void build_eri_ssss(const Libint_t* data) {
   auto& result = data->stack[0];
   result = 0;
   for (int i = 0; i < data->contrdepth; ++i)
     result += data[i].LIBINT_T_SS_EREP_SS(0)[0];
   const_cast<Libint_t*>(data)->targets[0] = data->stack;
 }
-#endif
 }  // namespace detail
 
-__libint2_engine_inline Engine::PreparedEri4 Engine::prepare_eri4(
-    const Eri4Primitive* primitives, std::size_t count, int mmax) const {
-#ifdef LIBINT_INCLUDE_ERI
+__libint2_engine_inline Engine::PreparedEri Engine::prepare_eri(
+    const EriPrimitive* primitives, std::size_t count, int mmax) const {
   static_assert(LIBINT2_MAX_VECLEN == 1, "prepared ERI requires scalar kernels");
-  if (oper_ != Operator::coulomb || braket_ != BraKet::xx_xx ||
-      deriv_order_ != 0)
+  if (operator_rank() != 2 || deriv_order_ != 0 || intrinsic_deriv_order() != 0)
     throw std::invalid_argument(
-        "prepare_eri4 requires a zero-derivative four-center Coulomb Engine");
+        "prepare_eri requires a zero-derivative scalar ERI task");
   if (!buildfnptrs_) throw missing_kernel();
+
+  const auto braket = braket_ == BraKet::xx_xs ? BraKet::xs_xx : braket_;
+  if (braket != BraKet::xx_xx &&
+      LIBINT2_SHELLQUARTET_SET != LIBINT2_SHELLQUARTET_SET_STANDARD)
+    throw std::invalid_argument(
+        "prepared reduced-center ERIs require standard shell quartet ordering");
+
+  // Use the same generated task the Engine selected. Match by table so that
+  // every radial operator sharing this recurrence uses the same adapter.
+  void (*init)(Libint_t*, int, void*) = nullptr;
+#ifdef LIBINT_INCLUDE_ERI
+  if (braket == BraKet::xx_xx &&
+      buildfnptrs_ == to_ptr1(LIBINT2_PREFIXED_NAME(libint2_build_eri)))
+    init = LIBINT2_PREFIXED_NAME(libint2_init_eri);
+#endif
+#ifdef LIBINT_INCLUDE_ERI3
+  if (braket == BraKet::xs_xx &&
+      buildfnptrs_ == to_ptr1(LIBINT2_PREFIXED_NAME(libint2_build_3eri)))
+    init = LIBINT2_PREFIXED_NAME(libint2_init_3eri);
+#endif
+#ifdef LIBINT_INCLUDE_ERI2
+  if (braket == BraKet::xs_xs &&
+      buildfnptrs_ == to_ptr1(LIBINT2_PREFIXED_NAME(libint2_build_2eri)))
+    init = LIBINT2_PREFIXED_NAME(libint2_init_2eri);
+#endif
+  if (!init)
+    throw std::invalid_argument("prepare_eri requires a scalar ERI recurrence");
+
+  const auto extents =
+      detail::eri_table_extents(braket, hard_lmax_, hard_default_lmax_);
+  int max_order = 0;
+  for (int extent : extents) max_order += std::min(lmax_, extent - 1);
   if (!primitives || count == 0 ||
-      count > std::size_t(std::numeric_limits<int>::max()) ||
-      mmax < 0 || mmax > 4 * lmax_)
+      count > std::size_t(std::numeric_limits<int>::max()) || mmax < 0 ||
+      mmax > max_order)
     throw std::invalid_argument("invalid prepared ERI batch size or radial order");
 
-  PreparedEri4 batch(count, lmax_, mmax, hard_lmax_, buildfnptrs_);
+  PreparedEri batch(count, lmax_, mmax, braket, extents, task_name_,
+                    buildfnptrs_);
   auto* data = batch.data_.get();
   std::array<value_type, 3> first_AB{}, first_CD{};
+  const bool paired_bra = braket == BraKet::xx_xx;
+  const bool paired_ket = braket != BraKet::xs_xs;
   for (std::size_t i = 0; i < count; ++i) {
     const auto& p = primitives[i];
     if (!p.seeds || p.seed_count <= std::size_t(mmax))
       throw std::invalid_argument("prepared ERI radial seed prefix is too short");
     auto& out = data[i];
     // The scalar generator places the radial seeds in consecutive members.
-    // Copy within the complete record, rather than indexing across arrays.
     auto* bytes = reinterpret_cast<unsigned char*>(&out);
     std::memcpy(bytes + offsetof(Libint_t, LIBINT_T_SS_EREP_SS(0)), p.seeds,
                 (mmax + 1) * sizeof(value_type));
     if (mmax == 0) continue;
 
     const auto& A = p.centers[0];
-    const auto& B = p.centers[1];
+    const auto& B = paired_bra ? p.centers[1] : A;
     const auto& C = p.centers[2];
-    const auto& D = p.centers[3];
+    const auto& D = paired_ket ? p.centers[3] : C;
     std::array<value_type, 3> AB, CD;
     for (int xyz = 0; xyz < 3; ++xyz) {
       AB[xyz] = A[xyz] - B[xyz];
@@ -1579,52 +1643,46 @@ __libint2_engine_inline Engine::PreparedEri4 Engine::prepare_eri4(
       first_CD = CD;
     } else if (AB != first_AB || CD != first_CD) {
       throw std::invalid_argument(
-          "prepared ERI contraction requires common A-B and C-D displacements");
+          "prepared ERI contraction requires common displacements within each "
+          "active pair");
     }
     const auto& a = p.exponents;
+    const auto alpha_b = paired_bra ? a[1] : value_type(0);
+    const auto alpha_d = paired_ket ? a[3] : value_type(0);
     detail::set_eri_recurrence_data(
-        out, BraKet::xx_xx, true, true, A.data(), B.data(), C.data(), D.data(),
-        AB.data(), CD.data(), p.P.data(), p.Q.data(), p.W.data(), a[0], a[1],
-        a[2], a[3], a[0] + a[1], a[2] + a[3], p.inverse_p, p.inverse_q,
+        out, braket, true, true, A.data(), B.data(), C.data(), D.data(),
+        AB.data(), CD.data(), p.P.data(), p.Q.data(), p.W.data(), a[0], alpha_b,
+        a[2], alpha_d, a[0] + alpha_b, a[2] + alpha_d, p.inverse_p, p.inverse_q,
         p.inverse_p_plus_q, p.rho);
   }
-  LIBINT2_PREFIXED_NAME(libint2_init_eri)(data, lmax_, nullptr);
+  init(data, lmax_, nullptr);
 #if LIBINT2_FLOP_COUNT
   LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)(data, count);
 #endif
   data->contrdepth = static_cast<int>(count);
   return batch;
-#else
-  (void)primitives;
-  (void)count;
-  (void)mmax;
-  throw missing_kernel();
-#endif
 }
 
-__libint2_engine_inline Engine::PreparedEri4::Kernel
-Engine::PreparedEri4::kernel(const std::array<int, 4>& l) & {
-#ifdef LIBINT_INCLUDE_ERI
+__libint2_engine_inline Engine::PreparedEri::Kernel Engine::PreparedEri::kernel(
+    const std::array<int, 4>& l) & {
   if (!data_) throw std::logic_error("moved-from prepared ERI batch");
-  std::size_t index = 0;
-  int order = 0;
-  for (const int am : l) {
-    if (am < 0) throw std::invalid_argument("negative ERI angular momentum");
-    if (am > lmax_) throw lmax_exceeded("eri", lmax_, am);
-    index = index * table_extent_ + am;
-    order += am;
-  }
+  const auto index = detail::eri_kernel_index(l, extents_, lmax_, task_name_);
+  const int order = l[0] + l[1] + l[2] + l[3];
   if (order > mmax_)
     throw std::invalid_argument("prepared ERI radial seed prefix is too short");
+  if (braket_ == BraKet::xs_xx && detail::eri3_pure_sh && l[0] > 1)
+    throw std::invalid_argument(
+        "prepared Cartesian ERI requires a Cartesian fitting axis");
+#ifdef LIBINT_ERI2_PURE_SH
+  if (braket_ == BraKet::xs_xs && (l[0] > 1 || l[2] > 1))
+    throw std::invalid_argument(
+        "prepared Cartesian ERI requires Cartesian kernel axes");
+#endif
   auto* data = data_.get();
-  if (order == 0) return Kernel(data, detail::build_prepared_ssss);
-  auto build = build_[index];
+  if (order == 0) return Kernel(data, detail::build_eri_ssss);
+  const auto build = build_[index];
   if (!build) throw missing_kernel();
   return Kernel(data, build);
-#else
-  (void)l;
-  throw missing_kernel();
-#endif
 }
 
 /// Computes a shell set of two-body integrals.
@@ -2178,11 +2236,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #ifdef LIBINT2_ENGINE_TIMERS
     timers.start(1);
 #endif
-    auto& stack = primdata_[0].stack[0];
-    stack = 0;
-    for (auto p = 0; p != primdata_[0].contrdepth; ++p)
-      stack += primdata_[p].LIBINT_T_SS_EREP_SS(0)[0];
-    primdata_[0].targets[0] = primdata_[0].stack;
+    detail::build_eri_ssss(&primdata_[0]);
 #ifdef LIBINT2_ENGINE_TIMERS
     const auto t1 = timers.stop(1);
 #ifdef LIBINT2_ENGINE_PROFILE_CLASS
@@ -2199,94 +2253,28 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     timers.start(1);
 #endif
 
-    // the per-center angular momentum limits are checked in all builds: lmax_
-    // (checked by initialize()) is the limit of the most permissive center, so
-    // for a task whose limit differs between the centers (e.g. 3eri, or
-    // 3coulomb_opop with LIBINT2_RKB_ERI3_MAX_AM != LIBINT2_MAX_AM) a shell can
-    // be within lmax_ and still beyond the limit of its center, and the index
-    // into the kernel table computed below would be out of range
-    auto check_lmax = [this](const Shell& sh, int lmax_plus_1) {
-      if (sh.contr[0].l >= lmax_plus_1)
-        throw lmax_exceeded(task_name_, lmax_plus_1 - 1, sh.contr[0].l);
-    };
+    const auto extents =
+        detail::eri_table_extents(braket_, hard_lmax_, hard_default_lmax_);
+    const auto buildfnidx = detail::eri_kernel_index(
+        {{bra1.contr[0].l, bra2.contr[0].l, ket1.contr[0].l, ket2.contr[0].l}},
+        extents, lmax_, task_name_);
 
-    size_t buildfnidx;
-    switch (braket_) {
-      case BraKet::xx_xx:
-        check_lmax(bra1, hard_lmax_);
-        check_lmax(bra2, hard_lmax_);
-        check_lmax(ket1, hard_lmax_);
-        check_lmax(ket2, hard_lmax_);
-        buildfnidx =
-            ((bra1.contr[0].l * hard_lmax_ + bra2.contr[0].l) * hard_lmax_ +
-             ket1.contr[0].l) *
-                hard_lmax_ +
-            ket2.contr[0].l;
-        break;
-
-      case BraKet::xx_xs:
-        // xx_xs is always canonicalized to xs_xx by swap_braket=true in the
-        // shell-aliasing logic above; the swapped shells (bra1, ket1, ket2)
-        // are already in xs_xx layout by this point. Fall through to the
-        // xs_xx case to compute buildfnidx from those swapped shells.
-        [[fallthrough]];
-      case BraKet::xs_xx: {
-        // The ket (paired/AO) centers may have a different max AM than the
-        // bra (fitting) center for *center-dependent* 3-center tasks (e.g.
-        // 3eri, or 3coulomb_opop with LIBINT2_RKB_ERI3_MAX_AM !=
-        // LIBINT2_MAX_AM), giving a non-cubic build table. _initialize() sets
-        // hard_default_lmax_ to the paired max (+1) for center-dependent
-        // tasks, or to INT_MAX for tasks that are not, whose build table is
-        // [hard_lmax_]^3.
-        const int ket_lmax =
-            hard_default_lmax_ != std::numeric_limits<int>::max()
-                ? hard_default_lmax_
-                : hard_lmax_;
-        check_lmax(bra1, hard_lmax_);
-        check_lmax(ket1, ket_lmax);
-        check_lmax(ket2, ket_lmax);
-
-        buildfnidx = (bra1.contr[0].l * ket_lmax + ket1.contr[0].l) * ket_lmax +
-                     ket2.contr[0].l;
-
-        // the kernels may have been generated assuming that the fitting
-        // (bra) shell will be transformed to solid harmonics
-        // (LIBINT2_ERI3_PURE_SH); this never applies to the RKB 3-center
-        // kernels, nor to derivative kernels (the generator marks the fitting
-        // shell pure only for derivative order 0, see build_libint.cc). Such
-        // kernels produce garbage for a cartesian shell, hence check in all
-        // builds
-        if (detail::eri3_pure_sh && deriv_order_ == 0 &&
-            !detail::is_rkb_2body(oper_) && bra1.contr[0].l > 1 &&
-            !bra1.contr[0].pure)
-          throw std::invalid_argument(
-              "Engine::compute2 -- this library assumes that the fitting "
-              "(bra) shell of 3-center 2-body integrals is a solid harmonics "
-              "shell, but a cartesian shell was given");
-      } break;
-
-      case BraKet::xs_xs:
-        check_lmax(bra1, hard_lmax_);
-        check_lmax(ket1, hard_lmax_);
-        buildfnidx = bra1.contr[0].l * hard_lmax_ + ket1.contr[0].l;
+    // Some zero-derivative reduced-center kernels assume projection of a
+    // fitting shell to solid harmonics. RKB kernels do not use this shortcut.
+    if ((braket_ == BraKet::xs_xx || braket_ == BraKet::xx_xs) &&
+        detail::eri3_pure_sh && deriv_order_ == 0 &&
+        !detail::is_rkb_2body(oper_) && bra1.contr[0].l > 1 &&
+        !bra1.contr[0].pure)
+      throw std::invalid_argument(
+          "Engine::compute2 -- this library assumes that the fitting "
+          "(bra) shell of 3-center 2-body integrals is a solid harmonics "
+          "shell, but a cartesian shell was given");
 #ifdef LIBINT_ERI2_PURE_SH
-        // as for 3-center: derivative kernels are generated for cartesian
-        // shells, only the energy kernels assume solid harmonics
-        if (deriv_order_ == 0 && bra1.contr[0].l > 1)
-          assert(bra1.contr[0].pure &&
-                 "library assumes solid harmonics shells in a 2-center "
-                 "2-body int, but a cartesian shell given in bra");
-        if (deriv_order_ == 0 && ket1.contr[0].l > 1)
-          assert(ket1.contr[0].pure &&
-                 "library assumes solid harmonics shells in a 2-center "
-                 "2-body int, but a cartesian shell given in ket");
-#endif
-        break;
-
-      default:
-        assert(false && "invalid braket");
-        abort();
+    if (braket_ == BraKet::xs_xs && deriv_order_ == 0) {
+      if (bra1.contr[0].l > 1) assert(bra1.contr[0].pure);
+      if (ket1.contr[0].l > 1) assert(ket1.contr[0].pure);
     }
+#endif
 
     assert(buildfnptrs_[buildfnidx] && "null build function ptr");
     buildfnptrs_[buildfnidx](&primdata_[0]);
