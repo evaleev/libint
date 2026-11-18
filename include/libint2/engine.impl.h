@@ -1545,7 +1545,298 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   }
 }  // Engine::compute_primdata()
 
-/// computes shell set of integrals of 2-body operator
+namespace detail {
+// Shared by the shell-based and externally prepared ERI paths.
+template <typename Geometry, typename Scalar>
+inline void set_eri_recurrence_data(
+    Libint_t& primdata, BraKet braket, bool need_wp, bool need_wq,
+    const Geometry* A, const Geometry* B, const Geometry* C, const Geometry* D,
+    const Geometry* AB, const Geometry* CD, const Geometry* P,
+    const Geometry* Q, const Geometry* W, Geometry alpha0, Geometry alpha1,
+    Geometry alpha2, Geometry alpha3, Geometry gammap, Geometry gammaq,
+    Geometry oogammap, Geometry oogammaq, Geometry oogammapq, Scalar rho) {
+  if (braket == BraKet::xx_xx) {
+#if LIBINT2_DEFINED(eri, PA_x)
+    primdata.PA_x[0] = P[0] - A[0];
+#endif
+#if LIBINT2_DEFINED(eri, PA_y)
+    primdata.PA_y[0] = P[1] - A[1];
+#endif
+#if LIBINT2_DEFINED(eri, PA_z)
+    primdata.PA_z[0] = P[2] - A[2];
+#endif
+#if LIBINT2_DEFINED(eri, PB_x)
+    primdata.PB_x[0] = P[0] - B[0];
+#endif
+#if LIBINT2_DEFINED(eri, PB_y)
+    primdata.PB_y[0] = P[1] - B[1];
+#endif
+#if LIBINT2_DEFINED(eri, PB_z)
+    primdata.PB_z[0] = P[2] - B[2];
+#endif
+  }
+
+  if (braket != BraKet::xs_xs) {
+#if LIBINT2_DEFINED(eri, QC_x)
+    primdata.QC_x[0] = Q[0] - C[0];
+#endif
+#if LIBINT2_DEFINED(eri, QC_y)
+    primdata.QC_y[0] = Q[1] - C[1];
+#endif
+#if LIBINT2_DEFINED(eri, QC_z)
+    primdata.QC_z[0] = Q[2] - C[2];
+#endif
+#if LIBINT2_DEFINED(eri, QD_x)
+    primdata.QD_x[0] = Q[0] - D[0];
+#endif
+#if LIBINT2_DEFINED(eri, QD_y)
+    primdata.QD_y[0] = Q[1] - D[1];
+#endif
+#if LIBINT2_DEFINED(eri, QD_z)
+    primdata.QD_z[0] = Q[2] - D[2];
+#endif
+  }
+
+  if (braket == BraKet::xx_xx) {
+#if LIBINT2_DEFINED(eri, AB_x)
+    primdata.AB_x[0] = AB[0];
+#endif
+#if LIBINT2_DEFINED(eri, AB_y)
+    primdata.AB_y[0] = AB[1];
+#endif
+#if LIBINT2_DEFINED(eri, AB_z)
+    primdata.AB_z[0] = AB[2];
+#endif
+#if LIBINT2_DEFINED(eri, BA_x)
+    primdata.BA_x[0] = -AB[0];
+#endif
+#if LIBINT2_DEFINED(eri, BA_y)
+    primdata.BA_y[0] = -AB[1];
+#endif
+#if LIBINT2_DEFINED(eri, BA_z)
+    primdata.BA_z[0] = -AB[2];
+#endif
+  }
+
+  if (braket != BraKet::xs_xs) {
+#if LIBINT2_DEFINED(eri, CD_x)
+    primdata.CD_x[0] = CD[0];
+#endif
+#if LIBINT2_DEFINED(eri, CD_y)
+    primdata.CD_y[0] = CD[1];
+#endif
+#if LIBINT2_DEFINED(eri, CD_z)
+    primdata.CD_z[0] = CD[2];
+#endif
+#if LIBINT2_DEFINED(eri, DC_x)
+    primdata.DC_x[0] = -CD[0];
+#endif
+#if LIBINT2_DEFINED(eri, DC_y)
+    primdata.DC_y[0] = -CD[1];
+#endif
+#if LIBINT2_DEFINED(eri, DC_z)
+    primdata.DC_z[0] = -CD[2];
+#endif
+  }
+
+  if (need_wp) {
+#if LIBINT2_DEFINED(eri, WP_x)
+    primdata.WP_x[0] = W[0] - P[0];
+#endif
+#if LIBINT2_DEFINED(eri, WP_y)
+    primdata.WP_y[0] = W[1] - P[1];
+#endif
+#if LIBINT2_DEFINED(eri, WP_z)
+    primdata.WP_z[0] = W[2] - P[2];
+#endif
+  }
+  if (need_wq) {
+#if LIBINT2_DEFINED(eri, WQ_x)
+    primdata.WQ_x[0] = W[0] - Q[0];
+#endif
+#if LIBINT2_DEFINED(eri, WQ_y)
+    primdata.WQ_y[0] = W[1] - Q[1];
+#endif
+#if LIBINT2_DEFINED(eri, WQ_z)
+    primdata.WQ_z[0] = W[2] - Q[2];
+#endif
+  }
+#if LIBINT2_DEFINED(eri, oo2z)
+  primdata.oo2z[0] = 0.5 * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri, oo2e)
+  primdata.oo2e[0] = 0.5 * oogammaq;
+#endif
+#if LIBINT2_DEFINED(eri, oo2ze)
+  primdata.oo2ze[0] = 0.5 * oogammapq;
+#endif
+#if LIBINT2_DEFINED(eri, roz)
+  primdata.roz[0] = rho * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri, roe)
+  primdata.roe[0] = rho * oogammaq;
+#endif
+
+// using ITR?
+#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_0_0_x)
+  primdata.TwoPRepITR_pfac0_0_0_x[0] =
+      -(alpha1 * AB[0] + alpha3 * CD[0]) * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_0_0_y)
+  primdata.TwoPRepITR_pfac0_0_0_y[0] =
+      -(alpha1 * AB[1] + alpha3 * CD[1]) * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_0_0_z)
+  primdata.TwoPRepITR_pfac0_0_0_z[0] =
+      -(alpha1 * AB[2] + alpha3 * CD[2]) * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_1_0_x)
+  primdata.TwoPRepITR_pfac0_1_0_x[0] =
+      -(alpha1 * AB[0] + alpha3 * CD[0]) * oogammaq;
+#endif
+#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_1_0_y)
+  primdata.TwoPRepITR_pfac0_1_0_y[0] =
+      -(alpha1 * AB[1] + alpha3 * CD[1]) * oogammaq;
+#endif
+#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_1_0_z)
+  primdata.TwoPRepITR_pfac0_1_0_z[0] =
+      -(alpha1 * AB[2] + alpha3 * CD[2]) * oogammaq;
+#endif
+#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_0_1_x)
+  primdata.TwoPRepITR_pfac0_0_1_x[0] =
+      (alpha0 * AB[0] + alpha2 * CD[0]) * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_0_1_y)
+  primdata.TwoPRepITR_pfac0_0_1_y[0] =
+      (alpha0 * AB[1] + alpha2 * CD[1]) * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_0_1_z)
+  primdata.TwoPRepITR_pfac0_0_1_z[0] =
+      (alpha0 * AB[2] + alpha2 * CD[2]) * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_1_1_x)
+  primdata.TwoPRepITR_pfac0_1_1_x[0] =
+      (alpha0 * AB[0] + alpha2 * CD[0]) * oogammaq;
+#endif
+#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_1_1_y)
+  primdata.TwoPRepITR_pfac0_1_1_y[0] =
+      (alpha0 * AB[1] + alpha2 * CD[1]) * oogammaq;
+#endif
+#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_1_1_z)
+  primdata.TwoPRepITR_pfac0_1_1_z[0] =
+      (alpha0 * AB[2] + alpha2 * CD[2]) * oogammaq;
+#endif
+#if LIBINT2_DEFINED(eri, eoz)
+  primdata.eoz[0] = gammaq * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri, zoe)
+  primdata.zoe[0] = gammap * oogammaq;
+#endif
+}
+
+#ifdef LIBINT_INCLUDE_ERI
+inline void build_prepared_ssss(const Libint_t* data) {
+  auto& result = data->stack[0];
+  result = 0;
+  for (int i = 0; i < data->contrdepth; ++i)
+    result += data[i].LIBINT_T_SS_EREP_SS(0)[0];
+  const_cast<Libint_t*>(data)->targets[0] = data->stack;
+}
+#endif
+}  // namespace detail
+
+__libint2_engine_inline Engine::PreparedEri4 Engine::prepare_eri4(
+    const Eri4Primitive* primitives, std::size_t count, int mmax) const {
+#ifdef LIBINT_INCLUDE_ERI
+  static_assert(LIBINT2_MAX_VECLEN == 1, "prepared ERI requires scalar kernels");
+  if (oper_ != Operator::coulomb || braket_ != BraKet::xx_xx ||
+      deriv_order_ != 0)
+    throw std::invalid_argument(
+        "prepare_eri4 requires a zero-derivative four-center Coulomb Engine");
+  if (!buildfnptrs_) throw missing_kernel();
+  if (!primitives || count == 0 ||
+      count > std::size_t(std::numeric_limits<int>::max()) ||
+      mmax < 0 || mmax > 4 * lmax_)
+    throw std::invalid_argument("invalid prepared ERI batch size or radial order");
+
+  PreparedEri4 batch(count, lmax_, mmax, hard_lmax_, buildfnptrs_);
+  auto* data = batch.data_.get();
+  std::array<value_type, 3> first_AB{}, first_CD{};
+  for (std::size_t i = 0; i < count; ++i) {
+    const auto& p = primitives[i];
+    if (!p.seeds || p.seed_count <= std::size_t(mmax))
+      throw std::invalid_argument("prepared ERI radial seed prefix is too short");
+    auto& out = data[i];
+    // The scalar generator places the radial seeds in consecutive members.
+    // Copy within the complete record, rather than indexing across arrays.
+    auto* bytes = reinterpret_cast<unsigned char*>(&out);
+    std::memcpy(bytes + offsetof(Libint_t, LIBINT_T_SS_EREP_SS(0)), p.seeds,
+                (mmax + 1) * sizeof(value_type));
+    if (mmax == 0) continue;
+
+    const auto& A = p.centers[0];
+    const auto& B = p.centers[1];
+    const auto& C = p.centers[2];
+    const auto& D = p.centers[3];
+    std::array<value_type, 3> AB, CD;
+    for (int xyz = 0; xyz < 3; ++xyz) {
+      AB[xyz] = A[xyz] - B[xyz];
+      CD[xyz] = C[xyz] - D[xyz];
+    }
+    if (i == 0) {
+      first_AB = AB;
+      first_CD = CD;
+    } else if (AB != first_AB || CD != first_CD) {
+      throw std::invalid_argument(
+          "prepared ERI contraction requires common A-B and C-D displacements");
+    }
+    const auto& a = p.exponents;
+    detail::set_eri_recurrence_data(
+        out, BraKet::xx_xx, true, true, A.data(), B.data(), C.data(), D.data(),
+        AB.data(), CD.data(), p.P.data(), p.Q.data(), p.W.data(), a[0], a[1],
+        a[2], a[3], a[0] + a[1], a[2] + a[3], p.inverse_p, p.inverse_q,
+        p.inverse_p_plus_q, p.rho);
+  }
+  LIBINT2_PREFIXED_NAME(libint2_init_eri)(data, lmax_, nullptr);
+#if LIBINT2_FLOP_COUNT
+  LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)(data, count);
+#endif
+  data->contrdepth = static_cast<int>(count);
+  return batch;
+#else
+  (void)primitives;
+  (void)count;
+  (void)mmax;
+  throw missing_kernel();
+#endif
+}
+
+__libint2_engine_inline Engine::PreparedEri4::Kernel
+Engine::PreparedEri4::kernel(const std::array<int, 4>& l) & {
+#ifdef LIBINT_INCLUDE_ERI
+  if (!data_) throw std::logic_error("moved-from prepared ERI batch");
+  std::size_t index = 0;
+  int order = 0;
+  for (const int am : l) {
+    if (am < 0) throw std::invalid_argument("negative ERI angular momentum");
+    if (am > lmax_) throw lmax_exceeded("eri", lmax_, am);
+    index = index * table_extent_ + am;
+    order += am;
+  }
+  if (order > mmax_)
+    throw std::invalid_argument("prepared ERI radial seed prefix is too short");
+  auto* data = data_.get();
+  if (order == 0) return Kernel(data, detail::build_prepared_ssss);
+  auto build = build_[index];
+  if (!build) throw missing_kernel();
+  return Kernel(data, build);
+#else
+  (void)l;
+  throw missing_kernel();
+#endif
+}
+
+/// Computes a shell set of two-body integrals.
 /// \note result is stored in the "chemists"/Mulliken form, (tbra1 tbra2 |tket1
 /// tket2), i.e. bra and ket are in chemists meaning; result is packed in
 /// row-major order.
@@ -1990,90 +2281,6 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             }
 
             if (mmax != 0) {
-              if (braket_ == BraKet::xx_xx) {
-#if LIBINT2_DEFINED(eri, PA_x)
-                primdata.PA_x[0] = P[0] - A[0];
-#endif
-#if LIBINT2_DEFINED(eri, PA_y)
-                primdata.PA_y[0] = P[1] - A[1];
-#endif
-#if LIBINT2_DEFINED(eri, PA_z)
-                primdata.PA_z[0] = P[2] - A[2];
-#endif
-#if LIBINT2_DEFINED(eri, PB_x)
-                primdata.PB_x[0] = P[0] - B[0];
-#endif
-#if LIBINT2_DEFINED(eri, PB_y)
-                primdata.PB_y[0] = P[1] - B[1];
-#endif
-#if LIBINT2_DEFINED(eri, PB_z)
-                primdata.PB_z[0] = P[2] - B[2];
-#endif
-              }
-
-              if (braket_ != BraKet::xs_xs) {
-#if LIBINT2_DEFINED(eri, QC_x)
-                primdata.QC_x[0] = Q[0] - C[0];
-#endif
-#if LIBINT2_DEFINED(eri, QC_y)
-                primdata.QC_y[0] = Q[1] - C[1];
-#endif
-#if LIBINT2_DEFINED(eri, QC_z)
-                primdata.QC_z[0] = Q[2] - C[2];
-#endif
-#if LIBINT2_DEFINED(eri, QD_x)
-                primdata.QD_x[0] = Q[0] - D[0];
-#endif
-#if LIBINT2_DEFINED(eri, QD_y)
-                primdata.QD_y[0] = Q[1] - D[1];
-#endif
-#if LIBINT2_DEFINED(eri, QD_z)
-                primdata.QD_z[0] = Q[2] - D[2];
-#endif
-              }
-
-              if (braket_ == BraKet::xx_xx) {
-#if LIBINT2_DEFINED(eri, AB_x)
-                primdata.AB_x[0] = AB[0];
-#endif
-#if LIBINT2_DEFINED(eri, AB_y)
-                primdata.AB_y[0] = AB[1];
-#endif
-#if LIBINT2_DEFINED(eri, AB_z)
-                primdata.AB_z[0] = AB[2];
-#endif
-#if LIBINT2_DEFINED(eri, BA_x)
-                primdata.BA_x[0] = -AB[0];
-#endif
-#if LIBINT2_DEFINED(eri, BA_y)
-                primdata.BA_y[0] = -AB[1];
-#endif
-#if LIBINT2_DEFINED(eri, BA_z)
-                primdata.BA_z[0] = -AB[2];
-#endif
-              }
-
-              if (braket_ != BraKet::xs_xs) {
-#if LIBINT2_DEFINED(eri, CD_x)
-                primdata.CD_x[0] = CD[0];
-#endif
-#if LIBINT2_DEFINED(eri, CD_y)
-                primdata.CD_y[0] = CD[1];
-#endif
-#if LIBINT2_DEFINED(eri, CD_z)
-                primdata.CD_z[0] = CD[2];
-#endif
-#if LIBINT2_DEFINED(eri, DC_x)
-                primdata.DC_x[0] = -CD[0];
-#endif
-#if LIBINT2_DEFINED(eri, DC_y)
-                primdata.DC_y[0] = -CD[1];
-#endif
-#if LIBINT2_DEFINED(eri, DC_z)
-                primdata.DC_z[0] = -CD[2];
-#endif
-              }
-
               const auto gammap_o_gammapgammaq = oogammapq * gammap;
               const auto gammaq_o_gammapgammaq = oogammapq * gammaq;
 
@@ -2084,31 +2291,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
               const auto Wz =
                   (gammap_o_gammapgammaq * P[2] + gammaq_o_gammapgammaq * Q[2]);
 
-              if (total_deriv_order > 0 || lmax_bra > 0) {
-#if LIBINT2_DEFINED(eri, WP_x)
-                primdata.WP_x[0] = Wx - P[0];
-#endif
-#if LIBINT2_DEFINED(eri, WP_y)
-                primdata.WP_y[0] = Wy - P[1];
-#endif
-#if LIBINT2_DEFINED(eri, WP_z)
-                primdata.WP_z[0] = Wz - P[2];
-#endif
-              }
-              if (total_deriv_order > 0 || lmax_ket > 0) {
-#if LIBINT2_DEFINED(eri, WQ_x)
-                primdata.WQ_x[0] = Wx - Q[0];
-#endif
-#if LIBINT2_DEFINED(eri, WQ_y)
-                primdata.WQ_y[0] = Wy - Q[1];
-#endif
-#if LIBINT2_DEFINED(eri, WQ_z)
-                primdata.WQ_z[0] = Wz - Q[2];
-#endif
-              }
-#if LIBINT2_DEFINED(eri, oo2z)
-              primdata.oo2z[0] = 0.5 * oogammap;
-#endif
+              const decltype(Wx) W[] = {Wx, Wy, Wz};
+              detail::set_eri_recurrence_data(
+                  primdata, braket_, total_deriv_order > 0 || lmax_bra > 0,
+                  total_deriv_order > 0 || lmax_ket > 0, A.data(), B.data(),
+                  C.data(), D.data(), AB, CD, P, Q, W, alpha0, alpha1, alpha2,
+                  alpha3, gammap, gammaq, oogammap, oogammaq, oogammapq, rho);
+
               // GIAO ERIs: positions of the second center of each pair
               // relative to the coordinate origin (see Operator::giao_coulomb)
               if (op == Operator::giao_coulomb) {
@@ -2131,74 +2320,6 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 primdata.DO_z[0] = D[2];
 #endif
               }
-#if LIBINT2_DEFINED(eri, oo2e)
-              primdata.oo2e[0] = 0.5 * oogammaq;
-#endif
-#if LIBINT2_DEFINED(eri, oo2ze)
-              primdata.oo2ze[0] = 0.5 * oogammapq;
-#endif
-#if LIBINT2_DEFINED(eri, roz)
-              primdata.roz[0] = rho * oogammap;
-#endif
-#if LIBINT2_DEFINED(eri, roe)
-              primdata.roe[0] = rho * oogammaq;
-#endif
-
-// using ITR?
-#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_0_0_x)
-              primdata.TwoPRepITR_pfac0_0_0_x[0] =
-                  -(alpha1 * AB[0] + alpha3 * CD[0]) * oogammap;
-#endif
-#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_0_0_y)
-              primdata.TwoPRepITR_pfac0_0_0_y[0] =
-                  -(alpha1 * AB[1] + alpha3 * CD[1]) * oogammap;
-#endif
-#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_0_0_z)
-              primdata.TwoPRepITR_pfac0_0_0_z[0] =
-                  -(alpha1 * AB[2] + alpha3 * CD[2]) * oogammap;
-#endif
-#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_1_0_x)
-              primdata.TwoPRepITR_pfac0_1_0_x[0] =
-                  -(alpha1 * AB[0] + alpha3 * CD[0]) * oogammaq;
-#endif
-#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_1_0_y)
-              primdata.TwoPRepITR_pfac0_1_0_y[0] =
-                  -(alpha1 * AB[1] + alpha3 * CD[1]) * oogammaq;
-#endif
-#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_1_0_z)
-              primdata.TwoPRepITR_pfac0_1_0_z[0] =
-                  -(alpha1 * AB[2] + alpha3 * CD[2]) * oogammaq;
-#endif
-#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_0_1_x)
-              primdata.TwoPRepITR_pfac0_0_1_x[0] =
-                  (alpha0 * AB[0] + alpha2 * CD[0]) * oogammap;
-#endif
-#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_0_1_y)
-              primdata.TwoPRepITR_pfac0_0_1_y[0] =
-                  (alpha0 * AB[1] + alpha2 * CD[1]) * oogammap;
-#endif
-#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_0_1_z)
-              primdata.TwoPRepITR_pfac0_0_1_z[0] =
-                  (alpha0 * AB[2] + alpha2 * CD[2]) * oogammap;
-#endif
-#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_1_1_x)
-              primdata.TwoPRepITR_pfac0_1_1_x[0] =
-                  (alpha0 * AB[0] + alpha2 * CD[0]) * oogammaq;
-#endif
-#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_1_1_y)
-              primdata.TwoPRepITR_pfac0_1_1_y[0] =
-                  (alpha0 * AB[1] + alpha2 * CD[1]) * oogammaq;
-#endif
-#if LIBINT2_DEFINED(eri, TwoPRepITR_pfac0_1_1_z)
-              primdata.TwoPRepITR_pfac0_1_1_z[0] =
-                  (alpha0 * AB[2] + alpha2 * CD[2]) * oogammaq;
-#endif
-#if LIBINT2_DEFINED(eri, eoz)
-              primdata.eoz[0] = gammaq * oogammap;
-#endif
-#if LIBINT2_DEFINED(eri, zoe)
-              primdata.zoe[0] = gammap * oogammaq;
-#endif
 
               // prefactors for derivative ERI relations
               if (total_deriv_order > 0) {

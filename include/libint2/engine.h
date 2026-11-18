@@ -47,6 +47,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdio>
 #include <cstring>
 #include <functional>
@@ -1407,6 +1408,86 @@ class Engine {
   typedef const target_ptr_vec& (Engine::*compute2_ptr_type)(
       const Shell& bra1, const Shell& bra2, const Shell& ket1,
       const Shell& ket2, const ShellPair* spbra, const ShellPair* spket);
+
+  /// Physical inputs for one externally prepared four-center ERI primitive.
+  /// Center order is (A,B|C,D). p=alpha_A+alpha_B, q=alpha_C+alpha_D,
+  /// and rho=p*q/(p+q). P and Q are the pair centers and W=(p*P+q*Q)/(p+q).
+  struct Eri4Primitive {
+    std::array<std::array<value_type, 3>, 4> centers;
+    std::array<value_type, 4> exponents;
+    std::array<value_type, 3> P, Q, W;
+    value_type inverse_p, inverse_q, inverse_p_plus_q, rho;
+    /// Orders start at zero. Each seed is (ss|ss)^(m), including the
+    /// primitive prefactor and any caller-supplied weights or scaling.
+    const value_type* seeds;
+    std::size_t seed_count;
+  };
+
+  /// Owns the packed inputs and scratch for one batch of four-center ERIs.
+  class PreparedEri4 {
+   public:
+    /// A kernel borrowing this batch's storage. The owning batch must outlive
+    /// all calls through the handle.
+    class Kernel {
+     public:
+      /// Returns the kernel's native Cartesian block. The next call using
+      /// the same batch overwrites it. Use distinct batches concurrently.
+      const value_type* operator()() const {
+#ifdef LIBINT2_ACCUM_INTS
+        data_->zero_out_targets = 1;
+#endif
+        build_(data_);
+        return data_->targets[0];
+      }
+
+     private:
+      friend class PreparedEri4;
+      Kernel(Libint_t* data, void (*build)(const Libint_t*))
+          : data_(data), build_(build) {}
+      Libint_t* data_;
+      void (*build_)(const Libint_t*);
+    };
+
+    /// Bind angular momenta (l_A,l_B,l_C,l_D) in the generated kernel's
+    /// native center order. The batch must use this same order. Results are
+    /// row major with the last center varying fastest and use the generated
+    /// Cartesian component order. Reuse the handle for repeated calls.
+    __libint2_engine_inline Kernel kernel(const std::array<int, 4>& l) &;
+    Kernel kernel(const std::array<int, 4>&) && = delete;
+
+    PreparedEri4(PreparedEri4&&) noexcept = default;
+    PreparedEri4& operator=(PreparedEri4&&) noexcept = default;
+
+   private:
+    friend class Engine;
+    struct Cleanup {
+      void operator()(Libint_t* data) const {
+        if (data->stack)
+          LIBINT2_PREFIXED_NAME(libint2_cleanup_default)(data);
+        delete[] data;
+      }
+    };
+    PreparedEri4(std::size_t count, int lmax, int mmax, int table_extent,
+                 void (**build)(const Libint_t*))
+        : data_(new Libint_t[count]{}), lmax_(lmax), mmax_(mmax),
+          table_extent_(table_extent), build_(build) {}
+
+    std::unique_ptr<Libint_t[], Cleanup> data_;
+    int lmax_, mmax_, table_extent_;
+    void (**build_)(const Libint_t*);
+  };
+
+  /// Pack a nonempty batch for a zero-derivative, four-center Coulomb Engine.
+  /// The caller selects the contributing primitives and supplies all seed
+  /// weights. Supply orders zero through mmax for every record, where mmax
+  /// is at least the sum of angular momenta of each kernel to be bound.
+  /// For mmax > 0 the geometry quantities must be mutually consistent and
+  /// all records must share A-B and C-D displacements for horizontal
+  /// recurrence after contraction. For mmax = 0 only the seeds are used.
+  /// The result owns its storage independently of the input and the Engine.
+  /// Engine screening, scale, and output normalization do not apply here.
+  __libint2_engine_inline PreparedEri4 prepare_eri4(
+      const Eri4Primitive* primitives, std::size_t count, int mmax) const;
 
   // clang-format off
  /** this specifies target precision for computing the integrals, i.e.
