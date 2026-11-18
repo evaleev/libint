@@ -1433,14 +1433,20 @@ class Engine {
     /// all calls through the handle.
     class Kernel {
      public:
-      /// Returns the kernel's native Cartesian block. The next call using
-      /// the same batch overwrites it. Use distinct batches concurrently.
+      /// Computes and returns the first Cartesian shell set.
       const value_type* operator()() const {
+        return compute()[0];
+      }
+
+      /// Computes all Cartesian shell sets in native derivative order.
+      /// The next call using the same batch overwrites these results.
+      /// Use distinct batches concurrently.
+      const value_type* const* compute() const {
 #ifdef LIBINT2_ACCUM_INTS
         data_->zero_out_targets = 1;
 #endif
         build_(data_);
-        return data_->targets[0];
+        return data_->targets;
       }
 
      private:
@@ -1459,6 +1465,11 @@ class Engine {
     __libint2_engine_inline Kernel kernel(const std::array<int, 4>& l) &;
     Kernel kernel(const std::array<int, 4>&) && = delete;
 
+    /// Number of shell sets returned by Kernel::compute().
+    std::size_t nshellsets() const {
+      return num_geometrical_derivatives(rank(braket_), deriv_order_);
+    }
+
     PreparedEri(PreparedEri&&) noexcept = default;
     PreparedEri& operator=(PreparedEri&&) noexcept = default;
 
@@ -1472,12 +1483,13 @@ class Engine {
       }
     };
     PreparedEri(std::size_t count, int lmax, int mmax, BraKet braket,
-                const std::array<int, 4>& extents, const char* task_name,
-                void (**build)(const Libint_t*))
+                int deriv_order, const std::array<int, 4>& extents,
+                const char* task_name, void (**build)(const Libint_t*))
         : data_(new Libint_t[count]{}),
           lmax_(lmax),
           mmax_(mmax),
           braket_(braket),
+          deriv_order_(deriv_order),
           extents_(extents),
           task_name_(task_name),
           build_(build) {}
@@ -1485,19 +1497,21 @@ class Engine {
     std::unique_ptr<Libint_t[], Cleanup> data_;
     int lmax_, mmax_;
     BraKet braket_;
+    int deriv_order_;
     std::array<int, 4> extents_;
     const char* task_name_;
     void (**build_)(const Libint_t*);
   };
 
-  /// Pack a nonempty batch for an Engine using the scalar ERI recurrence
-  /// without geometric derivatives. This includes Coulomb and radial variants
-  /// such as erfc Coulomb. The caller selects the primitives and supplies all
-  /// seed weights and orders through mmax, at least the sum of angular
-  /// momenta of each kernel to be bound.
+  /// Pack a nonempty batch for an Engine using the scalar ERI recurrence.
+  /// This includes Coulomb and radial variants such as erfc Coulomb at the
+  /// Engine's configured geometric derivative order. The caller selects
+  /// primitives and supplies weighted seeds through mmax, which must cover
+  /// the sum of angular momenta plus the derivative order of each bound kernel.
   /// Use native kernel order: (A,B|C,D), (A,unit|C,D), or (A,unit|C,unit).
-  /// An xx_xs Engine uses the same native layout as xs_xx. This interface
-  /// supports reduced centers in the standard shell quartet ordering.
+  /// Derivative sets follow CartesianDerivIterator over the active centers.
+  /// A zero-derivative xx_xs Engine uses the xs_xx layout. Reduced centers
+  /// require the standard shell quartet ordering.
   /// With nonzero mmax, records must share the displacements of each
   /// active pair for horizontal recurrence after contraction. Kernels
   /// requiring solid-harmonic projection are outside the Cartesian interface.
