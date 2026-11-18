@@ -116,13 +116,16 @@ TEST_CASE("Reuse externally prepared four-center ERI seeds", "[engine][2-body]")
      defined(LIBINT2_SUPPORT_ERI3))
 TEST_CASE("Prepared scalar ERIs share the same input representation",
           "[engine][2-body]") {
-  auto check = [](Operator op, BraKet braket) {
+  auto check = [](Operator op, BraKet braket, int deriv_order = 0) {
+    CAPTURE(deriv_order);
+    CAPTURE(static_cast<int>(braket));
     constexpr double omega = .7;
     const bool paired_bra = braket == BraKet::xx_xx;
     const bool paired_ket = braket != BraKet::xs_xs;
     const bool reversed = braket == BraKet::xx_xs;
     const bool erfc = op == Operator::erfc_coulomb;
-    Engine engine(op, 1, 1, 0, 0., libint2::default_params(op), braket);
+    Engine engine(op, 1, 1, deriv_order, 0., libint2::default_params(op),
+                  braket);
     if (erfc) engine.set_params(omega);
     Engine::EriPrimitive input{};
     input.centers = {
@@ -143,15 +146,16 @@ TEST_CASE("Prepared scalar ERIs share the same input representation",
       const double delta = input.P[xyz] - input.Q[xyz];
       T += input.rho * delta * delta;
     }
-    const auto boys = libint2::FmEval_Chebyshev7<double>::instance(2);
-    std::array<double, 3> seeds;
-    boys->eval(seeds.data(), T, 2);
+    const int mmax = 2 + deriv_order;
+    const auto boys = libint2::FmEval_Chebyshev7<double>::instance(mmax);
+    std::vector<double> seeds(mmax + 1);
+    boys->eval(seeds.data(), T, mmax);
     if (erfc) {
       // The long-range complement rescales both T and each radial order.
       const double range = omega / std::sqrt(omega * omega + input.rho);
-      std::array<double, 3> long_range;
-      boys->eval(long_range.data(), range * range * T, 2);
-      for (int m = 0; m <= 2; ++m)
+      std::vector<double> long_range(mmax + 1);
+      boys->eval(long_range.data(), range * range * T, mmax);
+      for (int m = 0; m <= mmax; ++m)
         seeds[m] -= std::pow(range, 2 * m + 1) * long_range[m];
     }
     const double prefactor =
@@ -167,22 +171,39 @@ TEST_CASE("Prepared scalar ERIs share the same input representation",
     const auto A = shell(0, 1), C = shell(2, 1);
     const auto B = paired_bra ? shell(1, 0) : Shell::unit();
     const auto D = paired_ket ? shell(3, 0) : Shell::unit();
-    const auto* reference = braket == BraKet::xx_xx
-                                ? engine.compute(A, B, C, D)[0]
-                            : reversed   ? engine.compute(C, D, A)[0]
-                            : paired_ket ? engine.compute(A, C, D)[0]
-                                         : engine.compute(A, C)[0];
-    REQUIRE(reference != nullptr);
+    auto compute = [&](const Shell& bra, const Shell& ket)
+        -> const Engine::target_ptr_vec& {
+      if (paired_bra) return engine.compute(bra, B, ket, D);
+      if (reversed) return engine.compute(ket, D, bra);
+      if (paired_ket) return engine.compute(bra, ket, D);
+      return engine.compute(bra, ket);
+    };
+    const auto& reference = compute(A, C);
     // The caller need not populate inactive slots as unit shells.
     if (!paired_bra) input.exponents[1] = 100.;
     if (!paired_ket) input.exponents[3] = 200.;
-    auto prepared = engine.prepare_eri(&input, 1, 2);
-    const auto* values = prepared.kernel({{1, 0, 1, 0}})();
-    for (int i = 0; i < 3; ++i)
-      for (int j = 0; j < 3; ++j)
-        CHECK(
-            values[3 * i + j] ==
-            Approx(reference[reversed ? 3 * j + i : 3 * i + j]).margin(2e-14));
+    auto prepared = engine.prepare_eri(&input, 1, mmax);
+    REQUIRE(prepared.nshellsets() == reference.size());
+    const auto values = prepared.kernel({{1, 0, 1, 0}}).compute();
+    for (std::size_t s = 0; s < reference.size(); ++s) {
+      REQUIRE(reference[s] != nullptr);
+      for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+          CHECK(values[s][3 * i + j] ==
+                Approx(reference[s][reversed ? 3 * j + i : 3 * i + j])
+                    .margin(2e-14));
+    }
+    if (deriv_order > 0) {
+      const auto& s_reference = compute(shell(0, 0), shell(2, 0));
+      auto radial_prefix = engine.prepare_eri(&input, 1, deriv_order);
+      const auto s_values = radial_prefix.kernel({{0, 0, 0, 0}}).compute();
+      for (std::size_t s = 0; s < s_reference.size(); ++s)
+        CHECK(s_values[s][0] == Approx(s_reference[s][0]).margin(2e-14));
+      CHECK_THROWS_AS(radial_prefix.kernel({{1, 0, 1, 0}}),
+                      std::invalid_argument);
+      CHECK_THROWS_AS(engine.prepare_eri(&input, 1, deriv_order - 1),
+                      std::invalid_argument);
+    }
     if (!paired_bra)
       CHECK_THROWS_AS(prepared.kernel({{0, 1, 1, 0}}), Engine::lmax_exceeded);
     if (!paired_ket)
@@ -198,6 +219,16 @@ TEST_CASE("Prepared scalar ERIs share the same input representation",
 #endif
 #if defined(LIBINT2_SUPPORT_ERI2) && LIBINT2_MAX_AM_2eri >= 1
   check(Operator::coulomb, BraKet::xs_xs);
+#endif
+#if LIBINT2_TASK_EXISTS_4eri1 && LIBINT2_MAX_AM_eri1 >= 1
+  check(Operator::erfc_coulomb, BraKet::xx_xx, 1);
+#endif
+#if LIBINT2_TASK_EXISTS_3eri1 && LIBINT2_MAX_AM_3eri1 >= 1 && \
+    LIBINT2_MAX_AM_default1 >= 1
+  check(Operator::coulomb, BraKet::xs_xx, 1);
+#endif
+#if LIBINT2_TASK_EXISTS_2eri1 && LIBINT2_MAX_AM_2eri1 >= 1
+  check(Operator::coulomb, BraKet::xs_xs, 1);
 #endif
 }
 #endif

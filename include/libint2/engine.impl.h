@@ -608,9 +608,11 @@ __libint2_engine_inline void Engine::_initialize() {
   BOOST_PP_LIST_AT(LIBINT2_PP_NBODY_OPERATOR_LIST, \
                    BOOST_PP_TUPLE_ELEM(3, 0, product))
 
-#define LIBINT2_PP_NBODYENGINE_MCR3_DERIV(product)                      \
-  BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(3, 2, product), 0), \
-               BOOST_PP_TUPLE_ELEM(3, 2, product), BOOST_PP_EMPTY())
+#define LIBINT2_PP_NBODYENGINE_TASK_DERIV(order) \
+  BOOST_PP_IIF(BOOST_PP_BOOL(order), order, BOOST_PP_EMPTY())
+
+#define LIBINT2_PP_NBODYENGINE_MCR3_DERIV(product) \
+  LIBINT2_PP_NBODYENGINE_TASK_DERIV(BOOST_PP_TUPLE_ELEM(3, 2, product))
 
 #define LIBINT2_PP_NBODYENGINE_MCR3_task(product)                         \
   BOOST_PP_CAT(BOOST_PP_CAT(LIBINT2_PP_NBODYENGINE_MCR3_ncenter(product), \
@@ -1525,6 +1527,65 @@ inline void set_eri_recurrence_data(
 #endif
 }
 
+template <typename Scalar>
+inline void set_eri_derivative_data(
+    Libint_t& primdata, Scalar alpha0, Scalar alpha1, Scalar alpha2,
+    Scalar alpha3, Scalar oogammap, Scalar oogammaq, Scalar oogammapq,
+    Scalar gammap_o_gammapgammaq, Scalar gammaq_o_gammapgammaq) {
+#if LIBINT2_DEFINED(eri, alpha1_rho_over_zeta2)
+  primdata.alpha1_rho_over_zeta2[0] =
+      alpha0 * (oogammap * gammaq_o_gammapgammaq);
+#endif
+#if LIBINT2_DEFINED(eri, alpha2_rho_over_zeta2)
+  primdata.alpha2_rho_over_zeta2[0] =
+      alpha1 * (oogammap * gammaq_o_gammapgammaq);
+#endif
+#if LIBINT2_DEFINED(eri, alpha3_rho_over_eta2)
+  primdata.alpha3_rho_over_eta2[0] =
+      alpha2 * (oogammaq * gammap_o_gammapgammaq);
+#endif
+#if LIBINT2_DEFINED(eri, alpha4_rho_over_eta2)
+  primdata.alpha4_rho_over_eta2[0] =
+      alpha3 * (oogammaq * gammap_o_gammapgammaq);
+#endif
+#if LIBINT2_DEFINED(eri, alpha1_over_zetapluseta)
+  primdata.alpha1_over_zetapluseta[0] = alpha0 * oogammapq;
+#endif
+#if LIBINT2_DEFINED(eri, alpha2_over_zetapluseta)
+  primdata.alpha2_over_zetapluseta[0] = alpha1 * oogammapq;
+#endif
+#if LIBINT2_DEFINED(eri, alpha3_over_zetapluseta)
+  primdata.alpha3_over_zetapluseta[0] = alpha2 * oogammapq;
+#endif
+#if LIBINT2_DEFINED(eri, alpha4_over_zetapluseta)
+  primdata.alpha4_over_zetapluseta[0] = alpha3 * oogammapq;
+#endif
+#if LIBINT2_DEFINED(eri, rho12_over_alpha1)
+  primdata.rho12_over_alpha1[0] = alpha1 * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri, rho12_over_alpha2)
+  primdata.rho12_over_alpha2[0] = alpha0 * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri, rho34_over_alpha3)
+  primdata.rho34_over_alpha3[0] = alpha3 * oogammaq;
+#endif
+#if LIBINT2_DEFINED(eri, rho34_over_alpha4)
+  primdata.rho34_over_alpha4[0] = alpha2 * oogammaq;
+#endif
+#if LIBINT2_DEFINED(eri, two_alpha0_bra)
+  primdata.two_alpha0_bra[0] = 2.0 * alpha0;
+#endif
+#if LIBINT2_DEFINED(eri, two_alpha0_ket)
+  primdata.two_alpha0_ket[0] = 2.0 * alpha1;
+#endif
+#if LIBINT2_DEFINED(eri, two_alpha1_bra)
+  primdata.two_alpha1_bra[0] = 2.0 * alpha2;
+#endif
+#if LIBINT2_DEFINED(eri, two_alpha1_ket)
+  primdata.two_alpha1_ket[0] = 2.0 * alpha3;
+#endif
+}
+
 // Table dimensions in native center order. Unit slots have extent one.
 // Three-center generated tasks can have a separate limit on the paired axes.
 inline std::array<int, 4> eri_table_extents(BraKet braket, int extent,
@@ -1571,9 +1632,8 @@ inline void build_eri_ssss(const Libint_t* data) {
 __libint2_engine_inline Engine::PreparedEri Engine::prepare_eri(
     const EriPrimitive* primitives, std::size_t count, int mmax) const {
   static_assert(LIBINT2_MAX_VECLEN == 1, "prepared ERI requires scalar kernels");
-  if (operator_rank() != 2 || deriv_order_ != 0 || intrinsic_deriv_order() != 0)
-    throw std::invalid_argument(
-        "prepare_eri requires a zero-derivative scalar ERI task");
+  if (operator_rank() != 2 || intrinsic_deriv_order() != 0 || nopers() != 1)
+    throw std::invalid_argument("prepare_eri requires a scalar ERI task");
   if (!buildfnptrs_) throw missing_kernel();
 
   const auto braket = braket_ == BraKet::xx_xs ? BraKet::xs_xx : braket_;
@@ -1585,34 +1645,40 @@ __libint2_engine_inline Engine::PreparedEri Engine::prepare_eri(
   // Use the same generated task the Engine selected. Match by table so that
   // every radial operator sharing this recurrence uses the same adapter.
   void (*init)(Libint_t*, int, void*) = nullptr;
-#ifdef LIBINT_INCLUDE_ERI
-  if (braket == BraKet::xx_xx &&
-      buildfnptrs_ == to_ptr1(LIBINT2_PREFIXED_NAME(libint2_build_eri)))
-    init = LIBINT2_PREFIXED_NAME(libint2_init_eri);
-#endif
-#ifdef LIBINT_INCLUDE_ERI3
-  if (braket == BraKet::xs_xx &&
-      buildfnptrs_ == to_ptr1(LIBINT2_PREFIXED_NAME(libint2_build_3eri)))
-    init = LIBINT2_PREFIXED_NAME(libint2_init_3eri);
-#endif
-#ifdef LIBINT_INCLUDE_ERI2
-  if (braket == BraKet::xs_xs &&
-      buildfnptrs_ == to_ptr1(LIBINT2_PREFIXED_NAME(libint2_build_2eri)))
-    init = LIBINT2_PREFIXED_NAME(libint2_init_2eri);
-#endif
+#define LIBINT2_PP_PREPARED_ERI_MATCH(task)                              \
+  if (buildfnptrs_ ==                                                    \
+      to_ptr1(LIBINT2_PREFIXED_NAME(BOOST_PP_CAT(libint2_build_, task)))) \
+    init = LIBINT2_PREFIXED_NAME(BOOST_PP_CAT(libint2_init_, task));
+#define LIBINT2_PP_PREPARED_ERI_IF_AVAILABLE(key, task)                    \
+  BOOST_PP_IIF(BOOST_PP_IS_1(BOOST_PP_CAT(LIBINT2_TASK_EXISTS_, key)),       \
+               LIBINT2_PP_PREPARED_ERI_MATCH, BOOST_PP_TUPLE_EAT(1))(task)
+#define LIBINT2_PP_PREPARED_ERI_TASK(key, task, order)                     \
+  LIBINT2_PP_PREPARED_ERI_IF_AVAILABLE(                                    \
+      BOOST_PP_CAT(key, LIBINT2_PP_NBODYENGINE_TASK_DERIV(order)),           \
+      BOOST_PP_CAT(task, LIBINT2_PP_NBODYENGINE_TASK_DERIV(order)))
+#define LIBINT2_PP_PREPARED_ERI_ORDER(z, order, unused) \
+  LIBINT2_PP_PREPARED_ERI_TASK(4eri, eri, order)        \
+  LIBINT2_PP_PREPARED_ERI_TASK(3eri, 3eri, order)       \
+  LIBINT2_PP_PREPARED_ERI_TASK(2eri, 2eri, order)
+  BOOST_PP_REPEAT(BOOST_PP_INC(LIBINT2_MAX_DERIV_ORDER),
+                  LIBINT2_PP_PREPARED_ERI_ORDER, _)
+#undef LIBINT2_PP_PREPARED_ERI_ORDER
+#undef LIBINT2_PP_PREPARED_ERI_TASK
+#undef LIBINT2_PP_PREPARED_ERI_IF_AVAILABLE
+#undef LIBINT2_PP_PREPARED_ERI_MATCH
   if (!init)
     throw std::invalid_argument("prepare_eri requires a scalar ERI recurrence");
 
   const auto extents =
       detail::eri_table_extents(braket, hard_lmax_, hard_default_lmax_);
-  int max_order = 0;
+  int max_order = deriv_order_;
   for (int extent : extents) max_order += std::min(lmax_, extent - 1);
   if (!primitives || count == 0 ||
-      count > std::size_t(std::numeric_limits<int>::max()) || mmax < 0 ||
-      mmax > max_order)
+      count > std::size_t(std::numeric_limits<int>::max()) ||
+      mmax < deriv_order_ || mmax > max_order)
     throw std::invalid_argument("invalid prepared ERI batch size or radial order");
 
-  PreparedEri batch(count, lmax_, mmax, braket, extents, task_name_,
+  PreparedEri batch(count, lmax_, mmax, braket, deriv_order_, extents, task_name_,
                     buildfnptrs_);
   auto* data = batch.data_.get();
   std::array<value_type, 3> first_AB{}, first_CD{};
@@ -1649,11 +1715,18 @@ __libint2_engine_inline Engine::PreparedEri Engine::prepare_eri(
     const auto& a = p.exponents;
     const auto alpha_b = paired_bra ? a[1] : value_type(0);
     const auto alpha_d = paired_ket ? a[3] : value_type(0);
+    const auto gammap = a[0] + alpha_b;
+    const auto gammaq = a[2] + alpha_d;
     detail::set_eri_recurrence_data(
         out, braket, true, true, A.data(), B.data(), C.data(), D.data(),
         AB.data(), CD.data(), p.P.data(), p.Q.data(), p.W.data(), a[0], alpha_b,
-        a[2], alpha_d, a[0] + alpha_b, a[2] + alpha_d, p.inverse_p, p.inverse_q,
+        a[2], alpha_d, gammap, gammaq, p.inverse_p, p.inverse_q,
         p.inverse_p_plus_q, p.rho);
+    if (deriv_order_ > 0)
+      detail::set_eri_derivative_data(
+          out, a[0], alpha_b, a[2], alpha_d, p.inverse_p, p.inverse_q,
+          p.inverse_p_plus_q, p.inverse_p_plus_q * gammap,
+          p.inverse_p_plus_q * gammaq);
   }
   init(data, lmax_, nullptr);
 #if LIBINT2_FLOP_COUNT
@@ -1667,14 +1740,15 @@ __libint2_engine_inline Engine::PreparedEri::Kernel Engine::PreparedEri::kernel(
     const std::array<int, 4>& l) & {
   if (!data_) throw std::logic_error("moved-from prepared ERI batch");
   const auto index = detail::eri_kernel_index(l, extents_, lmax_, task_name_);
-  const int order = l[0] + l[1] + l[2] + l[3];
+  const int order = l[0] + l[1] + l[2] + l[3] + deriv_order_;
   if (order > mmax_)
     throw std::invalid_argument("prepared ERI radial seed prefix is too short");
-  if (braket_ == BraKet::xs_xx && detail::eri3_pure_sh && l[0] > 1)
+  if (deriv_order_ == 0 && braket_ == BraKet::xs_xx && detail::eri3_pure_sh &&
+      l[0] > 1)
     throw std::invalid_argument(
         "prepared Cartesian ERI requires a Cartesian fitting axis");
 #ifdef LIBINT_ERI2_PURE_SH
-  if (braket_ == BraKet::xs_xs && (l[0] > 1 || l[2] > 1))
+  if (deriv_order_ == 0 && braket_ == BraKet::xs_xs && (l[0] > 1 || l[2] > 1))
     throw std::invalid_argument(
         "prepared Cartesian ERI requires Cartesian kernel axes");
 #endif
@@ -2146,61 +2220,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   C.data(), D.data(), AB, CD, P, Q, W, alpha0, alpha1, alpha2,
                   alpha3, gammap, gammaq, oogammap, oogammaq, oogammapq, rho);
 
-              // prefactors for derivative ERI relations
-              if (total_deriv_order > 0) {
-#if LIBINT2_DEFINED(eri, alpha1_rho_over_zeta2)
-                primdata.alpha1_rho_over_zeta2[0] =
-                    alpha0 * (oogammap * gammaq_o_gammapgammaq);
-#endif
-#if LIBINT2_DEFINED(eri, alpha2_rho_over_zeta2)
-                primdata.alpha2_rho_over_zeta2[0] =
-                    alpha1 * (oogammap * gammaq_o_gammapgammaq);
-#endif
-#if LIBINT2_DEFINED(eri, alpha3_rho_over_eta2)
-                primdata.alpha3_rho_over_eta2[0] =
-                    alpha2 * (oogammaq * gammap_o_gammapgammaq);
-#endif
-#if LIBINT2_DEFINED(eri, alpha4_rho_over_eta2)
-                primdata.alpha4_rho_over_eta2[0] =
-                    alpha3 * (oogammaq * gammap_o_gammapgammaq);
-#endif
-#if LIBINT2_DEFINED(eri, alpha1_over_zetapluseta)
-                primdata.alpha1_over_zetapluseta[0] = alpha0 * oogammapq;
-#endif
-#if LIBINT2_DEFINED(eri, alpha2_over_zetapluseta)
-                primdata.alpha2_over_zetapluseta[0] = alpha1 * oogammapq;
-#endif
-#if LIBINT2_DEFINED(eri, alpha3_over_zetapluseta)
-                primdata.alpha3_over_zetapluseta[0] = alpha2 * oogammapq;
-#endif
-#if LIBINT2_DEFINED(eri, alpha4_over_zetapluseta)
-                primdata.alpha4_over_zetapluseta[0] = alpha3 * oogammapq;
-#endif
-#if LIBINT2_DEFINED(eri, rho12_over_alpha1)
-                primdata.rho12_over_alpha1[0] = alpha1 * oogammap;
-#endif
-#if LIBINT2_DEFINED(eri, rho12_over_alpha2)
-                primdata.rho12_over_alpha2[0] = alpha0 * oogammap;
-#endif
-#if LIBINT2_DEFINED(eri, rho34_over_alpha3)
-                primdata.rho34_over_alpha3[0] = alpha3 * oogammaq;
-#endif
-#if LIBINT2_DEFINED(eri, rho34_over_alpha4)
-                primdata.rho34_over_alpha4[0] = alpha2 * oogammaq;
-#endif
-#if LIBINT2_DEFINED(eri, two_alpha0_bra)
-                primdata.two_alpha0_bra[0] = 2.0 * alpha0;
-#endif
-#if LIBINT2_DEFINED(eri, two_alpha0_ket)
-                primdata.two_alpha0_ket[0] = 2.0 * alpha1;
-#endif
-#if LIBINT2_DEFINED(eri, two_alpha1_bra)
-                primdata.two_alpha1_bra[0] = 2.0 * alpha2;
-#endif
-#if LIBINT2_DEFINED(eri, two_alpha1_ket)
-                primdata.two_alpha1_ket[0] = 2.0 * alpha3;
-#endif
-              }
+              if (total_deriv_order > 0)
+                detail::set_eri_derivative_data(
+                    primdata, alpha0, alpha1, alpha2, alpha3, oogammap,
+                    oogammaq, oogammapq, gammap_o_gammapgammaq,
+                    gammaq_o_gammapgammaq);
             }  // m != 0
 
             ++p;
