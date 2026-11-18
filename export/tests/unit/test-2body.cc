@@ -18,6 +18,7 @@
  *
  */
 
+#include <libint2/boys.h>
 #include <libint2/deriv_iter.h>
 
 #include <algorithm>
@@ -35,6 +36,80 @@
 #endif
 
 typedef unsigned int uint;
+
+#if defined(LIBINT2_SUPPORT_ERI) && LIBINT2_MAX_AM_eri >= 1 && \
+    LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD
+TEST_CASE("Reuse externally prepared four-center ERI seeds", "[engine][2-body]") {
+  using Primitive = Engine::Eri4Primitive;
+  std::array<Primitive, 2> input{};
+  std::array<std::array<double, 2>, 2> seeds{};
+  const std::array<std::array<double, 3>, 4> centers{
+      {{{0., 0., 0.}}, {{.5, 0., 0.}}, {{0., .5, 0.}}, {{.5, .5, 0.}}}};
+  auto shell = [&](int i, int l, double exponent) {
+    return Shell{{exponent}, {{l, false, {1.}}}, centers[i], false};
+  };
+
+  Engine engine(Operator::coulomb, 1, 1, 0, 0.);
+  std::array<double, 3> expected_p{};
+  double expected_s = 0;
+  for (std::size_t i = 0; i < input.size(); ++i) {
+    const double a = 1. + i;
+    auto& p = input[i];
+    p.centers = centers;
+    p.exponents = {{a, 1., 1., 1.}};
+    p.inverse_p = 1. / (a + 1.);
+    p.inverse_q = .5;
+    p.inverse_p_plus_q = 1. / (a + 3.);
+    p.rho = (a + 1.) * 2. * p.inverse_p_plus_q;
+    p.P = {{.5 * p.inverse_p, 0., 0.}};
+    p.Q = {{.25, .5, 0.}};
+    p.W = {{p.inverse_p_plus_q, p.inverse_p_plus_q, 0.}};
+    const double dx = p.P[0] - p.Q[0];
+    const double T = p.rho * (dx * dx + .25);
+    libint2::FmEval_Chebyshev7<double>::instance(1)->eval(seeds[i].data(), T, 1);
+    const double pi = std::acos(-1.);
+    const double prefactor = 2. * std::pow(pi, 2.5) * p.inverse_p * p.inverse_q *
+                             std::sqrt(p.inverse_p_plus_q) *
+                             std::exp(-.25 * (a * p.inverse_p + p.inverse_q));
+    for (auto& seed : seeds[i]) seed *= prefactor;
+    p.seeds = seeds[i].data();
+    p.seed_count = seeds[i].size();
+
+    expected_s += engine.compute(shell(0, 0, a), shell(1, 0, 1.),
+                                 shell(2, 0, 1.), shell(3, 0, 1.))[0][0];
+    const auto* values = engine.compute(shell(0, 0, a), shell(1, 0, 1.),
+                                        shell(2, 1, 1.), shell(3, 0, 1.))[0];
+    for (int xyz = 0; xyz < 3; ++xyz) expected_p[xyz] += values[xyz];
+  }
+
+  auto batch = engine.prepare_eri4(input.data(), input.size(), 1);
+  const auto ssss = batch.kernel({{0, 0, 0, 0}});
+  const auto ssps = batch.kernel({{0, 0, 1, 0}});
+  for (int repeat = 0; repeat < 2; ++repeat) {
+    CHECK(ssss()[0] == Approx(expected_s).margin(2e-14));
+    const auto* values = ssps();
+    for (int xyz = 0; xyz < 3; ++xyz)
+      CHECK(values[xyz] == Approx(expected_p[xyz]).margin(2e-14));
+  }
+  CHECK_THROWS_AS(batch.kernel({{0, 0, 1, 1}}), std::invalid_argument);
+  CHECK_THROWS_AS(batch.kernel({{0, 0, -1, 0}}), std::invalid_argument);
+  input[1].centers[3][0] += .25;
+  CHECK_THROWS_AS(engine.prepare_eri4(input.data(), input.size(), 1),
+                  std::invalid_argument);
+
+  // A radial-only batch owns its inputs and needs no Engine after packing.
+  auto make_radial_only_batch = [] {
+    Engine radial_engine(Operator::coulomb, 1, 0);
+    const double weighted_seed = -0.75;
+    Primitive primitive{};
+    primitive.seeds = &weighted_seed;
+    primitive.seed_count = 1;
+    return radial_engine.prepare_eri4(&primitive, 1, 0);
+  };
+  auto radial_only = make_radial_only_batch();
+  CHECK(radial_only.kernel({{0, 0, 0, 0}})()[0] == -0.75);
+}
+#endif
 
 TEST_CASE("Slater/Yukawa integrals", "[engine][2-body]") {
 #if defined(LIBINT2_SUPPORT_ERI)
