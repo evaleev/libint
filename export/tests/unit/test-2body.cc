@@ -37,7 +37,8 @@
 
 typedef unsigned int uint;
 
-#if defined(LIBINT2_SUPPORT_ERI) && LIBINT2_MAX_AM_eri >= 1 && \
+#if LIBINT2_MAX_VECLEN == 1 && defined(LIBINT2_SUPPORT_ERI) && \
+    LIBINT2_MAX_AM_eri >= 1 &&                                 \
     LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD
 TEST_CASE("Reuse externally prepared four-center ERI seeds", "[engine][2-body]") {
   using Primitive = Engine::EriPrimitive;
@@ -111,7 +112,8 @@ TEST_CASE("Reuse externally prepared four-center ERI seeds", "[engine][2-body]")
 }
 #endif
 
-#if LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD &&  \
+#if LIBINT2_MAX_VECLEN == 1 &&                                        \
+    LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD &&  \
     (defined(LIBINT2_SUPPORT_ERI) || defined(LIBINT2_SUPPORT_ERI2) || \
      defined(LIBINT2_SUPPORT_ERI3))
 TEST_CASE("Prepared scalar ERIs share the same input representation",
