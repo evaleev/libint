@@ -1216,6 +1216,11 @@ class Engine {
   /// Owns the packed inputs and scratch for one batch of ERIs.
   class PreparedEri {
    public:
+    /// A contracted batch returns its sum. An individual batch retains one
+    /// result per primitive and supports geometries with different pair
+    /// displacements.
+    enum class Mode { contracted, individual };
+
     /// A kernel borrowing this batch's storage. The owning batch must outlive
     /// all calls through the handle.
     class Kernel {
@@ -1229,19 +1234,32 @@ class Engine {
       /// The next call using the same batch overwrites these results.
       /// Use distinct batches concurrently.
       const value_type* const* compute() const {
-#ifdef LIBINT2_ACCUM_INTS
-        data_->zero_out_targets = 1;
-#endif
-        build_(data_);
-        return data_->targets;
+        return run(data_);
+      }
+
+      /// Computes one primitive from an individual batch. Index zero selects
+      /// the contracted result in a contracted batch.
+      const value_type* const* compute(std::size_t index) const {
+        if (index >= size_)
+          throw std::out_of_range("prepared ERI result index");
+        return run(data_ + index);
       }
 
      private:
+      const value_type* const* run(Libint_t* data) const {
+#ifdef LIBINT2_ACCUM_INTS
+        data->zero_out_targets = 1;
+#endif
+        build_(data);
+        return data->targets;
+      }
+
       friend class PreparedEri;
-      Kernel(Libint_t* data, void (*build)(const Libint_t*))
-          : data_(data), build_(build) {}
+      Kernel(Libint_t* data, void (*build)(const Libint_t*), std::size_t size)
+          : data_(data), build_(build), size_(size) {}
       Libint_t* data_;
       void (*build_)(const Libint_t*);
+      std::size_t size_;
     };
 
     /// Bind angular momenta (l_A,l_B,l_C,l_D) in the generated kernel's
@@ -1257,6 +1275,9 @@ class Engine {
       return num_geometrical_derivatives(rank(braket_), deriv_order_);
     }
 
+    /// Number of results addressable through Kernel::compute(index).
+    std::size_t size() const { return size_; }
+
     PreparedEri(PreparedEri&&) noexcept = default;
     PreparedEri& operator=(PreparedEri&&) noexcept = default;
 
@@ -1269,10 +1290,12 @@ class Engine {
         delete[] data;
       }
     };
-    PreparedEri(std::size_t count, int lmax, int mmax, BraKet braket,
+    PreparedEri(std::size_t count, std::size_t size, int lmax, int mmax,
+                BraKet braket,
                 int deriv_order, const std::array<int, 4>& extents,
                 const char* task_name, void (**build)(const Libint_t*))
         : data_(new Libint_t[count]{}),
+          size_(size),
           lmax_(lmax),
           mmax_(mmax),
           braket_(braket),
@@ -1282,6 +1305,7 @@ class Engine {
           build_(build) {}
 
     std::unique_ptr<Libint_t[], Cleanup> data_;
+    std::size_t size_;
     int lmax_, mmax_;
     BraKet braket_;
     int deriv_order_;
@@ -1299,14 +1323,26 @@ class Engine {
   /// Derivative sets follow CartesianDerivIterator over the active centers.
   /// A zero-derivative xx_xs Engine uses the xs_xx layout. Reduced centers
   /// require the standard shell quartet ordering.
-  /// With nonzero mmax, records must share the displacements of each
-  /// active pair for horizontal recurrence after contraction. Kernels
+  /// With nonzero mmax, contracted records must share the displacements of
+  /// each active pair for horizontal recurrence after contraction. Kernels
   /// requiring solid-harmonic projection are outside the Cartesian interface.
   /// For mmax = 0 only the seeds are used. The result owns its storage
   /// independently of the input and the Engine. Engine screening, scale,
   /// and output normalization do not apply here.
   __libint2_engine_inline PreparedEri prepare_eri(
       const EriPrimitive* primitives, std::size_t count, int mmax) const;
+
+  /// Pack the same inputs with an explicit choice of output contraction.
+  __libint2_engine_inline PreparedEri prepare_eri(
+      const EriPrimitive* primitives, std::size_t count, int mmax,
+      PreparedEri::Mode mode) const;
+
+  /// Evaluate the radial core of this scalar two-body operator through mmax.
+  /// rho is the reduced exponent and T = rho * |P - Q|^2. Multiply the
+  /// values by the primitive Coulomb prefactor (including any contraction
+  /// weights) to obtain EriPrimitive::seeds. Output has mmax + 1 entries.
+  __libint2_engine_inline void eval_eri_core(value_type* output, int mmax,
+                                             scalar_type rho, scalar_type T);
 
   // clang-format off
  /** this specifies target precision for computing the integrals, i.e.
@@ -1556,6 +1592,10 @@ class Engine {
                                                 const Shell& s1,
                                                 const Shell& s2, size_t p1,
                                                 size_t p2, size_t oset);
+
+  __libint2_engine_inline void eval_eri_core_impl(
+      value_type* gm_ptr, int mmax, scalar_type rho, scalar_type T,
+      scalar_type gammapq, scalar_type oogammap, scalar_type oogammaq);
 
  public:
   /// 3-dim array of pointers to help dispatch efficiently based on oper_,
