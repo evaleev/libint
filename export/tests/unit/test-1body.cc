@@ -18,6 +18,8 @@
  *
  */
 
+#include <algorithm>
+#include <array>
 #include <functional>
 
 #include "catch.hpp"
@@ -46,6 +48,50 @@
 
 #define LIBINT2_TEST_ONEBODY(scale, op_idx) \
   LIBINT2_TEST_ONEBODY_MARGIN(scale, op_idx, 0.0)
+
+#if defined(LIBINT2_SUPPORT_ONEBODY) && LIBINT2_MAX_VECLEN == 1 && \
+    LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD
+TEST_CASE("Reuse one-body primitive pairs across angular momenta",
+          "[engine][1-body]") {
+  const auto compare = [](Operator op, int deriv, int lmax) {
+    if (lmax < 1) return;
+    CAPTURE(static_cast<int>(op));
+    CAPTURE(deriv);
+    Engine engine(op, 2, lmax, deriv);
+    if (op == Operator::nuclear) {
+      using Charges = libint2::operator_traits<Operator::nuclear>::oper_params_type;
+      engine.set_params(Charges{{1.1, {{.73, .14, -.6}}},
+                                {-.3, {{-.4, .2, .11}}}});
+    }
+    engine.prescale_by(-.82);
+    Shell A{{.8, 2.1}, {{0, false, {1., -.2}}}, {{.1, .3, -.2}}, false};
+    Shell B{{1.3}, {{0, true, {1.}}}, {{-.3, .2, .7}}, false};
+    auto prepared = engine.prepare_one_body(A, B);
+    const std::array<std::array<int, 2>, 6> cases{
+        {{{0, 0}}, {{lmax, 1}}, {{1, lmax}}, {{0, 1}}, {{1, 0}}, {{0, 0}}}};
+    for (const auto& l : cases) {
+      A.contr[0].l = l[0];
+      B.contr[0].l = l[1];
+      const auto& ordinary = engine.compute1(A, B);
+      const auto& reused = prepared.compute(l[0], l[1]);
+      REQUIRE(reused.size() == ordinary.size());
+      for (std::size_t s = 0; s < reused.size(); ++s)
+        for (std::size_t i = 0; i < A.size() * B.size(); ++i)
+          CHECK(reused[s][i] == Approx(ordinary[s][i]).margin(2e-14));
+    }
+  };
+  compare(Operator::overlap, 0, std::min(2, LIBINT2_MAX_AM_overlap));
+  compare(Operator::kinetic, 0, std::min(2, LIBINT2_MAX_AM_kinetic));
+  compare(Operator::emultipole1, 0, std::min(2, LIBINT2_MAX_AM_1emultipole));
+  compare(Operator::nuclear, 0, std::min(2, LIBINT2_MAX_AM_elecpot));
+#if LIBINT2_TASK_EXISTS_2overlap1
+  compare(Operator::overlap, 1, std::min(2, LIBINT2_MAX_AM_overlap1));
+#endif
+#if LIBINT2_TASK_EXISTS_2elecpot1
+  compare(Operator::nuclear, 1, std::min(2, LIBINT2_MAX_AM_elecpot1));
+#endif
+}
+#endif
 
 TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential",
                  "[engine][1-body]") {

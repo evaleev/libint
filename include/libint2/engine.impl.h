@@ -210,6 +210,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
 /// \note resulting shell sets are stored in row-major order
 __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
     const libint2::Shell& s1, const libint2::Shell& s2) {
+  return compute1_impl(s1, s2, nullptr);
+}
+
+__libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1_impl(
+    const Shell& s1, const Shell& s2, Libint_t* packed) {
   if (buildfnptrs_ == nullptr) throw missing_kernel();
 
   // can only handle 1 contraction at a time
@@ -246,9 +251,6 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
          "the max number of primitive pairs exceeded");
 
   auto nparam_sets = nparams();
-
-  // keep track if need to set targets_ explicitly
-  bool set_targets = set_targets_;
 
   // # of targets computed by libint
   const auto ntargets = nopers() * num_geometrical_derivatives(2, deriv_order_);
@@ -292,9 +294,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
       lmax == 0 && deriv_order_ == 0 &&
       (oper_ == Operator::overlap || oper_is_nuclear) &&
       oper_ != Operator::opVop && oper_ != Operator::op_q_gau_op;
+  auto* data = packed ? packed : primdata_.data();
+  bool set_targets = set_targets_ || (packed && !compute_directly);
   if (compute_directly) {
-    primdata_[0].stack[0] = 0;
-    targets_[0] = primdata_[0].stack;
+    data->stack[0] = 0;
+    targets_[0] = data->stack;
   }
 
   if (accumulate_ints_in_scratch)
@@ -306,39 +310,46 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
     if (!oper_is_nuclear)
       assert(nparam_sets == 1 && "unexpected number of operator parameters");
 
-    auto p12 = 0;
-    for (auto p1 = 0; p1 != nprim1; ++p1) {
-      for (auto p2 = 0; p2 != nprim2; ++p2, ++p12) {
-        compute_primdata(primdata_[p12], s1, s2, p1, p2, pset);
+    if (packed) {
+      data = packed + pset * nprimpairs;
+    } else {
+      auto p12 = 0;
+      for (auto p1 = 0; p1 != nprim1; ++p1) {
+        for (auto p2 = 0; p2 != nprim2; ++p2, ++p12) {
+          compute_primdata(data[p12], s1, s2, p1, p2, pset);
+        }
       }
+      data->contrdepth = p12;
     }
-    primdata_[0].contrdepth = p12;
 
     if (compute_directly) {
-      auto& result = primdata_[0].stack[0];
+      auto& result = data->stack[0];
       switch (oper_) {
         case Operator::overlap:
-          for (auto p12 = 0; p12 != primdata_[0].contrdepth; ++p12)
-            result += primdata_[p12]._0_Overlap_0_x[0] *
-                      primdata_[p12]._0_Overlap_0_y[0] *
-                      primdata_[p12]._0_Overlap_0_z[0];
+          for (auto p12 = 0; p12 != data->contrdepth; ++p12)
+            result += data[p12]._0_Overlap_0_x[0] *
+                      data[p12]._0_Overlap_0_y[0] *
+                      data[p12]._0_Overlap_0_z[0];
           break;
         case Operator::nuclear:
         case Operator::q_gau:
         case Operator::erf_nuclear:
         case Operator::erfc_nuclear:
         case Operator::erfx_nuclear:
-          for (auto p12 = 0; p12 != primdata_[0].contrdepth; ++p12)
-            result += primdata_[p12].LIBINT_T_S_ELECPOT_S(0)[0];
+          for (auto p12 = 0; p12 != data->contrdepth; ++p12)
+            result += data[p12].LIBINT_T_S_ELECPOT_S(0)[0];
           break;
         default:
           assert(false && "missing case in switch");
       }
-      primdata_[0].targets[0] = &result;
+      data->targets[0] = &result;
     } else {
       const auto buildfnidx = s1.contr[0].l * hard_lmax_ + s2.contr[0].l;
       assert(buildfnptrs_[buildfnidx] && "null build function ptr");
-      buildfnptrs_[buildfnidx](&primdata_[0]);
+#ifdef LIBINT2_ACCUM_INTS
+      if (packed) data->zero_out_targets = 1;
+#endif
+      buildfnptrs_[buildfnidx](data);
 
       if (accumulate_ints_in_scratch) {
         set_targets = true;
@@ -353,12 +364,12 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
           auto s_target = &scratch_[0];
           for (auto s = 0; s != ntargets; ++s, s_target += ncart12)
             if (pset != 0)
-              std::transform(primdata_[0].targets[s],
-                             primdata_[0].targets[s] + ncart12, s_target,
+              std::transform(data->targets[s],
+                             data->targets[s] + ncart12, s_target,
                              s_target, std::plus<value_type>());
             else
-              std::copy(primdata_[0].targets[s],
-                        primdata_[0].targets[s] + ncart12, s_target);
+              std::copy(data->targets[s],
+                        data->targets[s] + ncart12, s_target);
         }
 
         // 2. reconstruct derivatives of nuclear ints for each nucleus
@@ -377,9 +388,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
               assert(ntargets == 6 * nopers && "unexpected # of targets");
               for (auto xyz = 0; xyz != 3; ++xyz) {
                 for (auto op = 0u; op != nopers; ++op) {
-                  const auto src_A = primdata_[0].targets[xyz * nopers + op];
+                  const auto src_A = data->targets[xyz * nopers + op];
                   const auto src_B =
-                      primdata_[0].targets[(3 + xyz) * nopers + op];
+                      data->targets[(3 + xyz) * nopers + op];
                   auto dest =
                       &scratch_[((6 + pset * 3 + xyz) * nopers + op) * ncart12];
                   for (auto i = 0; i != ncart12; ++i) {
@@ -407,7 +418,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
               assert(ntargets == 21 * nopers && "unexpected # of targets");
               // shellset computed by libint for this pset
               auto src_shellset = [&](int deriv_idx, unsigned int op) {
-                return primdata_[0].targets[deriv_idx * nopers + op];
+                return data->targets[deriv_idx * nopers + op];
               };
               // accumulated shellset in scratch
               auto tgt_shellset = [&](int deriv_idx, unsigned int op) {
@@ -551,7 +562,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
          ++s, spherical_ints += n12) {
       auto cartesian_ints = accumulate_ints_in_scratch
                                 ? &scratch_[s * ncart12]
-                                : primdata_[0].targets[s];
+                                : data->targets[s];
       // transform
       if (s1.contr[0].pure && s2.contr[0].pure) {
         libint2::solidharmonics::tform(l1, l2, cartesian_ints, spherical_ints);
@@ -572,7 +583,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
     for (auto s = 0ul; s != num_shellsets_computed; ++s) {
       auto cartesian_ints = accumulate_ints_in_scratch
                                 ? &scratch_[s * ncart12]
-                                : primdata_[0].targets[s];
+                                : data->targets[s];
       targets_[s] = cartesian_ints;
     }
   }
@@ -1074,7 +1085,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
                                                       const Shell& s1,
                                                       const Shell& s2,
                                                       size_t p1, size_t p2,
-                                                      size_t oset) {
+                                                      size_t oset,
+                                                      bool prepare_both_hrr) {
   const auto& A = s1.O;
   const auto& B = s2.O;
 
@@ -1111,8 +1123,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   // unlike the 2-body ints, can go both ways, determine which way to go (the
   // logic must match TwoCenter_OS_Tactic)
   const bool hrr_ket_to_bra = l1 >= l2;
-  if (use_hrr) {
-    if (hrr_ket_to_bra) {
+  if (use_hrr || prepare_both_hrr) {
+    if (hrr_ket_to_bra || prepare_both_hrr) {
 #if LIBINT2_DEFINED(eri, AB_x)
       primdata.AB_x[0] = AB_x;
 #endif
@@ -1122,7 +1134,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
 #if LIBINT2_DEFINED(eri, AB_z)
       primdata.AB_z[0] = AB_z;
 #endif
-    } else {
+    }
+    if (!hrr_ket_to_bra || prepare_both_hrr) {
 #if LIBINT2_DEFINED(eri, BA_x)
       primdata.BA_x[0] = -AB_x;
 #endif
@@ -1337,6 +1350,63 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
 #endif
   }
 }  // Engine::compute_primdata()
+
+__libint2_engine_inline Engine::PreparedOneBody Engine::prepare_one_body(
+    const Shell& s1, const Shell& s2) const {
+  if (operator_rank() != 1 || LIBINT2_MAX_VECLEN != 1)
+    throw std::invalid_argument("prepare_one_body requires a scalar one-body kernel");
+  if (!buildfnptrs_) throw missing_kernel();
+  if (s1.ncontr() != 1 || s2.ncontr() != 1 || s1.nprim() == 0 ||
+      s2.nprim() == 0 || s1.nprim() > max_nprim_ || s2.nprim() > max_nprim_)
+    throw std::invalid_argument("invalid prepared one-body shell pair");
+
+  if (s2.nprim() > std::size_t(std::numeric_limits<int>::max()) / s1.nprim())
+    throw std::overflow_error("prepared one-body pair count exceeds its capacity");
+  const auto nsets = nparams();
+  const auto npairs = s1.nprim() * s2.nprim();
+  if (nsets == 0)
+    throw std::logic_error("prepared one-body Engine has no operator parameters");
+  if (nsets > std::numeric_limits<std::size_t>::max() / npairs)
+    throw std::overflow_error("prepared one-body pair count exceeds its capacity");
+
+  PreparedOneBody batch(*this, s1, s2, nsets * npairs);
+  auto& owner = *batch.engine_;
+  auto& A = batch.shells_[0];
+  auto& B = batch.shells_[1];
+  A.contr[0].l = lmax_;
+  B.contr[0].l = lmax_;
+  for (std::size_t pset = 0; pset < nsets; ++pset) {
+    auto* records = batch.packed_.data() + pset * npairs;
+    auto& first = records[0];
+    first.stack = owner.primdata_[0].stack;
+    first.vstack = owner.primdata_[0].vstack;
+    first.contrdepth = static_cast<int>(npairs);
+#ifdef LIBINT2_PROFILE
+    first.timers = owner.primdata_[0].timers;
+#endif
+#if LIBINT2_FLOP_COUNT
+    // All records refer to the owning Engine's counter.
+    for (std::size_t k = 0; k < npairs; ++k)
+      records[k].nflops = owner.primdata_[0].nflops;
+#endif
+    std::size_t k = 0;
+    for (std::size_t p1 = 0; p1 < A.nprim(); ++p1)
+      for (std::size_t p2 = 0; p2 < B.nprim(); ++p2)
+        owner.compute_primdata(records[k++], A, B, p1, p2, pset, true);
+  }
+  return batch;
+}
+
+__libint2_engine_inline const Engine::target_ptr_vec&
+Engine::PreparedOneBody::compute(int l1, int l2) {
+  if (!engine_) throw std::logic_error("moved-from prepared one-body pair");
+  if (l1 < 0 || l2 < 0)
+    throw std::invalid_argument("negative one-body angular momentum");
+  shells_[0].contr[0].l = l1;
+  shells_[1].contr[0].l = l2;
+  return engine_->compute1_impl(shells_[0], shells_[1], packed_.data());
+}
+
 
 namespace detail {
 // Shared by the shell-based and externally prepared ERI paths.

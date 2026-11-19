@@ -1159,6 +1159,15 @@ class Engine {
   __libint2_engine_inline const target_ptr_vec& compute1(
       const libint2::Shell& s1, const libint2::Shell& s2);
 
+  class PreparedOneBody;
+
+  /// Pack a shell pair once for this one-body operator. The prepared pair
+  /// captures both shells' centers, exponents, coefficients, and Cartesian
+  /// or solid-harmonic representation along with the Engine configuration.
+  /// Its compute() accepts new angular momenta with those fixed inputs.
+  __libint2_engine_inline PreparedOneBody prepare_one_body(
+      const Shell& s1, const Shell& s2) const;
+
   /// Computes target shell sets of 2-body integrals, @code  @endcode
   /// @note result is stored in the "chemists"/Mulliken form, @code (bra1
   /// bra2|ket1 ket2) @endcode; the "physicists"/Dirac bra-ket form is @code
@@ -1591,7 +1600,11 @@ class Engine {
   __libint2_engine_inline void compute_primdata(Libint_t& primdata,
                                                 const Shell& s1,
                                                 const Shell& s2, size_t p1,
-                                                size_t p2, size_t oset);
+                                                size_t p2, size_t oset,
+                                                bool prepare_both_hrr = false);
+
+  __libint2_engine_inline const target_ptr_vec& compute1_impl(
+      const Shell& s1, const Shell& s2, Libint_t* packed);
 
   __libint2_engine_inline void eval_eri_core_impl(
       value_type* gm_ptr, int mmax, scalar_type rho, scalar_type T,
@@ -1647,6 +1660,28 @@ class Engine {
   //-------
   static const bool skip_core_ints = false;
 };  // struct Engine
+
+/// Owns the operator context and the packed primitive pairs. For operators
+/// with multiple centers, one set of primitive pairs is retained per center.
+class Engine::PreparedOneBody {
+ public:
+  PreparedOneBody(PreparedOneBody&&) noexcept = default;
+  PreparedOneBody& operator=(PreparedOneBody&&) noexcept = default;
+
+  /// Returns the same shell-set layout as Engine::compute1(). The next
+  /// call on this object overwrites it. Use separate objects concurrently.
+  __libint2_engine_inline const target_ptr_vec& compute(int l1, int l2);
+
+ private:
+  friend class Engine;
+  PreparedOneBody(const Engine& engine, const Shell& s1, const Shell& s2,
+                  std::size_t count)
+      : engine_(new Engine(engine)), shells_{{s1, s2}}, packed_(count) {}
+
+  std::unique_ptr<Engine> engine_;
+  std::array<Shell, 2> shells_;
+  std::vector<Libint_t> packed_;
+};
 
 }  // namespace libint2
 
