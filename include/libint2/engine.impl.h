@@ -1838,8 +1838,189 @@ inline void build_eri_ssss(const Libint_t* data) {
 }
 }  // namespace detail
 
+__libint2_engine_inline void Engine::eval_eri_core(
+    value_type* output, int mmax, scalar_type rho, scalar_type T) {
+  if (operator_rank() != 2 || nopers() != 1 || intrinsic_deriv_order() != 0)
+    throw std::invalid_argument("eval_eri_core requires a scalar ERI operator");
+  if (!output || mmax < 0 || mmax > int(braket_rank()) * lmax_ + deriv_order_ ||
+      !(rho > 0) || !std::isfinite(rho) || !(T >= 0) || !std::isfinite(T))
+    throw std::invalid_argument("invalid ERI radial arguments");
+  eval_eri_core_impl(output, mmax, rho, T, 0, 0, 0);
+}
+
+__libint2_engine_inline void Engine::eval_eri_core_impl(
+    value_type* gm_ptr, int mmax, scalar_type rho, scalar_type T,
+    scalar_type gammapq, scalar_type oogammap, scalar_type oogammaq) {
+// Simple core-eval dispatch: just `core_eval_ptr->eval(gm_ptr, T, mmax)`.
+// Applies to Coulomb-family operators whose core integral is the bare Fm.
+#define LIBINT2_SIMPLE_CORE_EVAL_CASE(OP)                           \
+  case Operator::OP: {                                              \
+    const auto& core_eval_ptr =                                     \
+        any_cast<const detail::core_eval_pack_type<Operator::OP>&>( \
+core_eval_pack_)                                        \
+.first();                                               \
+    core_eval_ptr->eval(gm_ptr, T, mmax);                           \
+  } break
+  switch (oper_) {
+    LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb);
+    LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb_opop);
+    LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb_op);
+    LIBINT2_SIMPLE_CORE_EVAL_CASE(opop_coulomb_opop);
+    LIBINT2_SIMPLE_CORE_EVAL_CASE(op_coulomb_op);
+    LIBINT2_SIMPLE_CORE_EVAL_CASE(giao_coulomb);
+    case Operator::cgtg_x_coulomb: {
+      const auto& core_eval_ptr =
+          any_cast<const detail::core_eval_pack_type<
+              Operator::cgtg_x_coulomb>&>(core_eval_pack_)
+              .first();
+      auto& core_eval_scratch =
+          any_cast<detail::core_eval_pack_type<
+              Operator::cgtg_x_coulomb>&>(core_eval_pack_)
+              .second();
+      const auto& core_ints_params =
+          any_cast<const typename operator_traits<
+              Operator::cgtg>::oper_params_type&>(
+              core_ints_params_);
+      core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params,
+                          &core_eval_scratch);
+    } break;
+    case Operator::cgtg: {
+      const auto& core_eval_ptr =
+          any_cast<
+              const detail::core_eval_pack_type<Operator::cgtg>&>(
+              core_eval_pack_)
+              .first();
+      const auto& core_ints_params =
+          any_cast<const typename operator_traits<
+              Operator::cgtg>::oper_params_type&>(
+              core_ints_params_);
+      core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
+    } break;
+    // N.B. delcgtga_delcgtgb has the same core evaluator as
+    // delcgtg2, and for both core_ints_params_ holds the product
+    // geminal, see init_core_ints_params
+    case Operator::delcgtg2:
+    case Operator::delcgtga_delcgtgb: {
+      static_assert(
+          std::is_same<
+              detail::core_eval_pack_type<Operator::delcgtg2>,
+              detail::core_eval_pack_type<
+                  Operator::delcgtga_delcgtgb>>::value,
+          "delcgtg2 and delcgtga_delcgtgb must share the core "
+          "evaluator");
+      const auto& core_eval_ptr =
+          any_cast<const detail::core_eval_pack_type<
+              Operator::delcgtg2>&>(core_eval_pack_)
+              .first();
+      const auto& core_ints_params =
+          any_cast<const typename operator_traits<
+              Operator::cgtg>::oper_params_type&>(
+              core_ints_params_);
+      core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
+    } break;
+    case Operator::delta: {
+      const auto& core_eval_ptr =
+          any_cast<
+              const detail::core_eval_pack_type<Operator::delta>&>(
+              core_eval_pack_)
+              .first();
+      core_eval_ptr->eval(gm_ptr, rho, T, mmax);
+    } break;
+    case Operator::r12: {
+      const auto& core_eval_ptr =
+          any_cast<
+              const detail::core_eval_pack_type<Operator::r12>&>(
+              core_eval_pack_)
+              .first();
+      core_eval_ptr->eval(gm_ptr, rho, T, mmax);
+    } break;
+    case Operator::truncated_coulomb: {
+      auto& pack = any_cast<detail::core_eval_pack_type<
+          Operator::truncated_coulomb>&>(core_eval_pack_);
+      const auto cutoff = any_cast<typename operator_traits<
+          Operator::truncated_coulomb>::oper_params_type>(
+          core_ints_params_);
+      pack.first()->eval(gm_ptr, rho, T, mmax, cutoff,
+                         pack.second());
+    } break;
+    case Operator::erf_coulomb: {
+      const auto& core_eval_ptr =
+          any_cast<const detail::core_eval_pack_type<
+              Operator::erf_coulomb>&>(core_eval_pack_)
+              .first();
+      const auto& core_ints_params =
+          any_cast<const typename operator_traits<
+              Operator::erf_coulomb>::oper_params_type&>(
+              core_ints_params_);
+      core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
+    } break;
+    case Operator::erfc_coulomb: {
+      const auto& core_eval_ptr =
+          any_cast<const detail::core_eval_pack_type<
+              Operator::erfc_coulomb>&>(core_eval_pack_)
+              .first();
+      const auto& core_ints_params =
+          any_cast<const typename operator_traits<
+              Operator::erfc_coulomb>::oper_params_type&>(
+              core_ints_params_);
+      core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params,
+                          0., 1.);
+    } break;
+    case Operator::erfx_coulomb: {
+      const auto& core_eval_ptr =
+          any_cast<const detail::core_eval_pack_type<
+              Operator::erfx_coulomb>&>(core_eval_pack_)
+              .first();
+      const auto& core_ints_params =
+          any_cast<const typename operator_traits<
+              Operator::erfx_coulomb>::oper_params_type&>(
+              core_ints_params_);
+      core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params[0],
+                          core_ints_params[1], core_ints_params[2]);
+    } break;
+    case Operator::stg: {
+      const auto& core_eval_ptr =
+          any_cast<
+              const detail::core_eval_pack_type<Operator::stg>&>(
+              core_eval_pack_)
+              .first();
+      auto zeta = any_cast<const typename operator_traits<
+          Operator::stg>::oper_params_type&>(core_ints_params_);
+      const auto one_over_rho = gammapq != 0
+                                   ? gammapq * oogammap * oogammaq
+                                   : 1 / rho;
+      core_eval_ptr->eval_slater(gm_ptr, one_over_rho, T, mmax,
+                                 zeta);
+    } break;
+    case Operator::stg_x_coulomb: {
+      const auto& core_eval_ptr =
+          any_cast<
+              const detail::core_eval_pack_type<Operator::stg>&>(
+              core_eval_pack_)
+              .first();
+      auto zeta = any_cast<const typename operator_traits<
+          Operator::stg>::oper_params_type&>(core_ints_params_);
+      const auto one_over_rho = gammapq != 0
+                                   ? gammapq * oogammap * oogammaq
+                                   : 1 / rho;
+      core_eval_ptr->eval_yukawa(gm_ptr, one_over_rho, T, mmax,
+                                 zeta);
+    } break;
+    default:
+      assert(false && "missing case in a switch");  // unreachable
+      abort();
+  }
+#undef LIBINT2_SIMPLE_CORE_EVAL_CASE
+}
+
 __libint2_engine_inline Engine::PreparedEri Engine::prepare_eri(
     const EriPrimitive* primitives, std::size_t count, int mmax) const {
+  return prepare_eri(primitives, count, mmax, PreparedEri::Mode::contracted);
+}
+
+__libint2_engine_inline Engine::PreparedEri Engine::prepare_eri(
+    const EriPrimitive* primitives, std::size_t count, int mmax,
+    PreparedEri::Mode mode) const {
   if (LIBINT2_MAX_VECLEN != 1)
     throw std::invalid_argument("prepare_eri requires scalar kernels");
   if (operator_rank() != 2 || intrinsic_deriv_order() != 0 || nopers() != 1)
@@ -1888,8 +2069,9 @@ __libint2_engine_inline Engine::PreparedEri Engine::prepare_eri(
       mmax < deriv_order_ || mmax > max_order)
     throw std::invalid_argument("invalid prepared ERI batch size or radial order");
 
-  PreparedEri batch(count, lmax_, mmax, braket, deriv_order_, extents, task_name_,
-                    buildfnptrs_);
+  const bool individual = mode == PreparedEri::Mode::individual;
+  PreparedEri batch(count, individual ? count : 1, lmax_, mmax, braket,
+                    deriv_order_, extents, task_name_, buildfnptrs_);
   auto* data = batch.data_.get();
   std::array<value_type, 3> first_AB{}, first_CD{};
   const bool paired_bra = braket == BraKet::xx_xx;
@@ -1914,13 +2096,15 @@ __libint2_engine_inline Engine::PreparedEri Engine::prepare_eri(
       AB[xyz] = A[xyz] - B[xyz];
       CD[xyz] = C[xyz] - D[xyz];
     }
-    if (i == 0) {
-      first_AB = AB;
-      first_CD = CD;
-    } else if (AB != first_AB || CD != first_CD) {
-      throw std::invalid_argument(
-          "prepared ERI contraction requires common displacements within each "
-          "active pair");
+    if (!individual) {
+      if (i == 0) {
+        first_AB = AB;
+        first_CD = CD;
+      } else if (AB != first_AB || CD != first_CD) {
+        throw std::invalid_argument(
+            "prepared ERI contraction requires common displacements within each "
+            "active pair");
+      }
     }
     const auto& a = p.exponents;
     const auto alpha_b = paired_bra ? a[1] : value_type(0);
@@ -1942,7 +2126,19 @@ __libint2_engine_inline Engine::PreparedEri Engine::prepare_eri(
 #if LIBINT2_FLOP_COUNT
   LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)(data, count);
 #endif
-  data->contrdepth = static_cast<int>(count);
+  data->contrdepth = individual ? 1 : static_cast<int>(count);
+  if (individual) {
+    // Only the first record owns the stack. A kernel evaluates one record
+    // at a time and borrows that same scratch regardless of the index.
+    for (std::size_t i = 1; i < count; ++i) {
+      data[i].stack = data->stack;
+      data[i].vstack = data->vstack;
+      data[i].contrdepth = 1;
+#ifdef LIBINT2_PROFILE
+      data[i].timers = data->timers;
+#endif
+    }
+  }
   return batch;
 }
 
@@ -1963,10 +2159,10 @@ __libint2_engine_inline Engine::PreparedEri::Kernel Engine::PreparedEri::kernel(
         "prepared Cartesian ERI requires Cartesian kernel axes");
 #endif
   auto* data = data_.get();
-  if (order == 0) return Kernel(data, detail::build_eri_ssss);
+  if (order == 0) return Kernel(data, detail::build_eri_ssss, size_);
   const auto build = build_[index];
   if (!build) throw missing_kernel();
-  return Kernel(data, build);
+  return Kernel(data, build, size_);
 }
 
 /// Computes a shell set of two-body integrals.
@@ -2250,164 +2446,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             auto* gm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
             const auto mmax = l + total_deriv_order;
 
-            if (!skip_core_ints) {
-// Simple core-eval dispatch: just `core_eval_ptr->eval(gm_ptr, T, mmax)`.
-// Applies to Coulomb-family operators whose core integral is the bare Fm.
-#define LIBINT2_SIMPLE_CORE_EVAL_CASE(OP)                           \
-  case Operator::OP: {                                              \
-    const auto& core_eval_ptr =                                     \
-        any_cast<const detail::core_eval_pack_type<Operator::OP>&>( \
-            core_eval_pack_)                                        \
-            .first();                                               \
-    core_eval_ptr->eval(gm_ptr, T, mmax);                           \
-  } break
-              switch (oper_) {
-                LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb);
-                LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb_opop);
-                LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb_op);
-                LIBINT2_SIMPLE_CORE_EVAL_CASE(opop_coulomb_opop);
-                LIBINT2_SIMPLE_CORE_EVAL_CASE(op_coulomb_op);
-                LIBINT2_SIMPLE_CORE_EVAL_CASE(giao_coulomb);
-                case Operator::cgtg_x_coulomb: {
-                  const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<
-                          Operator::cgtg_x_coulomb>&>(core_eval_pack_)
-                          .first();
-                  auto& core_eval_scratch =
-                      any_cast<detail::core_eval_pack_type<
-                          Operator::cgtg_x_coulomb>&>(core_eval_pack_)
-                          .second();
-                  const auto& core_ints_params =
-                      any_cast<const typename operator_traits<
-                          Operator::cgtg>::oper_params_type&>(
-                          core_ints_params_);
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params,
-                                      &core_eval_scratch);
-                } break;
-                case Operator::cgtg: {
-                  const auto& core_eval_ptr =
-                      any_cast<
-                          const detail::core_eval_pack_type<Operator::cgtg>&>(
-                          core_eval_pack_)
-                          .first();
-                  const auto& core_ints_params =
-                      any_cast<const typename operator_traits<
-                          Operator::cgtg>::oper_params_type&>(
-                          core_ints_params_);
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
-                } break;
-                // N.B. delcgtga_delcgtgb has the same core evaluator as
-                // delcgtg2, and for both core_ints_params_ holds the product
-                // geminal, see init_core_ints_params
-                case Operator::delcgtg2:
-                case Operator::delcgtga_delcgtgb: {
-                  static_assert(
-                      std::is_same<
-                          detail::core_eval_pack_type<Operator::delcgtg2>,
-                          detail::core_eval_pack_type<
-                              Operator::delcgtga_delcgtgb>>::value,
-                      "delcgtg2 and delcgtga_delcgtgb must share the core "
-                      "evaluator");
-                  const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<
-                          Operator::delcgtg2>&>(core_eval_pack_)
-                          .first();
-                  const auto& core_ints_params =
-                      any_cast<const typename operator_traits<
-                          Operator::cgtg>::oper_params_type&>(
-                          core_ints_params_);
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
-                } break;
-                case Operator::delta: {
-                  const auto& core_eval_ptr =
-                      any_cast<
-                          const detail::core_eval_pack_type<Operator::delta>&>(
-                          core_eval_pack_)
-                          .first();
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax);
-                } break;
-                case Operator::r12: {
-                  const auto& core_eval_ptr =
-                      any_cast<
-                          const detail::core_eval_pack_type<Operator::r12>&>(
-                          core_eval_pack_)
-                          .first();
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax);
-                } break;
-                case Operator::truncated_coulomb: {
-                  auto& pack = any_cast<detail::core_eval_pack_type<
-                      Operator::truncated_coulomb>&>(core_eval_pack_);
-                  const auto cutoff = any_cast<typename operator_traits<
-                      Operator::truncated_coulomb>::oper_params_type>(
-                      core_ints_params_);
-                  pack.first()->eval(gm_ptr, rho, T, mmax, cutoff,
-                                     pack.second());
-                } break;
-                case Operator::erf_coulomb: {
-                  const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<
-                          Operator::erf_coulomb>&>(core_eval_pack_)
-                          .first();
-                  const auto& core_ints_params =
-                      any_cast<const typename operator_traits<
-                          Operator::erf_coulomb>::oper_params_type&>(
-                          core_ints_params_);
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
-                } break;
-                case Operator::erfc_coulomb: {
-                  const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<
-                          Operator::erfc_coulomb>&>(core_eval_pack_)
-                          .first();
-                  const auto& core_ints_params =
-                      any_cast<const typename operator_traits<
-                          Operator::erfc_coulomb>::oper_params_type&>(
-                          core_ints_params_);
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params,
-                                      0., 1.);
-                } break;
-                case Operator::erfx_coulomb: {
-                  const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<
-                          Operator::erfx_coulomb>&>(core_eval_pack_)
-                          .first();
-                  const auto& core_ints_params =
-                      any_cast<const typename operator_traits<
-                          Operator::erfx_coulomb>::oper_params_type&>(
-                          core_ints_params_);
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params[0],
-                                      core_ints_params[1], core_ints_params[2]);
-                } break;
-                case Operator::stg: {
-                  const auto& core_eval_ptr =
-                      any_cast<
-                          const detail::core_eval_pack_type<Operator::stg>&>(
-                          core_eval_pack_)
-                          .first();
-                  auto zeta = any_cast<const typename operator_traits<
-                      Operator::stg>::oper_params_type&>(core_ints_params_);
-                  const auto one_over_rho = gammapq * oogammap * oogammaq;
-                  core_eval_ptr->eval_slater(gm_ptr, one_over_rho, T, mmax,
-                                             zeta);
-                } break;
-                case Operator::stg_x_coulomb: {
-                  const auto& core_eval_ptr =
-                      any_cast<
-                          const detail::core_eval_pack_type<Operator::stg>&>(
-                          core_eval_pack_)
-                          .first();
-                  auto zeta = any_cast<const typename operator_traits<
-                      Operator::stg>::oper_params_type&>(core_ints_params_);
-                  const auto one_over_rho = gammapq * oogammap * oogammaq;
-                  core_eval_ptr->eval_yukawa(gm_ptr, one_over_rho, T, mmax,
-                                             zeta);
-                } break;
-                default:
-                  assert(false && "missing case in a switch");  // unreachable
-                  abort();
-              }
-#undef LIBINT2_SIMPLE_CORE_EVAL_CASE
-            }
+            if (!skip_core_ints)
+              eval_eri_core_impl(gm_ptr, mmax, rho, T, gammapq, oogammap,
+                                 oogammaq);
 
             for (auto m = 0; m != mmax + 1; ++m) {
               gm_ptr[m] *= pfac;

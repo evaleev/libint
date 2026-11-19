@@ -98,6 +98,18 @@ TEST_CASE("Reuse externally prepared four-center ERI seeds", "[engine][2-body]")
   CHECK_THROWS_AS(engine.prepare_eri(input.data(), input.size(), 1),
                   std::invalid_argument);
 
+  auto individual = engine.prepare_eri(input.data(), input.size(), 1,
+                                       Engine::PreparedEri::Mode::individual);
+  const auto individual_ssps = individual.kernel({{0, 0, 1, 0}});
+  REQUIRE(individual.size() == input.size());
+  for (std::size_t i = 0; i < input.size(); ++i) {
+    auto one = engine.prepare_eri(&input[i], 1, 1);
+    const auto* single = one.kernel({{0, 0, 1, 0}})();
+    const auto* indexed = individual_ssps.compute(i)[0];
+    CHECK(std::equal(single, single + 3, indexed));
+  }
+  CHECK_THROWS_AS(individual_ssps.compute(input.size()), std::out_of_range);
+
   // A radial-only batch owns its inputs and needs no Engine after packing.
   auto make_radial_only_batch = [] {
     Engine radial_engine(Operator::coulomb, 1, 0);
@@ -160,6 +172,10 @@ TEST_CASE("Prepared scalar ERIs share the same input representation",
       for (int m = 0; m <= mmax; ++m)
         seeds[m] -= std::pow(range, 2 * m + 1) * long_range[m];
     }
+    std::vector<double> core(mmax + 1);
+    engine.eval_eri_core(core.data(), mmax, input.rho, T);
+    for (int m = 0; m <= mmax; ++m)
+      CHECK(core[m] == Approx(seeds[m]).margin(2e-14));
     const double prefactor =
         2. * std::pow(std::acos(-1.), 2.5) / (p * q * std::sqrt(p + q)) *
         std::exp(-.25 * (a[0] * a[1] / p + a[2] * a[3] / q));
@@ -196,6 +212,13 @@ TEST_CASE("Prepared scalar ERIs share the same input representation",
                     .margin(2e-14));
     }
     if (deriv_order > 0) {
+      auto records = std::array<Engine::EriPrimitive, 2>{{input, input}};
+      auto individual = engine.prepare_eri(
+          records.data(), records.size(), mmax,
+          Engine::PreparedEri::Mode::individual);
+      const auto second = individual.kernel({{1, 0, 1, 0}}).compute(1);
+      for (std::size_t s = 0; s < prepared.nshellsets(); ++s)
+        CHECK(std::equal(values[s], values[s] + 9, second[s]));
       const auto& s_reference = compute(shell(0, 0), shell(2, 0));
       auto radial_prefix = engine.prepare_eri(&input, 1, deriv_order);
       const auto s_values = radial_prefix.kernel({{0, 0, 0, 0}}).compute();
