@@ -1840,7 +1840,8 @@ inline void build_eri_ssss(const Libint_t* data) {
 
 __libint2_engine_inline Engine::PreparedEri Engine::prepare_eri(
     const EriPrimitive* primitives, std::size_t count, int mmax) const {
-  static_assert(LIBINT2_MAX_VECLEN == 1, "prepared ERI requires scalar kernels");
+  if (LIBINT2_MAX_VECLEN != 1)
+    throw std::invalid_argument("prepare_eri requires scalar kernels");
   if (operator_rank() != 2 || intrinsic_deriv_order() != 0 || nopers() != 1)
     throw std::invalid_argument("prepare_eri requires a scalar ERI task");
   if (!buildfnptrs_) throw missing_kernel();
