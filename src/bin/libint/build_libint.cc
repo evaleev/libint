@@ -325,12 +325,26 @@ Coulombσp_Descr make_descr<Coulombσp_Descr>(int p, int, int) {
   return Coulombσp_Descr(p);
 }
 
+template <>
+GIAOTwoPRep_Descr make_descr<GIAOTwoPRep_Descr>(int p, int, int) {
+  return GIAOTwoPRep_Descr(p);
+}
+
 #ifdef LIBINT_INCLUDE_ONEBODY
 
 #if LIBINT_SUPPORT_ONEBODYINTS == 0
 #error \
     "change LIBINT_SUPPORT_ONEBODYINTS in global_macros.h to 1 if need 1-body ints"
 #endif
+
+#define BOOST_PP_MAKE_DESCR_AXIS(r, data, op)            \
+  template <>                                            \
+  op##_Descr make_descr<op##_Descr>(int xyz, int, int) { \
+    return op##_Descr(xyz);                              \
+  }
+BOOST_PP_LIST_FOR_EACH(BOOST_PP_MAKE_DESCR_AXIS, _,
+                       BOOST_PP_MAGNETIC_1_1_OPER_LIST)
+#undef BOOST_PP_MAKE_DESCR_AXIS
 
 namespace {
 template <typename OperType>
@@ -343,6 +357,16 @@ template <typename OperType>
 struct AuxQuantaType {
   typedef EmptySet type;
 };
+
+/// @return true if \p OperType is one of the vector-valued magnetic operators
+/// (London-orbital/GIAO derivatives and angular momentum)
+template <typename OperType>
+constexpr bool is_magnetic_oper() {
+  return std::is_same<OperType, GIAOOverlapOper>::value ||
+         std::is_same<OperType, GIAOKineticOper>::value ||
+         std::is_same<OperType, GIAOElecPotOper>::value ||
+         std::is_same<OperType, AngularMomentumOper>::value;
+}
 
 }  // namespace
 
@@ -397,6 +421,9 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
     // throw std::invalid_argument(
     //     "derivatives of spherical multipole ints are not yet implemented");
   }
+  // derivatives of London-orbital (GIAO) and angular momentum integrals are
+  // not implemented
+  if (is_magnetic_oper<_OperType>() && deriv_level > 0) return;
 
   //
   // Construct graphs for each desired target integral and
@@ -487,6 +514,14 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
           // iterate over 12 = 3 dipole directions × 4 Pauli components
           for (int p = 0; p != 12; ++p) {
             descrs.emplace_back(make_descr<OperDescrType>(p));
+          }
+        }
+        if (is_magnetic_oper<_OperType>()) {
+          // reset descriptors array
+          descrs.resize(0);
+          // iterate over Cartesian components
+          for (int xyz = 0; xyz != 3; ++xyz) {
+            descrs.emplace_back(make_descr<OperDescrType>(xyz));
           }
         }
 
@@ -625,11 +660,13 @@ void try_main(int argc, char* argv[]) {
 // overlap, kinetic, elecpot cannot be omitted
 #define BOOST_PP_ONEBODY_TASK_TUPLE                                  \
   (overlap, kinetic, elecpot, 1emultipole, 2emultipole, 3emultipole, \
-   sphemultipole, opVop, opemuop)
-#define BOOST_PP_ONEBODY_TASK_OPER_TUPLE                              \
-  (OverlapOper, KineticOper, ElecPotOper, CartesianMultipoleOper<3u>, \
-   CartesianMultipoleOper<3u>, CartesianMultipoleOper<3u>,            \
-   SphericalMultipoleOper, σpVσpOper, σpeμσpOper)
+   sphemultipole, opVop, opemuop, giao_overlap, giao_kinetic,        \
+   giao_elecpot, angmom)
+#define BOOST_PP_ONEBODY_TASK_OPER_TUPLE                                   \
+  (OverlapOper, KineticOper, ElecPotOper, CartesianMultipoleOper<3u>,      \
+   CartesianMultipoleOper<3u>, CartesianMultipoleOper<3u>,                 \
+   SphericalMultipoleOper, σpVσpOper, σpeμσpOper, GIAOOverlapOper,         \
+   GIAOKineticOper, GIAOElecPotOper, AngularMomentumOper)
 #define BOOST_PP_ONEBODY_TASK_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_ONEBODY_TASK_TUPLE)
 #define BOOST_PP_ONEBODY_TASK_OPER_LIST \
@@ -647,6 +684,9 @@ void try_main(int argc, char* argv[]) {
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI; ++d) {
     taskmgr.add(task_label("eri", d));
   }
+#ifdef LIBINT_ENABLE_GIAO_ERI
+  taskmgr.add("giao_eri");  // N.B. no geometric derivatives
+#endif
 #endif
 
 #if (defined(LIBINT_INCLUDE_RKB_ERI) && LIBINT_INCLUDE_RKB_ERI > 0) || \
@@ -802,6 +842,12 @@ void try_main(int argc, char* argv[]) {
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI; ++d) {
     cparams->num_bf(task_label("eri", d), 4);
   }
+#ifdef LIBINT_ENABLE_GIAO_ERI
+  // same angular momentum limits as the (undifferentiated) ERIs
+  cparams->max_am("giao_eri", cparams->max_am("eri"));
+  cparams->max_am_opt("giao_eri", cparams->max_am_opt("eri"));
+  cparams->num_bf("giao_eri", 4);
+#endif
 #endif
 
 #ifdef LIBINT_INCLUDE_RKB_ERI
@@ -1133,6 +1179,9 @@ void try_main(int argc, char* argv[]) {
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI; ++d) {
     build_TwoPRep_2b_2k<TwoPRep>(os, "eri", cparams, iface, d);
   }
+#ifdef LIBINT_ENABLE_GIAO_ERI
+  build_TwoPRep_2b_2k<GIAOTwoPRep>(os, "giao_eri", cparams, iface, 0);
+#endif
 #endif
 #endif
 
@@ -1239,6 +1288,9 @@ void print_config(std::ostream& os) {
   if (LIBINT_INCLUDE_ERI > 0)
     os << "(deriv order = " << LIBINT_INCLUDE_ERI << ")";
   os << endl;
+#ifdef LIBINT_ENABLE_GIAO_ERI
+  os << "Will support GIAO ERI" << endl;
+#endif
 #endif
 #ifdef LIBINT_INCLUDE_ERI3
   os << "Will support 3-center ERI";
@@ -2549,6 +2601,9 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
 #endif
 #ifdef LIBINT_INCLUDE_ERI
   iface->to_params(iface->macro_define("SUPPORT_ERI", 1));
+#ifdef LIBINT_ENABLE_GIAO_ERI
+  iface->to_params(iface->macro_define("SUPPORT_GIAO_ERI", 1));
+#endif
   iface->to_params(iface->macro_define("DERIV_ERI_ORDER", LIBINT_INCLUDE_ERI));
   max_deriv_order = std::max(max_deriv_order, LIBINT_INCLUDE_ERI);
 #endif
@@ -2622,7 +2677,7 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
 
 #define BOOST_PP_TWOBODY_TASKOPER_TUPLE                                       \
   ("eri", "coulomb_opop", "coulomb_op", "opop_coulomb_opop", "op_coulomb_op", \
-   "r12kg12", "r12_0_g12", "r12_2_g12", "g12_T1_g12", "g12dkh")
+   "r12kg12", "r12_0_g12", "r12_2_g12", "g12_T1_g12", "g12dkh", "giao_eri")
 #define BOOST_PP_TWOBODY_TASKOPER_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_TWOBODY_TASKOPER_TUPLE)
 

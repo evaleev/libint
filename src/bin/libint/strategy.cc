@@ -184,6 +184,16 @@ struct MasterStrategy<R12kG12_11_11_int> {
 };
 #endif
 
+// GIAO electron repulsion integrals are expressed in terms of conventional
+// electron repulsion integrals by a single CR
+template <>
+struct MasterStrategy<GIAOTwoPRep_11_11_sq> {
+  typedef boost::mpl::list<CR_11_GIAOTwoPRep_11<CGShell>> value;
+};
+template <>
+struct MasterStrategy<GIAOTwoPRep_11_11_int> {
+  typedef boost::mpl::list<CR_11_GIAOTwoPRep_11<CGF>> value;
+};
 template <>
 struct MasterStrategy<R12kR12lG12_11_11_sq> {
   typedef boost::mpl::list<HRR_ab_11_R12kR12lG12_11_sh,
@@ -326,6 +336,20 @@ template <>
 struct MasterStrategy<σpVσp_1_1_int> {
   typedef boost::mpl::list<CR_1_σpVσp_1_int> value;
 };
+// London-orbital (GIAO) and angular momentum integrals are expressed in terms
+// of conventional integrals by a single CR
+#define BOOST_PP_MAGNETIC_1_1_STRATEGY(r, data, op)                      \
+  template <>                                                           \
+  struct MasterStrategy<op##_1_1_sh> {                                  \
+    typedef boost::mpl::list<CR_1_GIAO_1<CGShell, op##Oper>> value;     \
+  };                                                                    \
+  template <>                                                           \
+  struct MasterStrategy<op##_1_1_int> {                                 \
+    typedef boost::mpl::list<CR_1_GIAO_1<CGF, op##Oper>> value;         \
+  };
+BOOST_PP_LIST_FOR_EACH(BOOST_PP_MAGNETIC_1_1_STRATEGY, _,
+                       BOOST_PP_MAGNETIC_1_1_OPER_LIST)
+#undef BOOST_PP_MAGNETIC_1_1_STRATEGY
 template <>
 struct MasterStrategy<σpeμσp_1_1_sh> {
   typedef boost::mpl::list<CR_1_σpeμσp_1_sh> value;

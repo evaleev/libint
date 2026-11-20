@@ -56,6 +56,15 @@ typedef GenIntegralSet_1_1<CGShell, CartesianMultipoleOper<3u>, EmptySet>
     CMultipole_1_1_sh;
 typedef GenIntegralSet_1_1<CGF, CartesianMultipoleOper<3u>, EmptySet>
     CMultipole_1_1_int;
+// magnetic operators: London-orbital (GIAO) derivatives and angular momentum
+#define BOOST_PP_MAGNETIC_1_1_OPER_LIST \
+  (GIAOOverlap, (GIAOKinetic, (GIAOElecPot, (AngularMomentum, BOOST_PP_NIL))))
+#define BOOST_PP_MAGNETIC_1_1_TYPEDEFS(r, data, op)                     \
+  typedef GenIntegralSet_1_1<CGShell, op##Oper, EmptySet> op##_1_1_sh; \
+  typedef GenIntegralSet_1_1<CGF, op##Oper, EmptySet> op##_1_1_int;
+BOOST_PP_LIST_FOR_EACH(BOOST_PP_MAGNETIC_1_1_TYPEDEFS, _,
+                       BOOST_PP_MAGNETIC_1_1_OPER_LIST)
+#undef BOOST_PP_MAGNETIC_1_1_TYPEDEFS
 typedef GenIntegralSet_1_1<CGShell, SphericalMultipoleOper, EmptySet>
     SMultipole_1_1_sh;
 typedef GenIntegralSet_1_1<CGF, SphericalMultipoleOper, EmptySet>
@@ -123,6 +132,9 @@ typedef GenIntegralSet_11_11<CGShell, σpCoulombσpOper, mType>
 typedef GenIntegralSet_11_11<CGF, σpCoulombσpOper, mType> σpCoulombσp_11_11_int;
 typedef GenIntegralSet_11_11<CGShell, CoulombσpOper, mType> Coulombσp_11_11_sq;
 typedef GenIntegralSet_11_11<CGF, CoulombσpOper, mType> Coulombσp_11_11_int;
+typedef GenIntegralSet_11_11<CGShell, GIAOTwoPRep, mType>
+    GIAOTwoPRep_11_11_sq;
+typedef GenIntegralSet_11_11<CGF, GIAOTwoPRep, mType> GIAOTwoPRep_11_11_int;
 typedef GenIntegralSet_11_11<CGShell, R12kG12, mType> R12kG12_11_11_sq;
 typedef GenIntegralSet_11_11<CGF, R12kG12, mType> R12kG12_11_11_int;
 typedef GenIntegralSet_11_11<CGShell, R12kR12lG12, EmptySet>
@@ -159,7 +171,9 @@ typedef boost::mpl::list<
     σpeμσp_1_1_int, CMultipole_1_1_sh, CMultipole_1_1_int, CMultipole_1_1_sh_x,
     CMultipole_1_1_sh_y, CMultipole_1_1_sh_z, CMultipole_1_1_int_x,
     CMultipole_1_1_int_y, CMultipole_1_1_int_z, SMultipole_1_1_sh,
-    SMultipole_1_1_int
+    SMultipole_1_1_int, GIAOOverlap_1_1_sh, GIAOOverlap_1_1_int,
+    GIAOKinetic_1_1_sh, GIAOKinetic_1_1_int, GIAOElecPot_1_1_sh,
+    GIAOElecPot_1_1_int, AngularMomentum_1_1_sh, AngularMomentum_1_1_int
 #endif
     >
     MasterIntegralTypeList_1body_part;
@@ -171,7 +185,8 @@ typedef boost::mpl::list<
     R12kR12lG12_11_11_sq, R12kR12lG12_11_11_int, TiG12_11_11_sq,
     TiG12_11_11_int, G12TiG12_11_11_sq, G12TiG12_11_11_int,
     DivG12prime_xTx_11_11_sq, DivG12prime_xTx_11_11_int,
-    DummySymmIntegral_11_11_sq, DummySymmIntegral_11_11_int>
+    DummySymmIntegral_11_11_sq, DummySymmIntegral_11_11_int,
+    GIAOTwoPRep_11_11_sq, GIAOTwoPRep_11_11_int>
     MasterIntegralTypeList_2body_part;
 typedef boost::mpl::joint_view<MasterIntegralTypeList_1body_part,
                                MasterIntegralTypeList_2body_part>
