@@ -71,47 +71,51 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
 /// These MUST appear in the same order as in Operator.
 /// You must also update LIBINT2_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX when you
 /// add one-body ints
-#define LIBINT2_PP_NBODY_OPERATOR_LIST                                    \
-  (overlap,                                       /* overlap */           \
-   (kinetic,                                      /* kinetic */           \
-    (elecpot,                                     /* nuclear */           \
-     (elecpot,                                    /* erf_nuclear */       \
-      (elecpot,                                   /* erfc_nuclear */      \
-       (elecpot,                                  /* erfx_nuclear */      \
-        (elecpot,                                 /* q_gau */             \
-         (1emultipole,                            /* emultipole1 */       \
-          (2emultipole,                           /* emultipole2 */       \
-           (3emultipole,                          /* emultipole3 */       \
-            (sphemultipole,                       /* sphemultipole */     \
-             (opVop,                              /* opVop */             \
-              (opVop,                             /* op_q_gau_op */       \
-               (opemuop,                          /* opemuop */           \
-                (eri,                             /* delta */             \
-                 (eri,                            /* coulomb */           \
-                  (eri,                           /* cgtg */              \
-                   (eri,                          /* cgtg_x_coulomb */    \
-                    (eri,                         /* delcgtg2 */          \
-                     (eri,                        /* r12 */               \
-                      (eri,                       /* erf_coulomb */       \
-                       (eri,                      /* erfc_coulomb */      \
-                        (eri,                     /* erfx_coulomb */      \
-                         (eri,                    /* stg */               \
-                          (eri,                   /* yukawa */            \
-                           (eri,                  /* delcgtga_delcgtgb */ \
-                            (coulomb_opop,        /* coulomb_opop */      \
-                             (coulomb_op,         /* coulomb_op */        \
-                              (opop_coulomb_opop, /* opop_coulomb_opop */ \
-                               (op_coulomb_op,    /* op_coulomb_op */     \
-                                (eri,             /* truncated_coulomb */ \
-                                 BOOST_PP_NIL)))))))))))))))))))))))))))))))
+#define LIBINT2_PP_NBODY_OPERATOR_LIST                                               \
+  (overlap,                                           /* overlap */                  \
+   (kinetic,                                          /* kinetic */                  \
+    (elecpot,                                         /* nuclear */                  \
+     (elecpot,                                        /* erf_nuclear */              \
+      (elecpot,                                       /* erfc_nuclear */             \
+       (elecpot,                                      /* erfx_nuclear */             \
+        (elecpot,                                     /* q_gau */                    \
+         (1emultipole,                                /* emultipole1 */              \
+          (2emultipole,                               /* emultipole2 */              \
+           (3emultipole,                              /* emultipole3 */              \
+            (sphemultipole,                           /* sphemultipole */            \
+             (opVop,                                  /* opVop */                    \
+              (opVop,                                 /* op_q_gau_op */              \
+               (opemuop,                              /* opemuop */                  \
+                (giao_overlap,                        /* giao_overlap */             \
+                 (giao_kinetic,                       /* giao_kinetic */             \
+                  (giao_elecpot,                      /* giao_nuclear */             \
+                   (angmom,                           /* angular_momentum */         \
+                    (eri,                             /* delta */                    \
+                     (eri,                            /* coulomb */                  \
+                      (eri,                           /* cgtg */                     \
+                       (eri,                          /* cgtg_x_coulomb */           \
+                        (eri,                         /* delcgtg2 */                 \
+                         (eri,                        /* r12 */                      \
+                          (eri,                       /* erf_coulomb */              \
+                           (eri,                      /* erfc_coulomb */             \
+                            (eri,                     /* erfx_coulomb */             \
+                             (eri,                    /* stg */                      \
+                              (eri,                   /* yukawa */                   \
+                               (eri,                  /* delcgtga_delcgtgb */        \
+                                (coulomb_opop,        /* coulomb_opop */             \
+                                 (coulomb_op,         /* coulomb_op */               \
+                                  (opop_coulomb_opop, /* opop_coulomb_opop */        \
+                                   (op_coulomb_op,    /* op_coulomb_op */            \
+                                    (eri,             /* truncated_coulomb */        \
+                                     BOOST_PP_NIL)))))))))))))))))))))))))))))))))))
 
 #define LIBINT2_PP_NBODY_OPERATOR_INDEX_TUPLE \
   LIBINT2_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(LIBINT2_PP_NBODY_OPERATOR_LIST))
 #define LIBINT2_PP_NBODY_OPERATOR_INDEX_LIST \
   BOOST_PP_TUPLE_TO_LIST(LIBINT2_PP_NBODY_OPERATOR_INDEX_TUPLE)
 #define LIBINT2_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX \
-  13  // opemuop, the 14th member of LIBINT2_PP_NBODY_OPERATOR_LIST, is the last
-      // 1-body operator
+  17  // angular_momentum, the 18th member of LIBINT2_PP_NBODY_OPERATOR_LIST, is
+      // the last 1-body operator
 
 // make list of braket indices for n-body ints
 #define LIBINT2_PP_NBODY_BRAKET_MAX_INDEX 4
@@ -291,7 +295,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   const auto compute_directly =
       lmax == 0 && deriv_order_ == 0 &&
       (oper_ == Operator::overlap || oper_is_nuclear) &&
-      oper_ != Operator::opVop && oper_ != Operator::op_q_gau_op;
+      oper_ != Operator::opVop && oper_ != Operator::op_q_gau_op &&
+      oper_ != Operator::giao_nuclear;
   if (compute_directly) {
     primdata_[0].stack[0] = 0;
     targets_[0] = primdata_[0].stack;
@@ -723,6 +728,14 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
   // make sure it's no default initialized
   if (lmax_ < 0) throw using_default_initialized();
 
+  // geometric derivatives of the magnetic (GIAO and angular momentum)
+  // integrals are not implemented
+  if (deriv_order_ > 0 && is_magnetic_type(oper_))
+    throw std::invalid_argument(
+        "Engine: geometric derivatives of Operator::giao_overlap, "
+        "giao_kinetic, giao_nuclear, and angular_momentum integrals are not "
+        "supported");
+
   // initialize braket, if needed
   if (braket_ == BraKet::invalid) braket_ = default_braket(oper_);
 
@@ -810,6 +823,7 @@ __libint2_engine_inline unsigned int Engine::nparams() const {
   switch (oper_) {
     case Operator::nuclear:
     case Operator::opVop:
+    case Operator::giao_nuclear:
       return any_cast<
                  const operator_traits<Operator::nuclear>::oper_params_type&>(
                  params_)
@@ -1100,6 +1114,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
          "non-standard shell ordering");
 
   const auto oper_is_nuclear = is_nuclear_type(oper_);
+  const auto oper_is_magnetic = is_magnetic_type(oper_);
 
   // need to use HRR? see strategy.cc
   const auto l1 = s1.contr[0].l;
@@ -1132,6 +1147,28 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
 #endif
     }
   }
+  // AB appears explicitly in the GIAO integrals; BA may be needed by the HRR of
+  // the underlying integrals
+  if (oper_is_magnetic) {
+#if LIBINT2_DEFINED(eri, AB_x)
+    primdata.AB_x[0] = AB_x;
+#endif
+#if LIBINT2_DEFINED(eri, AB_y)
+    primdata.AB_y[0] = AB_y;
+#endif
+#if LIBINT2_DEFINED(eri, AB_z)
+    primdata.AB_z[0] = AB_z;
+#endif
+#if LIBINT2_DEFINED(eri, BA_x)
+    primdata.BA_x[0] = -AB_x;
+#endif
+#if LIBINT2_DEFINED(eri, BA_y)
+    primdata.BA_y[0] = -AB_y;
+#endif
+#if LIBINT2_DEFINED(eri, BA_z)
+    primdata.BA_z[0] = -AB_z;
+#endif
+  }
 
   // figure out whether will do VRR on center A and/or B
 //  if ((!use_hrr && l1 > 0) || hrr_ket_to_bra) {
@@ -1159,10 +1196,17 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   //  }
 
   if (oper_ == Operator::emultipole1 || oper_ == Operator::emultipole2 ||
-      oper_ == Operator::emultipole3 || oper_ == Operator::opemuop) {
-    const auto& O = any_cast<
-        const operator_traits<Operator::emultipole1>::oper_params_type&>(
-        params_);  // same as emultipoleX
+      oper_ == Operator::emultipole3 || oper_ == Operator::opemuop ||
+      oper_is_magnetic) {
+    // the GIAO phase factors are defined with respect to the coordinate origin
+    static const operator_traits<Operator::emultipole1>::oper_params_type
+        coordinate_origin{{0, 0, 0}};
+    const auto& O =
+        (oper_is_magnetic && oper_ != Operator::angular_momentum)
+            ? coordinate_origin
+            : any_cast<const operator_traits<
+                  Operator::emultipole1>::oper_params_type&>(
+                  params_);  // same as emultipoleX, opemuop, angular_momentum
 #if LIBINT2_DEFINED(eri, BO_x)
     primdata.BO_x[0] = B[0] - O[0];
 #endif
@@ -1208,7 +1252,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
 
   if (oper_ == Operator::kinetic || (deriv_order_ > 0) ||
       oper_ == Operator::opVop || oper_ == Operator::op_q_gau_op ||
-      oper_ == Operator::opemuop) {
+      oper_ == Operator::opemuop || oper_ == Operator::giao_kinetic ||
+      oper_ == Operator::angular_momentum) {
 #if LIBINT2_DEFINED(eri, two_alpha0_bra)
     primdata.two_alpha0_bra[0] = 2.0 * alpha1;
 #endif
@@ -1221,7 +1266,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
     using nuclear_params_type =
         operator_traits<Operator::nuclear>::oper_params_type;
     const auto& params = [&]() -> const nuclear_params_type& {
-      if (oper_ == Operator::nuclear || oper_ == Operator::opVop)
+      if (oper_ == Operator::nuclear || oper_ == Operator::opVop ||
+          oper_ == Operator::giao_nuclear)
         return any_cast<const nuclear_params_type&>(params_);
       else if (oper_ == Operator::erf_nuclear ||
                oper_ == Operator::erfc_nuclear)
@@ -1270,7 +1316,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
     const auto mmax =
         s1.contr[0].l + s2.contr[0].l + deriv_order_ + intrinsic_deriv_order();
     auto* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
-    if (oper_ == Operator::nuclear || oper_ == Operator::opVop) {
+    if (oper_ == Operator::nuclear || oper_ == Operator::opVop ||
+        oper_ == Operator::giao_nuclear) {
       const auto& fm_engine_ptr =
           any_cast<const detail::core_eval_pack_type<Operator::nuclear>&>(
               core_eval_pack_)

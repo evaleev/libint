@@ -29,6 +29,7 @@
 #include <comp_11_tig12_11.h>
 #include <comp_11_σpCoulombσp_11.h>
 #include <comp_11_σpσpCoulombσpσp_11.h>
+#include <comp_1_giao_1.h>
 #include <comp_1_σpVσp_1.h>
 #include <comp_1_σpeμσp_1.h>
 #include <comp_deriv_gauss.h>
