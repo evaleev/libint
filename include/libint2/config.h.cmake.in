@@ -71,6 +71,9 @@
 /* Disable support for 1-body property derivatives */
 #cmakedefine LIBINT_DISABLE_ONEBODY_PROPERTY_DERIVS @LIBINT_DISABLE_ONEBODY_PROPERTY_DERIVS@
 
+/* Support GIAO ERIs */
+#cmakedefine LIBINT_ENABLE_GIAO_ERI @LIBINT_ENABLE_GIAO_ERI@
+
 /* Support ERI derivatives up to this order */
 #define LIBINT_INCLUDE_ERI @LIBINT_INCLUDE_ERI@
 #if @LIBINT_INCLUDE_ERI@ == -1

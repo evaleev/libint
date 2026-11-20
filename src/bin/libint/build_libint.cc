@@ -325,6 +325,11 @@ Coulombσp_Descr make_descr<Coulombσp_Descr>(int p, int, int) {
   return Coulombσp_Descr(p);
 }
 
+template <>
+GIAOTwoPRep_Descr make_descr<GIAOTwoPRep_Descr>(int p, int, int) {
+  return GIAOTwoPRep_Descr(p);
+}
+
 #ifdef LIBINT_INCLUDE_ONEBODY
 
 #if LIBINT_SUPPORT_ONEBODYINTS == 0
@@ -679,6 +684,9 @@ void try_main(int argc, char* argv[]) {
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI; ++d) {
     taskmgr.add(task_label("eri", d));
   }
+#ifdef LIBINT_ENABLE_GIAO_ERI
+  taskmgr.add("giao_eri");  // N.B. no geometric derivatives
+#endif
 #endif
 
 #if (defined(LIBINT_INCLUDE_RKB_ERI) && LIBINT_INCLUDE_RKB_ERI > 0) || \
@@ -834,6 +842,12 @@ void try_main(int argc, char* argv[]) {
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI; ++d) {
     cparams->num_bf(task_label("eri", d), 4);
   }
+#ifdef LIBINT_ENABLE_GIAO_ERI
+  // same angular momentum limits as the (undifferentiated) ERIs
+  cparams->max_am("giao_eri", cparams->max_am("eri"));
+  cparams->max_am_opt("giao_eri", cparams->max_am_opt("eri"));
+  cparams->num_bf("giao_eri", 4);
+#endif
 #endif
 
 #ifdef LIBINT_INCLUDE_RKB_ERI
@@ -1165,6 +1179,9 @@ void try_main(int argc, char* argv[]) {
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI; ++d) {
     build_TwoPRep_2b_2k<TwoPRep>(os, "eri", cparams, iface, d);
   }
+#ifdef LIBINT_ENABLE_GIAO_ERI
+  build_TwoPRep_2b_2k<GIAOTwoPRep>(os, "giao_eri", cparams, iface, 0);
+#endif
 #endif
 #endif
 
@@ -1271,6 +1288,9 @@ void print_config(std::ostream& os) {
   if (LIBINT_INCLUDE_ERI > 0)
     os << "(deriv order = " << LIBINT_INCLUDE_ERI << ")";
   os << endl;
+#ifdef LIBINT_ENABLE_GIAO_ERI
+  os << "Will support GIAO ERI" << endl;
+#endif
 #endif
 #ifdef LIBINT_INCLUDE_ERI3
   os << "Will support 3-center ERI";
@@ -2581,6 +2601,9 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
 #endif
 #ifdef LIBINT_INCLUDE_ERI
   iface->to_params(iface->macro_define("SUPPORT_ERI", 1));
+#ifdef LIBINT_ENABLE_GIAO_ERI
+  iface->to_params(iface->macro_define("SUPPORT_GIAO_ERI", 1));
+#endif
   iface->to_params(iface->macro_define("DERIV_ERI_ORDER", LIBINT_INCLUDE_ERI));
   max_deriv_order = std::max(max_deriv_order, LIBINT_INCLUDE_ERI);
 #endif
@@ -2654,7 +2677,7 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
 
 #define BOOST_PP_TWOBODY_TASKOPER_TUPLE                                       \
   ("eri", "coulomb_opop", "coulomb_op", "opop_coulomb_opop", "op_coulomb_op", \
-   "r12kg12", "r12_0_g12", "r12_2_g12", "g12_T1_g12", "g12dkh")
+   "r12kg12", "r12_0_g12", "r12_2_g12", "g12_T1_g12", "g12dkh", "giao_eri")
 #define BOOST_PP_TWOBODY_TASKOPER_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_TWOBODY_TASKOPER_TUPLE)
 

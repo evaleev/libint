@@ -184,6 +184,16 @@ struct MasterStrategy<R12kG12_11_11_int> {
 };
 #endif
 
+// GIAO electron repulsion integrals are expressed in terms of conventional
+// electron repulsion integrals by a single CR
+template <>
+struct MasterStrategy<GIAOTwoPRep_11_11_sq> {
+  typedef boost::mpl::list<CR_11_GIAOTwoPRep_11<CGShell>> value;
+};
+template <>
+struct MasterStrategy<GIAOTwoPRep_11_11_int> {
+  typedef boost::mpl::list<CR_11_GIAOTwoPRep_11<CGF>> value;
+};
 template <>
 struct MasterStrategy<R12kR12lG12_11_11_sq> {
   typedef boost::mpl::list<HRR_ab_11_R12kR12lG12_11_sh,

@@ -71,43 +71,44 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
 /// These MUST appear in the same order as in Operator.
 /// You must also update LIBINT2_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX when you
 /// add one-body ints
-#define LIBINT2_PP_NBODY_OPERATOR_LIST                                               \
-  (overlap,                                           /* overlap */                  \
-   (kinetic,                                          /* kinetic */                  \
-    (elecpot,                                         /* nuclear */                  \
-     (elecpot,                                        /* erf_nuclear */              \
-      (elecpot,                                       /* erfc_nuclear */             \
-       (elecpot,                                      /* erfx_nuclear */             \
-        (elecpot,                                     /* q_gau */                    \
-         (1emultipole,                                /* emultipole1 */              \
-          (2emultipole,                               /* emultipole2 */              \
-           (3emultipole,                              /* emultipole3 */              \
-            (sphemultipole,                           /* sphemultipole */            \
-             (opVop,                                  /* opVop */                    \
-              (opVop,                                 /* op_q_gau_op */              \
-               (opemuop,                              /* opemuop */                  \
-                (giao_overlap,                        /* giao_overlap */             \
-                 (giao_kinetic,                       /* giao_kinetic */             \
-                  (giao_elecpot,                      /* giao_nuclear */             \
-                   (angmom,                           /* angular_momentum */         \
-                    (eri,                             /* delta */                    \
-                     (eri,                            /* coulomb */                  \
-                      (eri,                           /* cgtg */                     \
-                       (eri,                          /* cgtg_x_coulomb */           \
-                        (eri,                         /* delcgtg2 */                 \
-                         (eri,                        /* r12 */                      \
-                          (eri,                       /* erf_coulomb */              \
-                           (eri,                      /* erfc_coulomb */             \
-                            (eri,                     /* erfx_coulomb */             \
-                             (eri,                    /* stg */                      \
-                              (eri,                   /* yukawa */                   \
-                               (eri,                  /* delcgtga_delcgtgb */        \
-                                (coulomb_opop,        /* coulomb_opop */             \
-                                 (coulomb_op,         /* coulomb_op */               \
-                                  (opop_coulomb_opop, /* opop_coulomb_opop */        \
-                                   (op_coulomb_op,    /* op_coulomb_op */            \
-                                    (eri,             /* truncated_coulomb */        \
-                                     BOOST_PP_NIL)))))))))))))))))))))))))))))))))))
+#define LIBINT2_PP_NBODY_OPERATOR_LIST                                                 \
+  (overlap,                                           /* overlap */                    \
+   (kinetic,                                          /* kinetic */                    \
+    (elecpot,                                         /* nuclear */                    \
+     (elecpot,                                        /* erf_nuclear */                \
+      (elecpot,                                       /* erfc_nuclear */               \
+       (elecpot,                                      /* erfx_nuclear */               \
+        (elecpot,                                     /* q_gau */                      \
+         (1emultipole,                                /* emultipole1 */                \
+          (2emultipole,                               /* emultipole2 */                \
+           (3emultipole,                              /* emultipole3 */                \
+            (sphemultipole,                           /* sphemultipole */              \
+             (opVop,                                  /* opVop */                      \
+              (opVop,                                 /* op_q_gau_op */                \
+               (opemuop,                              /* opemuop */                    \
+                (giao_overlap,                        /* giao_overlap */               \
+                 (giao_kinetic,                       /* giao_kinetic */               \
+                  (giao_elecpot,                      /* giao_nuclear */               \
+                   (angmom,                           /* angular_momentum */           \
+                    (eri,                             /* delta */                      \
+                     (eri,                            /* coulomb */                    \
+                      (eri,                           /* cgtg */                       \
+                       (eri,                          /* cgtg_x_coulomb */             \
+                        (eri,                         /* delcgtg2 */                   \
+                         (eri,                        /* r12 */                        \
+                          (eri,                       /* erf_coulomb */                \
+                           (eri,                      /* erfc_coulomb */               \
+                            (eri,                     /* erfx_coulomb */               \
+                             (eri,                    /* stg */                        \
+                              (eri,                   /* yukawa */                     \
+                               (eri,                  /* delcgtga_delcgtgb */          \
+                                (coulomb_opop,        /* coulomb_opop */               \
+                                 (coulomb_op,         /* coulomb_op */                 \
+                                  (opop_coulomb_opop, /* opop_coulomb_opop */          \
+                                   (op_coulomb_op,    /* op_coulomb_op */              \
+                                    (eri,             /* truncated_coulomb */          \
+                                     (giao_eri,       /* giao_coulomb */               \
+                                      BOOST_PP_NIL))))))))))))))))))))))))))))))))))))
 
 #define LIBINT2_PP_NBODY_OPERATOR_INDEX_TUPLE \
   LIBINT2_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(LIBINT2_PP_NBODY_OPERATOR_LIST))
@@ -733,8 +734,18 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
   if (deriv_order_ > 0 && is_magnetic_type(oper_))
     throw std::invalid_argument(
         "Engine: geometric derivatives of Operator::giao_overlap, "
-        "giao_kinetic, giao_nuclear, and angular_momentum integrals are not "
-        "supported");
+        "giao_kinetic, giao_nuclear, angular_momentum, and giao_coulomb "
+        "integrals are not supported");
+  if (oper_ == Operator::giao_coulomb) {
+#if !defined(LIBINT2_TASK_EXISTS_4giao_eri) || !LIBINT2_TASK_EXISTS_4giao_eri
+    throw std::invalid_argument(
+        "Engine: Operator::giao_coulomb requires a library configured with "
+        "LIBINT2_ENABLE_GIAO_ERI=ON");
+#endif
+    if (braket_ != BraKet::invalid && braket_ != BraKet::xx_xx)
+      throw std::invalid_argument(
+          "Engine: Operator::giao_coulomb only supports BraKet::xx_xx");
+  }
 
   // initialize braket, if needed
   if (braket_ == BraKet::invalid) braket_ = default_braket(oper_);
@@ -900,6 +911,7 @@ __libint2_engine_inline unsigned int Engine::intrinsic_deriv_order() const {
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(PairSwap, pair_swap, (), pair_swap)
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(bool, braket_swap, (), braket_swap)
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(int, pair_swap_phase, (unsigned int c), pair_swap_phase(c))
+LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(int, bra_pair_swap_phase, (unsigned int c), bra_pair_swap_phase(c))
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(int, braket_swap_phase, (unsigned int c), braket_swap_phase(c))
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(unsigned int, braket_swap_remap, (unsigned int c), braket_swap_remap(c))
 #undef LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR
@@ -1681,6 +1693,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb_op);
                 LIBINT2_SIMPLE_CORE_EVAL_CASE(opop_coulomb_opop);
                 LIBINT2_SIMPLE_CORE_EVAL_CASE(op_coulomb_op);
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(giao_coulomb);
                 case Operator::cgtg_x_coulomb: {
                   const auto& core_eval_ptr =
                       any_cast<const detail::core_eval_pack_type<
@@ -1946,6 +1959,28 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #if LIBINT2_DEFINED(eri, oo2z)
               primdata.oo2z[0] = 0.5 * oogammap;
 #endif
+              // GIAO ERIs: positions of the second center of each pair
+              // relative to the coordinate origin (see Operator::giao_coulomb)
+              if (op == Operator::giao_coulomb) {
+#if LIBINT2_DEFINED(eri, BO_x)
+                primdata.BO_x[0] = B[0];
+#endif
+#if LIBINT2_DEFINED(eri, BO_y)
+                primdata.BO_y[0] = B[1];
+#endif
+#if LIBINT2_DEFINED(eri, BO_z)
+                primdata.BO_z[0] = B[2];
+#endif
+#if LIBINT2_DEFINED(eri, DO_x)
+                primdata.DO_x[0] = D[0];
+#endif
+#if LIBINT2_DEFINED(eri, DO_y)
+                primdata.DO_y[0] = D[1];
+#endif
+#if LIBINT2_DEFINED(eri, DO_z)
+                primdata.DO_z[0] = D[2];
+#endif
+              }
 #if LIBINT2_DEFINED(eri, oo2e)
               primdata.oo2e[0] = 0.5 * oogammaq;
 #endif
@@ -2316,6 +2351,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           const auto component = s % this->nopers();
           const value_type component_phase =
               (swap_ket ? this->pair_swap_phase(component) : 1) *
+              (swap_bra && this->pair_swap() == PairSwap::independent
+                   ? this->bra_pair_swap_phase(component)
+                   : 1) *
               (swap_braket ? this->braket_swap_phase(component) : 1);
 
           // if permuting derivatives ints must update their derivative index

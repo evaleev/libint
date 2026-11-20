@@ -158,6 +158,9 @@ option_with_default(LIBINT2_ENABLE_G12
 option_with_default(LIBINT2_ENABLE_G12DKH
   "Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors (-1 for OFF)" -1)
 
+option_with_print(LIBINT2_ENABLE_GIAO_ERI
+  "Enable zero-field London-orbital (GIAO) derivatives of 4-center electron repulsion integrals
+   (Operator::giao_coulomb), needed for GIAO NMR shieldings. Requires `LIBINT2_ENABLE_ERI>=0`." OFF)
 option_with_print(LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS
   "Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot, and σpVσp, i.e. opVop and op_q_gau_op).
    These derivatives are disabled by default to save compile time. (enable with OFF)
@@ -369,6 +372,7 @@ booleanize01(LIBINT2_USE_COMPOSITE_EVALUATORS)
 booleanize01(LIBINT2_SINGLE_EVALTYPE)
 booleanize01(LIBINT2_CONTRACTED_INTS)
 booleanize01(LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS)
+booleanize01(LIBINT2_ENABLE_GIAO_ERI)
 booleanize01(LIBINT2_GENERATE_FMA)
 booleanize01(LIBINT2_ENABLE_GENERIC_CODE)
 booleanize01(LIBINT2_ENABLE_T1G12)
@@ -434,7 +438,7 @@ configure_file(
 #   library build time.
 set(_EXPORT_MODE 0)
 # convert user-facing LIBINT2_ variables to LIBINT_ internal variables
-foreach(_var API_PREFIX;ERI3_PURE_SH;ERI2_PURE_SH;DISABLE_ONEBODY_PROPERTY_DERIVS;ENABLE_UNROLLING;ENABLE_GENERIC_CODE;VECTOR_LENGTH;VECTOR_METHOD;ALIGN_SIZE;USER_DEFINED_REAL;USER_DEFINED_REAL_INCLUDES;GENERATE_FMA;ACCUM_INTS;FLOP_COUNT;PROFILE;CONTRACTED_INTS;SINGLE_EVALTYPE;USE_COMPOSITE_EVALUATORS;ERI_STRATEGY;MULTIPOLE_MAX_ORDER)
+foreach(_var API_PREFIX;ERI3_PURE_SH;ERI2_PURE_SH;DISABLE_ONEBODY_PROPERTY_DERIVS;ENABLE_GIAO_ERI;ENABLE_UNROLLING;ENABLE_GENERIC_CODE;VECTOR_LENGTH;VECTOR_METHOD;ALIGN_SIZE;USER_DEFINED_REAL;USER_DEFINED_REAL_INCLUDES;GENERATE_FMA;ACCUM_INTS;FLOP_COUNT;PROFILE;CONTRACTED_INTS;SINGLE_EVALTYPE;USE_COMPOSITE_EVALUATORS;ERI_STRATEGY;MULTIPOLE_MAX_ORDER)
     if (DEFINED LIBINT2_${_var})
         if (DEFINED LIBINT_${_var})
             message(FATAL_ERROR "renaming user-facing LIBINT2_${_var} variable but internal variable LIBINT_${_var} already exists")
