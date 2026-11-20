@@ -326,6 +326,20 @@ template <>
 struct MasterStrategy<σpVσp_1_1_int> {
   typedef boost::mpl::list<CR_1_σpVσp_1_int> value;
 };
+// London-orbital (GIAO) and angular momentum integrals are expressed in terms
+// of conventional integrals by a single CR
+#define BOOST_PP_MAGNETIC_1_1_STRATEGY(r, data, op)                      \
+  template <>                                                           \
+  struct MasterStrategy<op##_1_1_sh> {                                  \
+    typedef boost::mpl::list<CR_1_GIAO_1<CGShell, op##Oper>> value;     \
+  };                                                                    \
+  template <>                                                           \
+  struct MasterStrategy<op##_1_1_int> {                                 \
+    typedef boost::mpl::list<CR_1_GIAO_1<CGF, op##Oper>> value;         \
+  };
+BOOST_PP_LIST_FOR_EACH(BOOST_PP_MAGNETIC_1_1_STRATEGY, _,
+                       BOOST_PP_MAGNETIC_1_1_OPER_LIST)
+#undef BOOST_PP_MAGNETIC_1_1_STRATEGY
 template <>
 struct MasterStrategy<σpeμσp_1_1_sh> {
   typedef boost::mpl::list<CR_1_σpeμσp_1_sh> value;

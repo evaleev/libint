@@ -56,6 +56,15 @@ typedef GenIntegralSet_1_1<CGShell, CartesianMultipoleOper<3u>, EmptySet>
     CMultipole_1_1_sh;
 typedef GenIntegralSet_1_1<CGF, CartesianMultipoleOper<3u>, EmptySet>
     CMultipole_1_1_int;
+// magnetic operators: London-orbital (GIAO) derivatives and angular momentum
+#define BOOST_PP_MAGNETIC_1_1_OPER_LIST \
+  (GIAOOverlap, (GIAOKinetic, (GIAOElecPot, (AngularMomentum, BOOST_PP_NIL))))
+#define BOOST_PP_MAGNETIC_1_1_TYPEDEFS(r, data, op)                     \
+  typedef GenIntegralSet_1_1<CGShell, op##Oper, EmptySet> op##_1_1_sh; \
+  typedef GenIntegralSet_1_1<CGF, op##Oper, EmptySet> op##_1_1_int;
+BOOST_PP_LIST_FOR_EACH(BOOST_PP_MAGNETIC_1_1_TYPEDEFS, _,
+                       BOOST_PP_MAGNETIC_1_1_OPER_LIST)
+#undef BOOST_PP_MAGNETIC_1_1_TYPEDEFS
 typedef GenIntegralSet_1_1<CGShell, SphericalMultipoleOper, EmptySet>
     SMultipole_1_1_sh;
 typedef GenIntegralSet_1_1<CGF, SphericalMultipoleOper, EmptySet>
@@ -159,7 +168,9 @@ typedef boost::mpl::list<
     σpeμσp_1_1_int, CMultipole_1_1_sh, CMultipole_1_1_int, CMultipole_1_1_sh_x,
     CMultipole_1_1_sh_y, CMultipole_1_1_sh_z, CMultipole_1_1_int_x,
     CMultipole_1_1_int_y, CMultipole_1_1_int_z, SMultipole_1_1_sh,
-    SMultipole_1_1_int
+    SMultipole_1_1_int, GIAOOverlap_1_1_sh, GIAOOverlap_1_1_int,
+    GIAOKinetic_1_1_sh, GIAOKinetic_1_1_int, GIAOElecPot_1_1_sh,
+    GIAOElecPot_1_1_int, AngularMomentum_1_1_sh, AngularMomentum_1_1_int
 #endif
     >
     MasterIntegralTypeList_1body_part;

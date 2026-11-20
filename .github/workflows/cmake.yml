@@ -348,6 +348,11 @@ jobs:
               -D CMAKE_EXE_LINKER_FLAGS="-Wl,-rpath-link,${CONDA_PREFIX}/lib"
             testargs: ""
 
+          # N.B. the MSVC STL of the runner image (14.52+) requires a newer
+          # clang-cl than the one bundled with Visual Studio (STL1000), hence
+          # _ALLOW_COMPILER_AND_STL_VERSION_MISMATCH; the _INIT flags keep the
+          # default MSVC flags (/EHsc etc.); N.B. -D, not /D, since the MSYS
+          # bash running cmake converts arguments starting with / into paths
           - runs-on: windows-latest
             lane: windows-clang-cl
             libargs: >
@@ -356,11 +361,13 @@ jobs:
               -D BUILD_SHARED_LIBS=OFF
               -D CMAKE_CXX_COMPILER=clang-cl
               -D CMAKE_C_COMPILER=clang-cl
+              -D CMAKE_CXX_FLAGS_INIT=-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH
             testargs: >
               -G Ninja
               -D CMAKE_BUILD_TYPE=Release
               -D CMAKE_CXX_COMPILER=clang-cl
               -D CMAKE_C_COMPILER=clang-cl
+              -D CMAKE_CXX_FLAGS_INIT=-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH
 
           - runs-on: macos-15
             lane: macos-clang
