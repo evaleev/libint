@@ -23,6 +23,7 @@
 
 #include <generic_rr.h>
 
+#include <functional>
 #include <type_traits>
 
 namespace libint2 {
@@ -45,6 +46,14 @@ namespace libint2 {
  * (\vec{r} - \vec{B})_j \partial_i \phi_b = - \partial \phi_{b+1_j} / \partial
  * B_i \f$ for \f$ i \neq j \f$ .
  *
+ * Geometric derivatives (derivative quanta of the Gaussians) are the
+ * derivatives of \f$ X_k \f$, including those of the London phase factors,
+ * i.e. of \f$ \vec{R}_{AB} \f$ (Leibniz rule), with the identities above
+ * generalized to differentiated Gaussians, e.g.
+ * \f$ (\vec{r} - \vec{A})_j \partial^n \phi_a / \partial A^n =
+ * \partial^n \phi_{a+1_j} / \partial A^n +
+ * n_j \partial^{n-1_j} \phi_a / \partial A^{n-1_j} \f$.
+ *
  * The \c BO prefactor (\f$ \vec{B} - \vec{O} \f$) is the position of the ket
  * center relative to the origin (the coordinate origin for the GIAO
  * operators, the gauge origin for AngularMomentumOper).
@@ -66,7 +75,8 @@ class CR_1_GIAO_1
       ParentType;
   friend class GenericRecurrenceRelation<ThisType, BasisFunctionType,
                                          TargetType>;
-  static const unsigned int max_nchildren = 8;
+  /// N.B. the size is only a hint
+  static const unsigned int max_nchildren = 20;
 
   using ParentType::Instance;
 
@@ -102,6 +112,13 @@ class CR_1_GIAO_1
     result.deriv().inc(xyz);
     return result;
   }
+  /// @return \p f with one less derivative quantum in direction \p xyz
+  static F lower(const F& f, unsigned int xyz) {
+    F result(f);
+    assert(f.deriv().d(xyz) > 0);
+    result.deriv().dec(xyz);
+    return result;
+  }
 };
 
 template <typename F, typename Oper>
@@ -118,13 +135,6 @@ CR_1_GIAO_1<F, Oper>::CR_1_GIAO_1(const std::shared_ptr<TargetType>& Tint,
   // integrals are uncontracted first
   if (a.contracted() || b.contracted()) return;
 
-  // prefactors that depend on the Gaussian centers are not differentiated, so
-  // geometric derivatives of these integrals cannot be expressed this way
-  if (a.deriv().norm() != 0 || b.deriv().norm() != 0)
-    throw std::logic_error(
-        "CR_1_GIAO_1: geometric derivatives of GIAO/angular momentum integrals "
-        "are not supported");
-
   using namespace libint2::algebra;
   using namespace libint2::prefactor;
   using libint2::algebra::operator*;
@@ -134,72 +144,144 @@ CR_1_GIAO_1<F, Oper>::CR_1_GIAO_1(const std::shared_ptr<TargetType>& Tint,
   const auto l = (k + 1) % 3;
   const auto m = (k + 2) % 3;
 
+  // geometric derivatives: a and b may carry derivative quanta n and p, i.e.
+  // the target is d^n/dA^n d^p/dB^p X_k , where the derivatives act on the
+  // Gaussians and on R_AB = A - B (the London phase factors); the latter
+  // contributes (Leibniz rule; R_AB is linear in A and B)
+  //   d^n/dA^n d^p/dB^p (R_AB)_j W = (R_AB)_j W[n,p] + n_j W[n-1_j,p]
+  //                                  - p_j W[n,p-1_j]
+  // where W[n,p] is W over the differentiated Gaussians; the identities
+  // used to remove r from the integrand hold for differentiated Gaussians if
+  //   (r-A)_j d^n phi_a/dA^n = d^n phi_{a+1_j}/dA^n + n_j d^{n-1_j} phi_a/dA^n
+  const auto& n = a.deriv();
+  const auto& p = b.deriv();
+
   typedef CartesianMultipoleOper<3u> CMultipoleOper;
   ChildFactory<ThisType, GenIntegralSet_1_1<F, CMultipoleOper, EmptySet>>
       cmfactory(this);
   const auto overlap = CMultipoleOper();
 
   // (a| (r-O)_j |b)
-  auto dipole = [&](unsigned int j) {
+  auto dipole = [&](const F& a, const F& b, unsigned int j) {
     CartesianMultipole_Descr<3u> descr;
     descr.inc(j);
     return cmfactory.make_child(a, b, EmptySet(), CMultipoleOper(descr));
   };
   // (a| dB_i b+1_j) = - (a| (r-B)_j \partial_i |b) for i != j, where dB_i is
-  // the derivative w.r.t. B_i
+  // the derivative w.r.t. B_i (this holds for differentiated b too)
   auto dB_i_bp1_j = [&](unsigned int i, unsigned int j) {
     return cmfactory.make_child(a, differentiate(raise(b, j), i), EmptySet(),
                                 overlap);
   };
 
   if (std::is_same<Oper, GIAOOverlapOper>::value) {
-    // X_k = 1/2 [ AB_l (a|(r-O)_m|b) - AB_m (a|(r-O)_l|b) ]
-    auto r_l = dipole(l);
-    auto r_m = dipole(m);
+    // X_k = 1/2 [ AB_l (a|(r-O)_m|b) - AB_m (a|(r-O)_l|b) ] + derivatives of AB
+    auto r_l = dipole(a, b, l);
+    auto r_m = dipole(a, b, m);
     if (is_simple()) {
       expr_ = Scalar(0.5) * (Vector("AB")[l] * r_m - Vector("AB")[m] * r_l);
       nflops_ += 4;
     }
+    // + 1/2 [ n_l W_m[n-1_l,p] - n_m W_l[n-1_m,p]
+    //         - p_l W_m[n,p-1_l] + p_m W_l[n,p-1_m] ], W_j = (a|(r-O)_j|b)
+    struct Term {
+      unsigned int count;  // n_i or p_i
+      bool on_a;           // differentiated w.r.t. A?
+      unsigned int i, j;   // W_j[... - 1_i ...]
+      int sign;
+    };
+    for (const auto& t :
+         {Term{n.d(l), true, l, m, +1}, Term{n.d(m), true, m, l, -1},
+          Term{p.d(l), false, l, m, -1}, Term{p.d(m), false, m, l, +1}}) {
+      if (t.count == 0) continue;
+      auto W_j = t.on_a ? dipole(lower(a, t.i), b, t.j)
+                        : dipole(a, lower(b, t.i), t.j);
+      if (is_simple()) {
+        expr_ += Scalar(0.5 * t.sign * t.count) * W_j;
+        nflops_ += 2;
+      }
+    }
   } else if (std::is_same<Oper, GIAOKineticOper>::value ||
              std::is_same<Oper, GIAOElecPotOper>::value) {
-    // Y_j = (a+1_j|O|b) + BO_j (a|O|b), so that (a|((r-O) O)_j|b) = Y_j +
-    // AB_j (a|O|b) and AB x (a|(r-O) O|b) = AB x Y
-    std::shared_ptr<DGVertex> a1l_O_b, a1m_O_b, a_O_b;
-    if (std::is_same<Oper, GIAOKineticOper>::value) {
-      ChildFactory<ThisType, GenIntegralSet_1_1<F, KineticOper, EmptySet>>
-          factory(this);
-      a1l_O_b = factory.make_child(raise(a, l), b);
-      a1m_O_b = factory.make_child(raise(a, m), b);
-      a_O_b = factory.make_child(a, b);
-    } else {
-      ChildFactory<ThisType, GenIntegralSet_1_1<F, ElecPotOper, mType>> factory(
-          this);
-      const mType zero_m(0u);
-      a1l_O_b = factory.make_child(raise(a, l), b, zero_m);
-      a1m_O_b = factory.make_child(raise(a, m), b, zero_m);
-      a_O_b = factory.make_child(a, b, zero_m);
+    // (a'|O|b') for Gaussians a', b'
+    std::function<std::shared_ptr<DGVertex>(const F&, const F&)> O_child;
+    ChildFactory<ThisType, GenIntegralSet_1_1<F, KineticOper, EmptySet>>
+        tfactory(this);
+    ChildFactory<ThisType, GenIntegralSet_1_1<F, ElecPotOper, mType>> vfactory(
+        this);
+    if (std::is_same<Oper, GIAOKineticOper>::value)
+      O_child = [&](const F& a, const F& b) {
+        return tfactory.make_child(a, b);
+      };
+    else
+      O_child = [&](const F& a, const F& b) {
+        return vfactory.make_child(a, b, mType(0u));
+      };
+
+    // Y_j(a',b') = (a'+1_j|O|b') + n'_j (a'-1_j'|O|b') + BO_j (a'|O|b'),
+    // where n' are the derivative quanta of a' and a'-1_j' is a' with one
+    // less derivative quantum along j, so that
+    // (a'|r_j O|b') = Y_j(a',b') + AB_j (a'|O|b') =: W_j(a',b')
+    // and AB x W(a,b) = AB x Y(a,b)
+    // N.B. returns nullptr if !is_simple(), i.e. only makes the children
+    auto Y = [&](const F& a, const F& b, unsigned int j,
+                 bool add_AB) -> std::shared_ptr<DGVertex> {
+      auto a1j_O_b = O_child(raise(a, j), b);
+      auto a_O_b = O_child(a, b);
+      std::shared_ptr<DGVertex> am1j_O_b;
+      if (a.deriv().d(j) != 0) am1j_O_b = O_child(lower(a, j), b);
+      if (!is_simple()) return nullptr;
+      std::shared_ptr<RecurrenceRelation::ExprType> result =
+          a1j_O_b + Vector("BO")[j] * a_O_b;
+      nflops_ += 2;
+      if (add_AB) {
+        result += Vector("AB")[j] * a_O_b;
+        nflops_ += 2;
+      }
+      if (am1j_O_b) {
+        result += Scalar(static_cast<double>(a.deriv().d(j))) * am1j_O_b;
+        nflops_ += 2;
+      }
+      return result;
+    };
+    // X_k = 1/2 [ AB_l Y_m - AB_m Y_l ] - 1/2 (a|((r-B) x nabla)_k|b)
+    auto Y_l = Y(a, b, l, false);
+    auto Y_m = Y(a, b, m, false);
+    if (is_simple()) {
+      expr_ = Scalar(0.5) * (Vector("AB")[l] * Y_m - Vector("AB")[m] * Y_l);
+      nflops_ += 4;
+    }
+    // + 1/2 [ n_l W_m[n-1_l,p] - n_m W_l[n-1_m,p]
+    //         - p_l W_m[n,p-1_l] + p_m W_l[n,p-1_m] ]
+    struct Term {
+      unsigned int count;  // n_i or p_i
+      bool on_a;           // differentiated w.r.t. A?
+      unsigned int i, j;   // W_j[... - 1_i ...]
+      int sign;
+    };
+    for (const auto& t :
+         {Term{n.d(l), true, l, m, +1}, Term{n.d(m), true, m, l, -1},
+          Term{p.d(l), false, l, m, -1}, Term{p.d(m), false, m, l, +1}}) {
+      if (t.count == 0) continue;
+      auto W_j = t.on_a ? Y(lower(a, t.i), b, t.j, true)
+                        : Y(a, lower(b, t.i), t.j, true);
+      if (is_simple()) {
+        expr_ += Scalar(0.5 * t.sign * t.count) * W_j;
+        nflops_ += 2;
+      }
     }
 
-    // X_k = 1/2 [ AB_l Y_m - AB_m Y_l ] - 1/2 (a|((r-B) x nabla)_k|b)
-    // (a|((r-B) x nabla)_k|b) = (a|(r-B)_l \partial_m|b)
-    //                           - (a|(r-B)_m \partial_l|b)
-    //                         = (a|dB_l b+1_m) - (a|dB_m b+1_l)
-    std::shared_ptr<DGVertex> dl_b1m, dm_b1l;
     if (std::is_same<Oper, GIAOKineticOper>::value) {
-      dl_b1m = dB_i_bp1_j(l, m);
-      dm_b1l = dB_i_bp1_j(m, l);
-    }
-    if (is_simple()) {
-      auto Y_l = a1l_O_b + Vector("BO")[l] * a_O_b;
-      auto Y_m = a1m_O_b + Vector("BO")[m] * a_O_b;
-      auto AB_x_Y = Vector("AB")[l] * Y_m - Vector("AB")[m] * Y_l;
-      nflops_ += 7;
-      if (std::is_same<Oper, GIAOKineticOper>::value) {
-        expr_ = Scalar(0.5) * (AB_x_Y - (dl_b1m - dm_b1l));
+      // (a|((r-B) x nabla)_k|b) = (a|(r-B)_l \partial_m|b)
+      //                           - (a|(r-B)_m \partial_l|b)
+      //                         = (a|dB_l b+1_m) - (a|dB_m b+1_l)
+      // the dependence of (r-B) on B is accounted for by differentiating
+      // b+1_j (the identity (r-B)_j phi_b = phi_{b+1_j} holds for any B)
+      auto dl_b1m = dB_i_bp1_j(l, m);
+      auto dm_b1l = dB_i_bp1_j(m, l);
+      if (is_simple()) {
+        expr_ -= Scalar(0.5) * (dl_b1m - dm_b1l);
         nflops_ += 3;
-      } else {
-        expr_ = Scalar(0.5) * AB_x_Y;
-        nflops_ += 1;
       }
     }
   } else if (std::is_same<Oper, AngularMomentumOper>::value) {
@@ -207,6 +289,10 @@ CR_1_GIAO_1<F, Oper>::CR_1_GIAO_1(const std::shared_ptr<TargetType>& Tint,
     // X_k = (a|(r-O)_l d_m b) - (a|(r-O)_m d_l b)
     //     = (a|dB_l b+1_m) - (a|dB_m b+1_l)
     //       + BO_m (a|dB_l b) - BO_l (a|dB_m b)
+    //       + p_m (a|dB_l (b-1_m')) - p_l (a|dB_m (b-1_l'))
+    // the last line is due to the derivative quanta p of b (the integrand
+    // depends on A and B only via the Gaussians, O is fixed), see
+    // (r-B)_j d^p phi_b/dB^p above
     auto dl_b1m = dB_i_bp1_j(l, m);
     auto dm_b1l = dB_i_bp1_j(m, l);
     auto dl_b =
@@ -217,6 +303,22 @@ CR_1_GIAO_1<F, Oper>::CR_1_GIAO_1(const std::shared_ptr<TargetType>& Tint,
       expr_ =
           (dl_b1m - dm_b1l) + (Vector("BO")[m] * dl_b - Vector("BO")[l] * dm_b);
       nflops_ += 5;
+    }
+    if (p.d(m) != 0) {
+      auto dl_bm1m = cmfactory.make_child(a, differentiate(lower(b, m), l),
+                                          EmptySet(), overlap);
+      if (is_simple()) {
+        expr_ += Scalar(static_cast<double>(p.d(m))) * dl_bm1m;
+        nflops_ += 2;
+      }
+    }
+    if (p.d(l) != 0) {
+      auto dm_bm1l = cmfactory.make_child(a, differentiate(lower(b, l), m),
+                                          EmptySet(), overlap);
+      if (is_simple()) {
+        expr_ -= Scalar(static_cast<double>(p.d(l))) * dm_bm1l;
+        nflops_ += 2;
+      }
     }
   } else
     throw std::logic_error("CR_1_GIAO_1: unsupported operator");

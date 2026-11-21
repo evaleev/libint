@@ -57,6 +57,7 @@
 #include <libint2/deriv_iter.h>
 #include <libint2/shgshell_ordering.h>
 #include <master_ints_list.h>
+#include <onebody_task_traits.h>
 #include <policy_spec.h>
 #include <purgeable.h>
 #include <rr.h>
@@ -332,15 +333,6 @@ Coulombσp_Descr make_descr<Coulombσp_Descr>(int p, int, int) {
     "change LIBINT_SUPPORT_ONEBODYINTS in global_macros.h to 1 if need 1-body ints"
 #endif
 
-#define BOOST_PP_MAKE_DESCR_AXIS(r, data, op)            \
-  template <>                                            \
-  op##_Descr make_descr<op##_Descr>(int xyz, int, int) { \
-    return op##_Descr(xyz);                              \
-  }
-BOOST_PP_LIST_FOR_EACH(BOOST_PP_MAKE_DESCR_AXIS, _,
-                       BOOST_PP_MAGNETIC_1_1_OPER_LIST)
-#undef BOOST_PP_MAKE_DESCR_AXIS
-
 namespace {
 template <typename OperType>
 struct AuxQuantaType;
@@ -353,31 +345,6 @@ struct AuxQuantaType {
   typedef EmptySet type;
 };
 
-/// @return true if \p OperType is one of the vector-valued magnetic operators
-/// (London-orbital/GIAO derivatives and angular momentum), i.e. is listed in
-/// BOOST_PP_MAGNETIC_1_1_OPER_LIST
-template <typename OperType>
-constexpr bool is_magnetic_oper() {
-#define BOOST_PP_IS_MAGNETIC_OPER(r, data, op) \
-  || std::is_same<OperType, op##Oper>::value
-  return false BOOST_PP_LIST_FOR_EACH(BOOST_PP_IS_MAGNETIC_OPER, _,
-                                      BOOST_PP_MAGNETIC_1_1_OPER_LIST);
-#undef BOOST_PP_IS_MAGNETIC_OPER
-}
-
-/// @return true if the integrals of \p OperType with derivative order
-/// \p deriv_level are generated; the magnetic integrals have no geometric
-/// derivatives, and are generated only if LIBINT_ENABLE_ONEBODY_MAGNETIC is
-/// defined (see LIBINT2_ENABLE_ONEBODY_MAGNETIC in CMakeLists.txt)
-template <typename OperType>
-constexpr bool onebody_task_enabled(unsigned int deriv_level) {
-#ifdef LIBINT_ENABLE_ONEBODY_MAGNETIC
-  return !is_magnetic_oper<OperType>() || deriv_level == 0;
-#else
-  return !is_magnetic_oper<OperType>();
-#endif
-}
-
 }  // namespace
 
 template <typename _OperType>
@@ -386,9 +353,7 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
                          std::shared_ptr<Libint2Iface>& iface,
                          unsigned int deriv_level) {
   // implement overlap as a special case of cartesian emultipole
-  using OperType =
-      typename std::conditional<std::is_same<_OperType, OverlapOper>::value,
-                                CartesianMultipoleOper<3u>, _OperType>::type;
+  using OperType = OnebodyTaskOper<_OperType>;
   const std::string task = task_label(label, deriv_level);
   // this task was not registered (see try_main())
   if (!onebody_task_enabled<_OperType>(deriv_level)) return;
@@ -411,29 +376,6 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
 
   const auto nullaux = typename Onebody_sh_1_1::AuxIndexType(0u);
 
-  // optionally skip derivative property ints; the operators of the (scalar
-  // and X2C) core Hamiltonian are not properties, their geometric derivatives
-  // are needed for nuclear gradients, hence they are never skipped.
-  // N.B. keep this list in sync with the DERIV_ONEBODY_PROPERTY_ORDER comment
-  // in config_to_api() and with the description of
-  // LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS in CMakeLists.txt and INSTALL.md;
-  // the magnetic operators have no derivatives (see onebody_task_enabled())
-#ifdef LIBINT_DISABLE_ONEBODY_PROPERTY_DERIVS
-  const auto property_operator =
-      !(std::is_same<_OperType, OverlapOper>::value ||
-        std::is_same<_OperType, KineticOper>::value ||
-        std::is_same<_OperType, ElecPotOper>::value ||
-        std::is_same<_OperType, σpVσpOper>::value);
-  if (property_operator && deriv_level > 0) return;
-#endif
-  // derivatives of spherical multipole integrals are not implemented
-  {
-    if (std::is_same<_OperType, SphericalMultipoleOper>::value &&
-        deriv_level > 0)
-      return;
-    // throw std::invalid_argument(
-    //     "derivatives of spherical multipole ints are not yet implemented");
-  }
   //
   // Construct graphs for each desired target integral and
   // 1) generate source code for the found traversal path
@@ -467,72 +409,9 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
         /////////////////////////////////
         // loop over operator components
         /////////////////////////////////
-        // most important operators have 1 component ...
-        std::vector<OperDescrType> descrs(1);  // operator descriptors
-        // important EXCEPTION: multipole moments
-        if (std::is_same<_OperType, CartesianMultipoleOper<3u>>::value) {
-          // reset descriptors array
-          descrs.resize(0);
-
-          // parse the label ... 1emultipole means include multipoles of order 0
-          // (overlap) and 1 (dipole)
-          unsigned int max_multipole_order = 0;
-          assert(label != "overlap");
-          auto key_pos = label.find("emultipole");
-          assert(key_pos != std::string::npos);
-          std::string tmp = label;
-          tmp.erase(key_pos, std::string::npos);
-          istringstream iss(tmp);
-          iss >> max_multipole_order;
-          assert(max_multipole_order > 0);
-
-          // iterate over operators and construct their descriptors
-          for (int multipole_order = 0; multipole_order <= max_multipole_order;
-               ++multipole_order) {
-            // we iterate over them same way as over cartesian Gaussian shells
-            int x, y, z;
-            LIBINT2_FOR_CART(x, y, z, multipole_order)
-            descrs.push_back(make_descr<OperDescrType>(x, y, z));
-            LIBINT2_END_FOR_CART
-          }
-        }
-        if (std::is_same<_OperType, SphericalMultipoleOper>::value) {
-          // reset descriptors array
-          descrs.resize(0);
-          // iterate over operators and construct their descriptors
-          for (int l = 0; l <= LIBINT_MULTIPOLE_MAX_ORDER; ++l) {
-            // we iterate over them using the *standard* solid harmonic Gaussian
-            // ordering
-            int m;
-            LIBINT2_FOR_SOLIDHARM_STANDARD(l, m)
-            descrs.push_back(make_descr<OperDescrType>(l, m));
-            LIBINT2_END_FOR_SOLIDHARM
-          }
-        }
-        if (std::is_same<_OperType, σpVσpOper>::value) {
-          // reset descriptors array
-          descrs.resize(0);
-          // iterate over pauli components
-          for (int p = 0; p != 4; ++p) {
-            descrs.emplace_back(make_descr<OperDescrType>(p));
-          }
-        }
-        if (std::is_same<_OperType, σpeμσpOper>::value) {
-          // reset descriptors array
-          descrs.resize(0);
-          // iterate over 12 = 3 dipole directions × 4 Pauli components
-          for (int p = 0; p != 12; ++p) {
-            descrs.emplace_back(make_descr<OperDescrType>(p));
-          }
-        }
-        if (is_magnetic_oper<_OperType>()) {
-          // reset descriptors array
-          descrs.resize(0);
-          // iterate over Cartesian components
-          for (int xyz = 0; xyz != 3; ++xyz) {
-            descrs.emplace_back(make_descr<OperDescrType>(xyz));
-          }
-        }
+        // operator components, see OnebodyTaskTraits
+        const std::vector<OperDescrType> descrs =
+            OnebodyTaskTraits<_OperType>::components(label);
 
         // derivative index is the outermost (slowest running)
         // operator component is second slowest
@@ -2603,10 +2482,10 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
   iface->to_params(
       iface->macro_define("DERIV_ONEBODY_ORDER", LIBINT_INCLUDE_ONEBODY));
   // DERIV_ONEBODY_ORDER is the max derivative order of the core Hamiltonian
-  // operators (overlap, kinetic, elecpot, and σpVσp, i.e. Operator::opVop and
-  // Operator::op_q_gau_op), DERIV_ONEBODY_PROPERTY_ORDER that of the rest
-  // (multipoles, σpeμσp), except the magnetic operators (giao_overlap,
-  // giao_kinetic, giao_elecpot, angmom), which have no derivatives; use
+  // operators (OnebodyTaskTraits::core_hamiltonian: overlap, kinetic, elecpot,
+  // and σpVσp, i.e. Operator::opVop and Operator::op_q_gau_op),
+  // DERIV_ONEBODY_PROPERTY_ORDER that of the rest, capped by
+  // OnebodyTaskTraits::max_deriv_order (e.g. 0 for sphemultipole); use
   // TASK_EXISTS_* to query the availability of a particular task
 #ifdef LIBINT_DISABLE_ONEBODY_PROPERTY_DERIVS
   iface->to_params(iface->macro_define("DERIV_ONEBODY_PROPERTY_ORDER", 0));

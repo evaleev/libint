@@ -392,6 +392,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
                   }
                 }
               }
+              if (oper_ == Operator::giao_nuclear)
+                giao_nuclear_charge_deriv_correction(s1, s2, pset);
             } break;
 
             case 2: {
@@ -728,14 +730,15 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
   // make sure it's no default initialized
   if (lmax_ < 0) throw using_default_initialized();
 
-  // geometric derivatives of the magnetic (GIAO and angular momentum)
-  // integrals are not implemented
-  if (deriv_order_ > 0 && is_magnetic_type(oper_)) {
+  // some operators support only low-order geometric derivatives (see
+  // operator_traits::max_deriv_order)
+  if (static_cast<unsigned int>(deriv_order_) > max_deriv_order()) {
     buildfnptrs_ = nullptr;
     throw std::invalid_argument(
-        "Engine: geometric derivatives of Operator::giao_overlap, "
-        "giao_kinetic, giao_nuclear, and angular_momentum integrals are not "
-        "supported");
+        "Engine::initialize -- geometric derivatives of order " +
+        std::to_string(deriv_order_) + " are not supported for Operator #" +
+        std::to_string(static_cast<int>(oper_)) +
+        " (max order = " + std::to_string(max_deriv_order()) + ")");
   }
 
   // initialize braket, if needed
@@ -775,6 +778,28 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
 #endif
 
   _initialize();
+
+  // the derivatives of the giao_nuclear integrals with respect to the point
+  // charges use the elecpot kernels, on the same stack (see
+  // giao_nuclear_charge_deriv_correction())
+  if (oper_ == Operator::giao_nuclear && deriv_order_ > 0 &&
+      buildfnptrs_ != nullptr) {
+#if LIBINT2_TASK_EXISTS_2elecpot
+    if (lmax_ > LIBINT2_MAX_AM_elecpot ||
+        LIBINT2_PREFIXED_NAME(libint2_need_memory_elecpot)(lmax_) >
+            stack_size_) {
+      buildfnptrs_ = nullptr;
+      throw std::logic_error(
+          "Engine::initialize -- the elecpot kernels needed for the "
+          "derivatives of Operator::giao_nuclear do not fit the library");
+    }
+#else
+    buildfnptrs_ = nullptr;
+    throw std::logic_error(
+        "Engine::initialize -- the derivatives of Operator::giao_nuclear need "
+        "the elecpot kernels");
+#endif
+  }
 }
 
 namespace detail {
@@ -901,6 +926,7 @@ __libint2_engine_inline unsigned int Engine::intrinsic_deriv_order() const {
   }
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(PairSwap, pair_swap, (), pair_swap)
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(bool, braket_swap, (), braket_swap)
+LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(unsigned int, max_deriv_order, (), max_deriv_order)
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(int, pair_swap_phase, (unsigned int c), pair_swap_phase(c))
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(int, braket_swap_phase, (unsigned int c), braket_swap_phase(c))
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(unsigned int, braket_swap_remap, (unsigned int c), braket_swap_remap(c))
@@ -1096,6 +1122,57 @@ __libint2_engine_inline void Engine::init_core_ints_params(const any& params) {
   }
 }
 
+/// The London phase factors of Operator::giao_nuclear are defined relative to
+/// the coordinate origin, hence translating the Gaussian centers A and B and
+/// the point charge C by \f$ \vec{d} \f$ changes \f$ X_k \f$ by
+/// \f$ \frac{1}{2} (\vec{R}_{AB} \times \vec{d})_k V_{ab} \f$, where
+/// \f$ V_{ab} \f$ is the (Cartesian) integral of the potential of C; hence
+/// \f$ \partial X_k / \partial C_x = - (\partial / \partial A_x +
+/// \partial / \partial B_x) X_k + \frac{1}{2} (\vec{R}_{AB} \times
+/// \vec{e}_x)_k V_{ab} \f$. compute1() computes the first two terms, this
+/// adds the last one.
+__libint2_engine_inline void Engine::giao_nuclear_charge_deriv_correction(
+    const Shell& s1, const Shell& s2, size_t pset) {
+  const auto l1 = s1.contr[0].l;
+  const auto l2 = s2.contr[0].l;
+  const auto ncart12 = s1.cartesian_size() * s2.cartesian_size();
+  // V_ab for this point charge, from the primitive data of pset
+  const value_type* V = nullptr;
+  value_type V_ss = 0;
+  if (l1 == 0 && l2 == 0) {  // no elecpot kernel for (s|s)
+    for (auto p12 = 0; p12 != primdata_[0].contrdepth; ++p12)
+      V_ss += primdata_[p12].LIBINT_T_S_ELECPOT_S(0)[0];
+    V = &V_ss;
+  } else {
+#if LIBINT2_TASK_EXISTS_2elecpot
+    // N.B. initialize() checked that the stack is large enough
+    const auto elecpot_buildfnptrs =
+        to_ptr1(LIBINT2_PREFIXED_NAME(libint2_build_elecpot));
+    elecpot_buildfnptrs[l1 * (LIBINT2_MAX_AM_elecpot + 1) + l2](&primdata_[0]);
+    V = primdata_[0].targets[0];
+#else
+    assert(false && "the elecpot kernels are missing");
+    abort();
+#endif
+  }
+
+  const std::array<double, 3> R_AB = {
+      {s1.O[0] - s2.O[0], s1.O[1] - s2.O[1], s1.O[2] - s2.O[2]}};
+  const auto nopers = this->nopers();
+  for (auto xyz = 0u; xyz != 3; ++xyz) {
+    for (auto k = 0u; k != 3; ++k) {
+      // (R_AB x e_xyz)_k = R_AB[k+1] e_xyz[k+2] - R_AB[k+2] e_xyz[k+1]
+      const auto k1 = (k + 1) % 3;
+      const auto k2 = (k + 2) % 3;
+      const auto c =
+          0.5 * ((k2 == xyz ? R_AB[k1] : 0.0) - (k1 == xyz ? R_AB[k2] : 0.0));
+      if (c == 0.0) continue;
+      auto dest = &scratch_[((6 + pset * 3 + xyz) * nopers + k) * ncart12];
+      for (auto i = 0u; i != ncart12; ++i) dest[i] += c * V[i];
+    }
+  }
+}
+
 __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
                                                       const Shell& s1,
                                                       const Shell& s2,
@@ -1128,7 +1205,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
          "non-standard shell ordering");
 
   const auto oper_is_nuclear = is_nuclear_type(oper_);
-  const auto oper_is_magnetic = is_magnetic_type(oper_);
+  const auto oper_is_magnetic = detail::is_magnetic_type(oper_);
 
   // need to use HRR? see strategy.cc
   const auto l1 = s1.contr[0].l;
@@ -1216,7 +1293,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
     static const operator_traits<Operator::emultipole1>::oper_params_type
         coordinate_origin{{0, 0, 0}};
     const auto& O =
-        (oper_is_magnetic && oper_ != Operator::angular_momentum)
+        detail::is_giao_type(oper_)
             ? coordinate_origin
             : any_cast<const operator_traits<
                   Operator::emultipole1>::oper_params_type&>(

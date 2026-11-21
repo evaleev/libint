@@ -22,6 +22,8 @@
 // (Operator::giao_overlap, giao_kinetic, giao_nuclear) and of the angular
 // momentum integrals (Operator::angular_momentum)
 
+#include <algorithm>
+
 #include "catch.hpp"
 #include "fixture.h"
 
@@ -857,20 +859,142 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture,
     require_equal(L2, L2_ref, 1e-12, "angular_momentum");
   }
 
-  SECTION("geometric derivatives are not supported") {
+#if !LIBINT2_TASK_EXISTS_2giao_overlap1
+  SECTION("geometric derivatives are missing if not generated") {
+    // e.g. with LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS=ON
     for (auto oper : magnetic_opers) {
-      REQUIRE_THROWS_AS(Engine(oper, 1, 1, 1), std::invalid_argument);
-      // switching an engine for derivatives to a magnetic operator throws and
-      // leaves no kernels behind, i.e. compute() does not dispatch the
-      // kernels of the previous operator
-      Engine engine(Operator::overlap, 1, 1, 1);
-      REQUIRE_THROWS_AS(engine.set(oper), std::invalid_argument);
+      Engine engine(oper, 1, 1, 1);
       if (libint2::is_nuclear_type(oper)) engine.set_params(charges(atoms));
+      if (oper == Operator::angular_momentum)
+        engine.set_params(std::array<double, 3>{{0, 0, 0}});
       REQUIRE_THROWS_AS(engine.compute(shells[0], shells[0]),
                         Engine::missing_kernel);
     }
   }
 #endif
+#endif
 }
+
+#if LIBINT2_TASK_EXISTS_2giao_overlap1
+TEST_CASE("geometric derivatives of GIAO and angular momentum integrals",
+          "[engine][1-body][giao][deriv]") {
+  // the derivatives include those of the London phase factors, check them
+  // against central finite differences of the integrals
+  const std::vector<libint2::Atom> atoms = {
+      {8, 0.1, -0.2, 0.05}, {1, 1.5, 0.3, 1.1}, {1, -1.2, 1.3, -0.6}};
+  const std::array<double, 3> gauge_origin = {{0.3, -0.4, 0.7}};
+  auto atom_xyz = [&](size_t i) -> std::array<double, 3> {
+    return {{atoms[i].x, atoms[i].y, atoms[i].z}};
+  };
+  std::vector<Shell> shells = {
+      Shell{{1.3, 0.4}, {{0, false, {0.5, 0.6}}}, atom_xyz(0)},
+      Shell{{0.9}, {{1, false, {1.0}}}, atom_xyz(1)},
+      Shell{{0.7}, {{2, true, {1.0}}}, atom_xyz(2)},
+      Shell{{0.8}, {{1, false, {1.0}}}, atom_xyz(0)}};
+  const int lmax = std::min(2, static_cast<int>(LIBINT2_MAX_AM_giao_overlap1));
+  shells.erase(std::remove_if(shells.begin(), shells.end(),
+                              [&](const Shell& s) {
+                                return static_cast<int>(s.contr[0].l) > lmax;
+                              }),
+               shells.end());
+  const double h = 1e-4;  // finite-difference step
+
+  /// the integrals of oper over (s1|s2) with point charges q, [comp][ij]
+  using Charges = std::vector<std::pair<double, std::array<double, 3>>>;
+  auto compute_ints = [&](Operator oper, int deriv_order, const Shell& s1,
+                          const Shell& s2, const Charges& q) {
+    Engine engine(oper, 2, lmax, deriv_order);
+    if (oper == Operator::giao_nuclear) engine.set_params(q);
+    if (oper == Operator::angular_momentum) engine.set_params(gauge_origin);
+    engine.compute(s1, s2);
+    const auto n12 = s1.size() * s2.size();
+    Matrices result;
+    for (const auto* r : engine.results()) result.emplace_back(r, r + n12);
+    return result;
+  };
+  auto moved = [&](Shell s, int xyz, double d) {
+    auto O = s.O;
+    O[xyz] += d;
+    s.move(O);
+    return s;
+  };
+  // the integrals with the shell centers and point charges displaced along
+  // coordinate c: 0-2 = bra center, 3-5 = ket center, 6+ = point charges
+  auto displaced_ints = [&](Operator oper, int deriv_order, const Shell& s1,
+                            const Shell& s2, size_t c, double d) {
+    auto q = charges(atoms);
+    if (c < 3) return compute_ints(oper, deriv_order, moved(s1, c, d), s2, q);
+    if (c < 6)
+      return compute_ints(oper, deriv_order, s1, moved(s2, c - 3, d), q);
+    q[(c - 6) / 3].second[(c - 6) % 3] += d;
+    return compute_ints(oper, deriv_order, s1, s2, q);
+  };
+
+  for (auto oper : magnetic_opers) {
+    const auto nq = oper == Operator::giao_nuclear ? atoms.size() : 0;
+    const auto ncoord = 6 + 3 * nq;
+    for (size_t i1 = 0; i1 != shells.size(); ++i1) {
+      for (size_t i2 = 0; i2 != shells.size(); ++i2) {
+        const auto& s1 = shells[i1];
+        const auto& s2 = shells[i2];
+        // first derivatives, ordered as coordinate * 3 + component
+        const auto d1 = compute_ints(oper, 1, s1, s2, charges(atoms));
+        REQUIRE(d1.size() == ncoord * 3);
+        for (size_t c = 0; c != ncoord; ++c) {
+          const auto plus = displaced_ints(oper, 0, s1, s2, c, h);
+          const auto minus = displaced_ints(oper, 0, s1, s2, c, -h);
+          for (size_t k = 0; k != 3; ++k)
+            for (size_t ij = 0; ij != plus[k].size(); ++ij) {
+              INFO("oper " << static_cast<int>(oper) << ", shells (" << i1
+                           << "," << i2 << "), coordinate " << c
+                           << ", component " << k << ", element " << ij);
+              REQUIRE(d1[c * 3 + k][ij] ==
+                      Approx((plus[k][ij] - minus[k][ij]) / (2 * h))
+                          .epsilon(1e-6)
+                          .margin(1e-8));
+            }
+        }
+
+#if LIBINT2_TASK_EXISTS_2giao_overlap2
+        // second derivatives (no point charges): upper triangle of the 6x6
+        // coordinates, ordered as pair * 3 + component
+        if (oper != Operator::giao_nuclear) {
+          const auto d2 = compute_ints(oper, 2, s1, s2, charges(atoms));
+          REQUIRE(d2.size() == 21 * 3);
+          for (size_t c2 = 0; c2 != 6; ++c2) {
+            const auto plus = displaced_ints(oper, 1, s1, s2, c2, h);
+            const auto minus = displaced_ints(oper, 1, s1, s2, c2, -h);
+            for (size_t c1 = 0; c1 != 6; ++c1) {
+              const auto i = std::min(c1, c2), j = std::max(c1, c2);
+              const auto c12 = i * (12 - i - 1) / 2 + j;
+              for (size_t k = 0; k != 3; ++k)
+                for (size_t ij = 0; ij != plus[k].size(); ++ij) {
+                  INFO("oper " << static_cast<int>(oper) << ", shells (" << i1
+                               << "," << i2 << "), coordinates (" << c1 << ","
+                               << c2 << "), component " << k << ", element "
+                               << ij);
+                  REQUIRE(
+                      d2[c12 * 3 + k][ij] ==
+                      Approx((plus[c1 * 3 + k][ij] - minus[c1 * 3 + k][ij]) /
+                             (2 * h))
+                          .epsilon(1e-6)
+                          .margin(1e-8));
+                }
+            }
+          }
+        }
+#endif
+      }
+    }
+  }
+
+#if LIBINT2_MAX_DERIV_ORDER > 1
+  // the point-charge derivatives of giao_nuclear are implemented for the
+  // first order only
+  REQUIRE_THROWS_AS(Engine(Operator::giao_nuclear, 1, 1, 2),
+                    std::invalid_argument);
+#endif
+}
+#endif  // LIBINT2_TASK_EXISTS_2giao_overlap1
 
 #endif  // defined(LIBINT2_SUPPORT_ONEBODY) && LIBINT2_TASK_EXISTS_2giao_overlap

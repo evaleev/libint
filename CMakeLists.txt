@@ -160,12 +160,12 @@ option_with_default(LIBINT2_ENABLE_G12DKH
 
 option_with_print(LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS
   "Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot, and σpVσp, i.e. opVop and op_q_gau_op).
-   The magnetic 1-body integrals (see LIBINT2_ENABLE_ONEBODY_MAGNETIC) have no geometric derivatives regardless of this option.
+   Some operators support lower derivative orders only: none for sphemultipole, first for giao_nuclear.
    These derivatives are disabled by default to save compile time. (enable with OFF)
    Note that the libtool build won't enable this- if forcibly enabled, build_libint balks." ON)
 option_with_print(LIBINT2_ENABLE_ONEBODY_MAGNETIC
   "Generate the 1-body integrals for magnetic properties, i.e. Operator::giao_overlap, giao_kinetic, giao_nuclear, and angular_momentum,
-   when 1-body integrals are enabled (no geometric derivatives). Irrelevant when `LIBINT2_ENABLE_ONEBODY=-1`. (disable with OFF to save compile time)" ON)
+   when 1-body integrals are enabled (their geometric derivatives are property derivatives, see LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS). Irrelevant when `LIBINT2_ENABLE_ONEBODY=-1`. (disable with OFF to save compile time)" ON)
 option_with_print(LIBINT2_ENABLE_T1G12
   "Enable [Ti,G12] integrals when G12 integrals are enabled. Irrelevant when `LIBINT2_ENABLE_G12=OFF`. (disable with OFF)" ON)
 
