@@ -71,6 +71,9 @@
 /* Disable support for 1-body property derivatives */
 #cmakedefine LIBINT_DISABLE_ONEBODY_PROPERTY_DERIVS @LIBINT_DISABLE_ONEBODY_PROPERTY_DERIVS@
 
+/* Generate the magnetic 1-body integrals (giao_overlap, giao_kinetic, giao_elecpot, angmom)? */
+#cmakedefine LIBINT_ENABLE_ONEBODY_MAGNETIC @LIBINT_ENABLE_ONEBODY_MAGNETIC@
+
 /* Support ERI derivatives up to this order */
 #define LIBINT_INCLUDE_ERI @LIBINT_INCLUDE_ERI@
 #if @LIBINT_INCLUDE_ERI@ == -1

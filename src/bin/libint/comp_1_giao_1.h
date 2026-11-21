@@ -40,10 +40,10 @@ namespace libint2 {
  * Jørgensen, J. Chem. Phys. 95, 2595 (1991)). The real \f$ X_k \f$ are computed
  * using
  * \f$ (\vec{R}_{AB} \times \vec{r})\, \phi_a = \vec{R}_{AB} \times
- *     (\vec{r} - \vec{A})\, \phi_a + (\vec{R}_{AB} \times \vec{B})\, \phi_a \f$,
- * where \f$ (\vec{r} - \vec{A})_j \phi_a = \phi_{a+1_j} \f$, and
- * \f$ (\vec{r} - \vec{B})_j \partial_i \phi_b = - \partial \phi_{b+1_j} /
- * \partial B_i \f$ for \f$ i \neq j \f$ .
+ *     (\vec{r} - \vec{A})\, \phi_a + (\vec{R}_{AB} \times \vec{B})\, \phi_a
+ * \f$, where \f$ (\vec{r} - \vec{A})_j \phi_a = \phi_{a+1_j} \f$, and \f$
+ * (\vec{r} - \vec{B})_j \partial_i \phi_b = - \partial \phi_{b+1_j} / \partial
+ * B_i \f$ for \f$ i \neq j \f$ .
  *
  * The \c BO prefactor (\f$ \vec{B} - \vec{O} \f$) is the position of the ket
  * center relative to the origin (the coordinate origin for the GIAO
@@ -86,6 +86,10 @@ class CR_1_GIAO_1
 
   /// @return \p f with its angular momentum raised by 1 in direction \p xyz
   /// (for shells: angular momentum raised by 1)
+  /// @note for shells \p xyz is ignored: a shell contains all components, and
+  /// for shell sets (`!is_simple()`) this CR only establishes the dependence on
+  /// the child shell sets; the expressions are built when the CR is applied to
+  /// the individual integrals (CGF), for which the direction matters
   static F raise(const F& f, unsigned int xyz) {
     F result(f);
     result.inc(std::is_same<F, CGShell>::value ? 0 : xyz);
@@ -153,8 +157,7 @@ CR_1_GIAO_1<F, Oper>::CR_1_GIAO_1(const std::shared_ptr<TargetType>& Tint,
     auto r_l = dipole(l);
     auto r_m = dipole(m);
     if (is_simple()) {
-      expr_ = Scalar(0.5) *
-              (Vector("AB")[l] * r_m - Vector("AB")[m] * r_l);
+      expr_ = Scalar(0.5) * (Vector("AB")[l] * r_m - Vector("AB")[m] * r_l);
       nflops_ += 4;
     }
   } else if (std::is_same<Oper, GIAOKineticOper>::value ||
@@ -169,8 +172,8 @@ CR_1_GIAO_1<F, Oper>::CR_1_GIAO_1(const std::shared_ptr<TargetType>& Tint,
       a1m_O_b = factory.make_child(raise(a, m), b);
       a_O_b = factory.make_child(a, b);
     } else {
-      ChildFactory<ThisType, GenIntegralSet_1_1<F, ElecPotOper, mType>>
-          factory(this);
+      ChildFactory<ThisType, GenIntegralSet_1_1<F, ElecPotOper, mType>> factory(
+          this);
       const mType zero_m(0u);
       a1l_O_b = factory.make_child(raise(a, l), b, zero_m);
       a1m_O_b = factory.make_child(raise(a, m), b, zero_m);
@@ -206,13 +209,13 @@ CR_1_GIAO_1<F, Oper>::CR_1_GIAO_1(const std::shared_ptr<TargetType>& Tint,
     //       + BO_m (a|dB_l b) - BO_l (a|dB_m b)
     auto dl_b1m = dB_i_bp1_j(l, m);
     auto dm_b1l = dB_i_bp1_j(m, l);
-    auto dl_b = cmfactory.make_child(a, differentiate(b, l), EmptySet(),
-                                     overlap);
-    auto dm_b = cmfactory.make_child(a, differentiate(b, m), EmptySet(),
-                                     overlap);
+    auto dl_b =
+        cmfactory.make_child(a, differentiate(b, l), EmptySet(), overlap);
+    auto dm_b =
+        cmfactory.make_child(a, differentiate(b, m), EmptySet(), overlap);
     if (is_simple()) {
-      expr_ = (dl_b1m - dm_b1l) +
-              (Vector("BO")[m] * dl_b - Vector("BO")[l] * dm_b);
+      expr_ =
+          (dl_b1m - dm_b1l) + (Vector("BO")[m] * dl_b - Vector("BO")[l] * dm_b);
       nflops_ += 5;
     }
   } else

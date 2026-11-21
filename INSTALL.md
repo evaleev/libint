@@ -174,9 +174,10 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * `LIBINT2_ENABLE_G12` - G - Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
 * `LIBINT2_ENABLE_G12DKH` - G - Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
 
-* `LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS` - G - Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot, and σ·pVσ·p, i.e. `Operator::opVop` and `Operator::op_q_gau_op`, whose derivatives are needed for X2C nuclear gradients). The max derivative order of the latter is `LIBINT2_DERIV_ONEBODY_ORDER`, of the rest `LIBINT2_DERIV_ONEBODY_PROPERTY_ORDER`.
+* `LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS` - G - Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot, and σ·pVσ·p, i.e. `Operator::opVop` and `Operator::op_q_gau_op`, whose derivatives are needed for X2C nuclear gradients). The max derivative order of the latter is `LIBINT2_DERIV_ONEBODY_ORDER`, of the rest `LIBINT2_DERIV_ONEBODY_PROPERTY_ORDER`, except for the magnetic 1-body integrals (see `LIBINT2_ENABLE_ONEBODY_MAGNETIC`), which have no geometric derivatives.
    These derivatives are disabled by default to save compile time. Use OFF to enable.
    Note that the libtool build won't enable this- if forcibly enabled, build_libint balks. [Default=ON]
+* `LIBINT2_ENABLE_ONEBODY_MAGNETIC` - G - Generate the 1-body integrals for magnetic properties: `Operator::giao_overlap`, `Operator::giao_kinetic`, `Operator::giao_nuclear` (zero-field derivatives of the integrals over London orbitals with respect to the magnetic field), and `Operator::angular_momentum`. Geometric derivatives of these are not available. Irrelevant when `LIBINT2_ENABLE_ONEBODY=-1`. Use OFF to save compile time; the corresponding `LIBINT2_TASK_EXISTS_2giao_overlap` etc. are then 0 and `Engine` throws `Engine::missing_kernel`. [Default=ON]
 
 * `LIBINT2_ENABLE_T1G12` - G - Enable [Ti,G12] integrals when G12 integrals are enabled. Irrelevant when `LIBINT2_ENABLE_G12=OFF`. Use OFF to disable. [Default=ON]
 

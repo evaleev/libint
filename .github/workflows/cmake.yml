@@ -48,10 +48,13 @@ jobs:
             os: ubuntu-24.04
             subproject: OFF
             disable_onebody_property_derivs: OFF
+          # check that the library and the tests build without the magnetic
+          # 1-body integrals
           - build_type: Release
             build_shared_libs: ON
             os: macos-15
             do_fortran: ON
+            onebody_magnetic: OFF
           # exercise a center-dependent AM table for the 3-center RKB ERIs,
           # per-derivative AM lists, and 2nd geometric derivatives of the
           # 4-center ERIs in one lane only; the 2nd-derivative ERIs must cover
@@ -92,6 +95,7 @@ jobs:
         -D LIBINT2_RKB_ERI3_MAX_AM=${{ matrix.rkb_eri3_max_am || 2 }}
         -D LIBINT2_ENABLE_ONEBODY=1
         -D LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS=${{ matrix.disable_onebody_property_derivs || 'ON' }}
+        -D LIBINT2_ENABLE_ONEBODY_MAGNETIC=${{ matrix.onebody_magnetic || 'ON' }}
         -D LIBINT2_MULTIPOLE_MAX_ORDER=2
         -D LIBINT2_REQUIRE_CXX_API_COMPILED=ON
         -D LIBINT2_ENABLE_FORTRAN=${{ matrix.do_fortran }}

@@ -71,42 +71,42 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
 /// These MUST appear in the same order as in Operator.
 /// You must also update LIBINT2_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX when you
 /// add one-body ints
-#define LIBINT2_PP_NBODY_OPERATOR_LIST                                               \
-  (overlap,                                           /* overlap */                  \
-   (kinetic,                                          /* kinetic */                  \
-    (elecpot,                                         /* nuclear */                  \
-     (elecpot,                                        /* erf_nuclear */              \
-      (elecpot,                                       /* erfc_nuclear */             \
-       (elecpot,                                      /* erfx_nuclear */             \
-        (elecpot,                                     /* q_gau */                    \
-         (1emultipole,                                /* emultipole1 */              \
-          (2emultipole,                               /* emultipole2 */              \
-           (3emultipole,                              /* emultipole3 */              \
-            (sphemultipole,                           /* sphemultipole */            \
-             (opVop,                                  /* opVop */                    \
-              (opVop,                                 /* op_q_gau_op */              \
-               (opemuop,                              /* opemuop */                  \
-                (giao_overlap,                        /* giao_overlap */             \
-                 (giao_kinetic,                       /* giao_kinetic */             \
-                  (giao_elecpot,                      /* giao_nuclear */             \
-                   (angmom,                           /* angular_momentum */         \
-                    (eri,                             /* delta */                    \
-                     (eri,                            /* coulomb */                  \
-                      (eri,                           /* cgtg */                     \
-                       (eri,                          /* cgtg_x_coulomb */           \
-                        (eri,                         /* delcgtg2 */                 \
-                         (eri,                        /* r12 */                      \
-                          (eri,                       /* erf_coulomb */              \
-                           (eri,                      /* erfc_coulomb */             \
-                            (eri,                     /* erfx_coulomb */             \
-                             (eri,                    /* stg */                      \
-                              (eri,                   /* yukawa */                   \
-                               (eri,                  /* delcgtga_delcgtgb */        \
-                                (coulomb_opop,        /* coulomb_opop */             \
-                                 (coulomb_op,         /* coulomb_op */               \
-                                  (opop_coulomb_opop, /* opop_coulomb_opop */        \
-                                   (op_coulomb_op,    /* op_coulomb_op */            \
-                                    (eri,             /* truncated_coulomb */        \
+#define LIBINT2_PP_NBODY_OPERATOR_LIST                                        \
+  (overlap,                                           /* overlap */           \
+   (kinetic,                                          /* kinetic */           \
+    (elecpot,                                         /* nuclear */           \
+     (elecpot,                                        /* erf_nuclear */       \
+      (elecpot,                                       /* erfc_nuclear */      \
+       (elecpot,                                      /* erfx_nuclear */      \
+        (elecpot,                                     /* q_gau */             \
+         (1emultipole,                                /* emultipole1 */       \
+          (2emultipole,                               /* emultipole2 */       \
+           (3emultipole,                              /* emultipole3 */       \
+            (sphemultipole,                           /* sphemultipole */     \
+             (opVop,                                  /* opVop */             \
+              (opVop,                                 /* op_q_gau_op */       \
+               (opemuop,                              /* opemuop */           \
+                (giao_overlap,                        /* giao_overlap */      \
+                 (giao_kinetic,                       /* giao_kinetic */      \
+                  (giao_elecpot,                      /* giao_nuclear */      \
+                   (angmom,                           /* angular_momentum */  \
+                    (eri,                             /* delta */             \
+                     (eri,                            /* coulomb */           \
+                      (eri,                           /* cgtg */              \
+                       (eri,                          /* cgtg_x_coulomb */    \
+                        (eri,                         /* delcgtg2 */          \
+                         (eri,                        /* r12 */               \
+                          (eri,                       /* erf_coulomb */       \
+                           (eri,                      /* erfc_coulomb */      \
+                            (eri,                     /* erfx_coulomb */      \
+                             (eri,                    /* stg */               \
+                              (eri,                   /* yukawa */            \
+                               (eri,                  /* delcgtga_delcgtgb */ \
+                                (coulomb_opop,        /* coulomb_opop */      \
+                                 (coulomb_op,         /* coulomb_op */        \
+                                  (opop_coulomb_opop, /* opop_coulomb_opop */ \
+                                   (op_coulomb_op,    /* op_coulomb_op */     \
+                                    (eri,             /* truncated_coulomb */ \
                                      BOOST_PP_NIL)))))))))))))))))))))))))))))))))))
 
 #define LIBINT2_PP_NBODY_OPERATOR_INDEX_TUPLE \
@@ -730,11 +730,13 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
 
   // geometric derivatives of the magnetic (GIAO and angular momentum)
   // integrals are not implemented
-  if (deriv_order_ > 0 && is_magnetic_type(oper_))
+  if (deriv_order_ > 0 && is_magnetic_type(oper_)) {
+    buildfnptrs_ = nullptr;
     throw std::invalid_argument(
         "Engine: geometric derivatives of Operator::giao_overlap, "
         "giao_kinetic, giao_nuclear, and angular_momentum integrals are not "
         "supported");
+  }
 
   // initialize braket, if needed
   if (braket_ == BraKet::invalid) braket_ = default_braket(oper_);
@@ -1050,6 +1052,18 @@ __libint2_engine_inline void Engine::init_core_ints_params(const any& params) {
           ") != point charges size (" +
           std::to_string(std::get<1>(q_gau_params).size()) + ")");
     }
+    core_ints_params_ = params;
+  } else if (oper_ == Operator::giao_overlap ||
+             oper_ == Operator::giao_kinetic) {
+    // these have no params; reject e.g. an origin, which would otherwise be
+    // silently ignored
+    if (any_cast<operator_traits<Operator::giao_overlap>::oper_params_type>(
+            &params) == nullptr)
+      throw std::invalid_argument(
+          "Engine::set_params(Operator::giao_overlap/giao_kinetic): these "
+          "operators take no params; the phase origin of the London orbitals "
+          "is the coordinate origin, to use another phase origin translate the "
+          "system");
     core_ints_params_ = params;
   } else if (oper_ == Operator::delcgtga_delcgtgb) {
     // (\Del g_a) \cdot (\Del g_b) with g_a = \sum_i c_i exp(-a_i r_12^2),
