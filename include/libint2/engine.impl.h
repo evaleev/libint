@@ -784,20 +784,26 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
   // giao_nuclear_charge_deriv_correction())
   if (oper_ == Operator::giao_nuclear && deriv_order_ > 0 &&
       buildfnptrs_ != nullptr) {
+    // as elsewhere, leave no kernels if these are unusable: compute() then
+    // throws missing_kernel
 #if LIBINT2_TASK_EXISTS_2elecpot
-    if (lmax_ > LIBINT2_MAX_AM_elecpot ||
-        LIBINT2_PREFIXED_NAME(libint2_need_memory_elecpot)(lmax_) >
-            stack_size_) {
+    if (lmax_ > LIBINT2_MAX_AM_elecpot) {
+      buildfnptrs_ = nullptr;
+      throw lmax_exceeded("elecpot", LIBINT2_MAX_AM_elecpot, lmax_);
+    }
+    // the giao_elecpot1 kernels evaluate elecpot integrals of higher angular
+    // momenta, hence need a larger stack; this is an invariant of the
+    // generated code, not a property of the configuration
+    if (LIBINT2_PREFIXED_NAME(libint2_need_memory_elecpot)(lmax_) >
+        stack_size_) {
       buildfnptrs_ = nullptr;
       throw std::logic_error(
-          "Engine::initialize -- the elecpot kernels needed for the "
-          "derivatives of Operator::giao_nuclear do not fit the library");
+          "Engine::initialize -- the stack of the giao_elecpot1 kernels is "
+          "too small for the elecpot kernels");
     }
 #else
     buildfnptrs_ = nullptr;
-    throw std::logic_error(
-        "Engine::initialize -- the derivatives of Operator::giao_nuclear need "
-        "the elecpot kernels");
+    throw missing_kernel();
 #endif
   }
 }
@@ -927,6 +933,14 @@ __libint2_engine_inline unsigned int Engine::intrinsic_deriv_order() const {
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(PairSwap, pair_swap, (), pair_swap)
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(bool, braket_swap, (), braket_swap)
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(unsigned int, max_deriv_order, (), max_deriv_order)
+// operator_traits::max_deriv_order mirrors OnebodyTaskTraits::max_deriv_order of the compiler
+// (onebody_task_traits.h); if the compiler generated a task beyond the former the two are out of sync
+#if LIBINT2_TASK_EXISTS_2sphemultipole1
+#error "sphemultipole1 task exists, but operator_traits<Operator::sphemultipole>::max_deriv_order is 0"
+#endif
+#if LIBINT2_TASK_EXISTS_2giao_elecpot2
+#error "giao_elecpot2 task exists, but operator_traits<Operator::giao_nuclear>::max_deriv_order is 1"
+#endif
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(int, pair_swap_phase, (unsigned int c), pair_swap_phase(c))
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(int, braket_swap_phase, (unsigned int c), braket_swap_phase(c))
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(unsigned int, braket_swap_remap, (unsigned int c), braket_swap_remap(c))
@@ -1148,7 +1162,12 @@ __libint2_engine_inline void Engine::giao_nuclear_charge_deriv_correction(
     // N.B. initialize() checked that the stack is large enough
     const auto elecpot_buildfnptrs =
         to_ptr1(LIBINT2_PREFIXED_NAME(libint2_build_elecpot));
-    elecpot_buildfnptrs[l1 * (LIBINT2_MAX_AM_elecpot + 1) + l2](&primdata_[0]);
+    const auto elecpot_buildfnidx = l1 * (LIBINT2_MAX_AM_elecpot + 1) + l2;
+    assert(elecpot_buildfnptrs[elecpot_buildfnidx] &&
+           "null build function ptr");
+    // N.B. primdata_ was computed for the giao_elecpot1 kernel, see
+    // compute_primdata() for what the elecpot kernels need of it
+    elecpot_buildfnptrs[elecpot_buildfnidx](&primdata_[0]);
     V = primdata_[0].targets[0];
 #else
     assert(false && "the elecpot kernels are missing");
@@ -1240,6 +1259,12 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   }
   // AB appears explicitly in the GIAO integrals; BA may be needed by the HRR of
   // the underlying integrals
+  // N.B. giao_nuclear_charge_deriv_correction() evaluates the elecpot kernels
+  // with the primitive data computed here for Operator::giao_nuclear, i.e.
+  // they need AB or BA (whichever their HRR uses), PA, PB, PC, oo2z, and the
+  // (s|s) integrals with m <= l1 + l2 to be a subset of what is set for
+  // Operator::giao_nuclear: keep that in mind when making any of these
+  // conditional
   if (oper_is_magnetic) {
 #if LIBINT2_DEFINED(eri, AB_x)
     primdata.AB_x[0] = AB_x;

@@ -253,8 +253,7 @@ enum class Operator {
   /// Component ordering of results(): x, y, z.
   /// \note the geometric derivatives of \f$ X_k \f$ include the dependence of
   /// the London phase factors on the Gaussian centers; only first derivatives
-  /// are supported (including those with respect to
-  /// the point charges)
+  /// are supported (including those with respect to the point charges)
   giao_nuclear,
   /// \f$ (\vec{r} - \vec{O}) \times \nabla \f$, the real representation of
   /// the electronic angular momentum

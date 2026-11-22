@@ -886,12 +886,15 @@ TEST_CASE("geometric derivatives of GIAO and angular momentum integrals",
   auto atom_xyz = [&](size_t i) -> std::array<double, 3> {
     return {{atoms[i].x, atoms[i].y, atoms[i].z}};
   };
+  // N.B. contracted shells with l > 0 exercise the elecpot kernels that
+  // compute the point-charge derivatives of giao_nuclear
   std::vector<Shell> shells = {
       Shell{{1.3, 0.4}, {{0, false, {0.5, 0.6}}}, atom_xyz(0)},
-      Shell{{0.9}, {{1, false, {1.0}}}, atom_xyz(1)},
-      Shell{{0.7}, {{2, true, {1.0}}}, atom_xyz(2)},
-      Shell{{0.8}, {{1, false, {1.0}}}, atom_xyz(0)}};
-  const int lmax = std::min(2, static_cast<int>(LIBINT2_MAX_AM_giao_overlap1));
+      Shell{{0.9, 0.35}, {{1, false, {0.7, 0.4}}}, atom_xyz(1)},
+      Shell{{0.7, 0.3}, {{2, true, {0.6, 0.5}}}, atom_xyz(2)},
+      Shell{{0.8}, {{1, false, {1.0}}}, atom_xyz(0)},
+      Shell{{0.6}, {{3, true, {1.0}}}, atom_xyz(1)}};
+  const int lmax = std::min(3, static_cast<int>(LIBINT2_MAX_AM_giao_overlap1));
   shells.erase(std::remove_if(shells.begin(), shells.end(),
                               [&](const Shell& s) {
                                 return static_cast<int>(s.contr[0].l) > lmax;

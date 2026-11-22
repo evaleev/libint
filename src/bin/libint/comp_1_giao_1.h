@@ -75,7 +75,10 @@ class CR_1_GIAO_1
       ParentType;
   friend class GenericRecurrenceRelation<ThisType, BasisFunctionType,
                                          TargetType>;
-  /// N.B. the size is only a hint
+  /// N.B. this is only a hint (the number of children depends on the
+  /// derivative quanta and can exceed it) as long as the result of
+  /// ChildFactory::make_child() is copied: it is a reference to an element of
+  /// the vector of children, which reallocates beyond this size
   static const unsigned int max_nchildren = 20;
 
   using ParentType::Instance;
