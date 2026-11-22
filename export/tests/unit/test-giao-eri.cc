@@ -384,6 +384,8 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture,
     // 2-center integrals do not depend on the magnetic field
     Engine e(Operator::giao_coulomb, 1, 1);
     REQUIRE_THROWS_AS(e.set(libint2::BraKet::xs_xs), std::invalid_argument);
+    // the rejected set() leaves no kernels (rather than those of xx_xx)
+    REQUIRE_THROWS_AS(e.compute(shells[0], shells[0]), Engine::missing_kernel);
 #if !defined(LIBINT2_SUPPORT_GIAO_ERI3)
     Engine e3(Operator::giao_coulomb, 1, 1);
     e3.set(libint2::BraKet::xs_xx);
@@ -635,6 +637,9 @@ TEST_CASE("3-center GIAO electron repulsion integrals",
 
   // 2-center integrals do not depend on the magnetic field
   REQUIRE_THROWS_AS(engine.set(libint2::BraKet::xs_xs), std::invalid_argument);
+  // the rejected set() leaves no kernels (rather than those of xs_xx)
+  const auto& s0 = deriv_test_shells()[0];
+  REQUIRE_THROWS_AS(engine.compute(s0, s0), Engine::missing_kernel);
 }
 
 #if LIBINT2_DERIV_GIAO_ERI3_ORDER > 0
