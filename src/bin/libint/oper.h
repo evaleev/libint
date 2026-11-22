@@ -376,6 +376,79 @@ struct σpeμσp_Descr : public Contractable<σpeμσp_Descr> {
 };
 typedef GenOper<σpeμσp_Descr> σpeμσpOper;
 
+/// Base descriptor for the Cartesian components (x=0, y=1, z=2) of a real
+/// vector-valued one-body operator whose matrix is antisymmetric (the real
+/// representation of a purely-imaginary Hermitian operator).
+/// @tparam Derived the concrete descriptor, must define static
+/// `const char* name()`
+template <typename Derived>
+struct AntiHermitianVector1Body_Descr : public Contractable<Derived> {
+  typedef OperatorProperties<1, false, PermutationalSymmetry::nonsymm, true>
+      Properties;
+
+  AntiHermitianVector1Body_Descr(unsigned int axis = 0) : axis_(axis) {
+    assert(axis < 3);
+  }
+
+  static const unsigned int max_key = 3;
+  unsigned int key() const { return axis_; }
+  /// @return the Cartesian component index (0=x, 1=y, 2=z)
+  unsigned int axis() const { return axis_; }
+  std::string description() const {
+    return std::string(Derived::name()) + "[" + "XYZ"[axis_] + "]";
+  }
+  std::string label() const { return description(); }
+  int psymm(int i, int j) const { abort(); }
+  int hermitian(int i) const { return -1; }
+
+ private:
+  unsigned int axis_;
+};
+
+/// Zero-field London-orbital (GIAO) derivative of the overlap with respect to
+/// the magnetic field: \f$ \partial S_{ab} / \partial B_k = i X_k \f$ with
+/// \f$ X_k = \frac{1}{2} (\vec{R}_{AB} \times \langle a | \vec{r} | b
+/// \rangle)_k \f$
+struct GIAOOverlap_Descr
+    : public AntiHermitianVector1Body_Descr<GIAOOverlap_Descr> {
+  using AntiHermitianVector1Body_Descr::AntiHermitianVector1Body_Descr;
+  static const char* name() { return "GIAOOverlap"; }
+};
+typedef GenOper<GIAOOverlap_Descr> GIAOOverlapOper;
+
+/// Zero-field London-orbital (GIAO) derivative of the kinetic energy with
+/// respect to the magnetic field: \f$ \partial T_{ab} / \partial B_k = i X_k
+/// \f$ with \f$ X_k = \frac{1}{2} (\vec{R}_{AB} \times \langle a | \vec{r} \hat{T}
+/// | b \rangle)_k - \frac{1}{2} \langle a | ((\vec{r} - \vec{B}) \times
+/// \nabla)_k | b \rangle \f$
+struct GIAOKinetic_Descr
+    : public AntiHermitianVector1Body_Descr<GIAOKinetic_Descr> {
+  using AntiHermitianVector1Body_Descr::AntiHermitianVector1Body_Descr;
+  static const char* name() { return "GIAOKinetic"; }
+};
+typedef GenOper<GIAOKinetic_Descr> GIAOKineticOper;
+
+/// Zero-field London-orbital (GIAO) derivative of the electrostatic potential
+/// with respect to the magnetic field: \f$ \partial V_{ab} / \partial B_k = i
+/// X_k \f$ with \f$ X_k = \frac{1}{2} (\vec{R}_{AB} \times \langle a | \vec{r}
+/// \hat{V} | b \rangle)_k \f$
+struct GIAOElecPot_Descr
+    : public AntiHermitianVector1Body_Descr<GIAOElecPot_Descr> {
+  using AntiHermitianVector1Body_Descr::AntiHermitianVector1Body_Descr;
+  static const char* name() { return "GIAOElecPot"; }
+};
+typedef GenOper<GIAOElecPot_Descr> GIAOElecPotOper;
+
+/// \f$ (\vec{r} - \vec{O}) \times \nabla \f$, i.e. \f$ i \hat{L}_O \f$, where
+/// \f$ \hat{L}_O \f$ is the angular momentum operator about origin \f$ \vec{O}
+/// \f$
+struct AngularMomentum_Descr
+    : public AntiHermitianVector1Body_Descr<AngularMomentum_Descr> {
+  using AntiHermitianVector1Body_Descr::AntiHermitianVector1Body_Descr;
+  static const char* name() { return "AngularMomentum"; }
+};
+typedef GenOper<AngularMomentum_Descr> AngularMomentumOper;
+
 /// cartesian multipole operator in \c NDIM dimensions
 /// \f$ \hat{O}(\vec{k}) \equiv \vec{r}^{\cdot \vec{k}} = r_1^{k_1} r_2^{k_2}
 /// \cdots \f$ \internal OriginDerivative<NDIM> is used to store cartesian
@@ -458,6 +531,47 @@ struct TwoPRep_Descr : public Contractable<TwoPRep_Descr> {
   int hermitian(int i) const { return +1; }
 };
 typedef GenOper<TwoPRep_Descr> TwoPRep;
+
+/** GIAOTwoPRep describes the zero-field derivatives of the two-body repulsion
+   integrals over London orbitals (GIAOs) with respect to the magnetic field:
+   \f$ \partial (ab|cd) / \partial B_k = i (X^{(1)}_k + X^{(2)}_k) \f$, with
+   \f$ X^{(1)}_k = \frac{1}{2} (\vec{R}_{AB} \times (a \vec{r}_1 b|cd))_k \f$
+   and \f$ X^{(2)}_k = \frac{1}{2} (\vec{R}_{CD} \times (ab|c \vec{r}_2 d))_k
+   \f$. Its 6 components are \f$ X^{(1)}_{x,y,z} \f$ followed by
+   \f$ X^{(2)}_{x,y,z} \f$.
+ */
+struct GIAOTwoPRep_Descr : public Contractable<GIAOTwoPRep_Descr> {
+  typedef OperatorProperties<2, false, PermutationalSymmetry::nonsymm>
+      Properties;
+  /// swapping bra and ket swaps the components of electrons 1 and 2 (handled
+  /// by the engine)
+  static constexpr bool p1p2_swappable = true;
+  /// swapping the functions of a pair changes the sign of the components of
+  /// that pair (handled by the engine)
+  static constexpr PairSwap pair_swap = PairSwap::independent;
+
+  GIAOTwoPRep_Descr(unsigned int component = 0) : component_(component) {
+    assert(component < max_key);
+  }
+
+  static const unsigned int max_key = 6;
+  unsigned int key() const { return component_; }
+  /// @return the electron (0 or 1) whose pair density carries the London phase
+  unsigned int particle() const { return component_ / 3; }
+  /// @return the Cartesian component index (0=x, 1=y, 2=z)
+  unsigned int axis() const { return component_ % 3; }
+  std::string description() const {
+    return std::string("GIAOTwoPRep[") + std::to_string(particle() + 1) +
+           "XYZ"[axis()] + "]";
+  }
+  std::string label() const { return description(); }
+  int psymm(int i, int j) const { abort(); }
+  int hermitian(int i) const { return 0; }
+
+ private:
+  unsigned int component_;
+};
+typedef GenOper<GIAOTwoPRep_Descr> GIAOTwoPRep;
 
 /** Coulombσpσp: (a b | 1/r_{12} | σ·p c σ·p d), the Coulomb operator with
  *  σ·p acting on both functions of particle 2. The Dirac identity

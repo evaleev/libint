@@ -203,6 +203,73 @@ enum class Operator {
   /// Engine-enum names are ASCII (`op` = σ·p); the σ·p·r·σ·p math name σpeμσp
   /// lives on the compiler side (σpeμσp_Descr) and in the codegen label.
   opemuop,
+  /// Zero-field derivative of the overlap over London orbitals (also known
+  /// as gauge-including atomic orbitals, GIAOs)
+  /// \f$ \omega_a(\vec{r}) = e^{-\frac{i}{2} (\vec{B} \times \vec{A}) \cdot
+  /// \vec{r}} \phi_a(\vec{r}) \f$
+  /// with respect to the uniform magnetic field \f$ \vec{B} \f$.
+  /// The derivative is purely imaginary,
+  /// \f$ \partial S_{ab} / \partial B_k |_{\vec{B}=0} = i X_k \f$,
+  /// and the real antisymmetric matrices \f$ X_k \f$ (k = x, y, z) are
+  /// computed:
+  /// \f$ X_k = \frac{1}{2} \left( \vec{R}_{AB} \times \langle a | \vec{r} |
+  /// b \rangle \right)_k \f$, where \f$ \vec{R}_{AB} = \vec{A} - \vec{B} \f$.
+  /// The phase origin is the coordinate origin (i.e., \f$ \vec{r} \f$ is
+  /// measured from \f$ (0,0,0) \f$).
+  /// See T. Helgaker and P. Jørgensen, J. Chem. Phys. 95, 2595 (1991).
+  ///
+  /// Component ordering of results(): x, y, z.
+  /// \note the geometric derivatives of \f$ X_k \f$ include the dependence of
+  /// the London phase factors on the Gaussian centers
+  giao_overlap,
+  /// Zero-field derivative of the kinetic energy over London orbitals (see
+  /// Operator::giao_overlap) with respect to the magnetic field:
+  /// \f$ \partial T_{ab} / \partial B_k |_{\vec{B}=0} = i X_k \f$, where
+  /// \f$ T(\vec{B}) = \frac{1}{2} \vec{\pi}^2 \f$ is the kinetic energy of
+  /// an electron in the field (\f$ \vec{\pi} = -i \nabla + \vec{A} \f$,
+  /// Coulomb gauge),
+  /// \f$ X_k = \frac{1}{2} \left( \vec{R}_{AB} \times \langle a | \vec{r}
+  /// \hat{T} | b \rangle \right)_k - \frac{1}{2} \langle a | ( (\vec{r} -
+  /// \vec{B}) \times \nabla )_k | b \rangle \f$ .
+  /// The second term is the paramagnetic contribution
+  /// \f$ \frac{1}{2} \hat{L}_B \f$; due to the London phase factors the gauge
+  /// origin is the position of the ket Gaussian, hence the result does not
+  /// depend on the gauge origin.
+  /// The zero-field GIAO derivative of the one-electron Hamiltonian is the sum
+  /// of Operator::giao_kinetic and Operator::giao_nuclear .
+  ///
+  /// Component ordering of results(): x, y, z.
+  /// \note the geometric derivatives of \f$ X_k \f$ include the dependence of
+  /// the London phase factors on the Gaussian centers
+  giao_kinetic,
+  /// Zero-field derivative of the point-charge Coulomb potential over London
+  /// orbitals (see Operator::giao_overlap) with respect to the magnetic
+  /// field: \f$ \partial V_{ab} / \partial B_k |_{\vec{B}=0} = i X_k \f$, where
+  /// \f$ X_k = \frac{1}{2} \left( \vec{R}_{AB} \times \langle a | \vec{r}
+  /// \hat{V} | b \rangle \right)_k \f$ .
+  ///
+  /// Params type: same as Operator::nuclear (point charges vector).
+  ///
+  /// Component ordering of results(): x, y, z.
+  /// \note the geometric derivatives of \f$ X_k \f$ include the dependence of
+  /// the London phase factors on the Gaussian centers; only first derivatives
+  /// are supported (including those with respect to the point charges)
+  giao_nuclear,
+  /// \f$ (\vec{r} - \vec{O}) \times \nabla \f$, the real representation of
+  /// the electronic angular momentum
+  /// \f$ \hat{L}_O = -i (\vec{r} - \vec{O}) \times \nabla \f$ about origin
+  /// \f$ \vec{O} \f$ (i.e., the integrals of \f$ \hat{L}_O \f$ are \f$ -i \f$
+  /// times the computed real antisymmetric matrices). The paramagnetic
+  /// contribution to the one-electron Hamiltonian in a uniform magnetic
+  /// field with gauge origin \f$ \vec{O} \f$ is \f$ \frac{1}{2} \vec{B} \cdot
+  /// \hat{L}_O \f$.
+  ///
+  /// Params type: same as Operator::emultipole1 (origin).
+  ///
+  /// Component ordering of results(): x, y, z.
+  /// \note geometric derivatives are with respect to the Gaussian centers
+  /// (the origin is fixed)
+  angular_momentum,
   /// \f$ \delta(\vec{r}_1 - \vec{r}_2) \f$
   delta,
   /// (2-body) Coulomb operator = \f$ r_{12}^{-1} \f$
@@ -278,14 +345,66 @@ enum class Operator {
   /// Spherically truncated Coulomb, theta(Rc-r12)/r12; Rc has length units.
   /// Interpolation-free evaluation with binary64 order recurrences.
   truncated_coulomb,
+  /// Zero-field derivative of the Coulomb (electron repulsion) integrals over
+  /// London orbitals (see Operator::giao_overlap) with respect to the magnetic
+  /// field:
+  /// \f$ \partial (ab|cd) / \partial B_k |_{\vec{B}=0} = i (X^{(1)}_k +
+  /// X^{(2)}_k) \f$, where the contributions of the London phase factors of
+  /// the bra (electron 1) and ket (electron 2) pairs are
+  /// \f$ X^{(1)}_k = \frac{1}{2} \left( \vec{R}_{AB} \times (a \vec{r}_1
+  /// b|cd) \right)_k \f$ and
+  /// \f$ X^{(2)}_k = \frac{1}{2} \left( \vec{R}_{CD} \times (ab|c \vec{r}_2
+  /// d) \right)_k \f$; \f$ \vec{r} \f$ is measured from the coordinate
+  /// origin. \f$ X^{(1)} \f$ is antisymmetric with respect to \f$ a
+  /// \leftrightarrow b \f$ and symmetric with respect to \f$ c
+  /// \leftrightarrow d \f$ (vice versa for \f$ X^{(2)} \f$), and
+  /// \f$ X^{(1)}(ab|cd) = X^{(2)}(cd|ab) \f$ .
+  ///
+  /// Component ordering of results():
+  /// \f$ X^{(1)}_x, X^{(1)}_y, X^{(1)}_z, X^{(2)}_x, X^{(2)}_y, X^{(2)}_z
+  /// \f$.
+  ///
+  /// Geometric derivatives are the derivatives of \f$ X^{(1)}_k \f$ and
+  /// \f$ X^{(2)}_k \f$ *including* the dependence of the London phase
+  /// factors on the centers, i.e. the mixed derivatives with respect to the
+  /// centers and the magnetic field at zero field; shell sets are ordered as
+  /// derivative index * 6 + component. Since the phase factors refer to the
+  /// coordinate origin, the integrals are not translationally invariant:
+  /// the sum of the first derivatives with respect to coordinate \f$ x \f$
+  /// of all 4 centers is
+  /// \f$ \frac{1}{2} (\vec{R}_{AB} \times \vec{e}_x)_k (ab|cd) \f$ for
+  /// \f$ X^{(1)}_k \f$ (and similarly for \f$ X^{(2)}_k \f$ ).
+  /// \note only available if the library was configured with
+  /// LIBINT2_ENABLE_GIAO_ERI=N , where N>=0 is the max order of geometric
+  /// derivatives (otherwise Engine::compute() throws
+  /// Engine::missing_kernel)
+  ///
+  /// 3-center integrals (BraKet::xs_xx and BraKet::xx_xs): the unpaired
+  /// (fitting) function is a conventional Gaussian, without a London phase
+  /// factor, as is customary in density fitting with London orbitals. Hence
+  /// only the 3 components of the pair are computed,
+  /// \f$ \frac{1}{2} \left( \vec{R}_{CD} \times (X|c \vec{r}_2 d)
+  /// \right)_k \f$ for BraKet::xs_xx, and shell sets are ordered as
+  /// derivative index * 3 + component. For the same reason the 2-center
+  /// integrals (BraKet::xs_xs) do not depend on the magnetic field and are
+  /// not supported; use Operator::coulomb.
+  /// \note the 3-center integrals are only available if the library was
+  /// configured with LIBINT2_ENABLE_GIAO_ERI3=N
+  /// \note primitive integrals are screened using the estimates of the
+  /// Coulomb integrals, which do not account for the factors
+  /// \f$ \vec{R}_{AB} \f$ and \f$ \vec{r} \f$; hence the absolute precision
+  /// of the integrals degrades with the distance of the centers from the
+  /// coordinate origin (tighten the precision accordingly, see
+  /// Engine::set_precision() )
+  giao_coulomb,
   // do not modify this
   invalid = -1,
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!keep this
   // updated!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   first_1body_oper = overlap,
-  last_1body_oper = opemuop,
+  last_1body_oper = angular_momentum,
   first_2body_oper = delta,
-  last_2body_oper = truncated_coulomb,
+  last_2body_oper = giao_coulomb,
   first_oper = first_1body_oper,
   last_oper = last_2body_oper
 };
@@ -342,7 +461,8 @@ enum class Operator {
 
  The behavior of the components under the permutations Engine uses to
  canonicalize shell sets is encoded in operator_traits<Operator>:
- pair_swap, braket_swap, pair_swap_phase(), braket_swap_phase() and
+ pair_swap, braket_swap, pair_swap_phase(), bra_pair_swap_phase(),
+ braket_swap_phase() and
  braket_swap_remap(). The generated library covers exactly the shell sets that
  are canonical under these permutations (see the matching descriptor traits
  in the compiler).
@@ -371,8 +491,28 @@ inline constexpr bool is_nuclear_type(Operator oper) {
   return oper == Operator::nuclear || oper == Operator::erf_nuclear ||
          oper == Operator::erfc_nuclear || oper == Operator::erfx_nuclear ||
          oper == Operator::q_gau || oper == Operator::opVop ||
-         oper == Operator::op_q_gau_op;
+         oper == Operator::op_q_gau_op || oper == Operator::giao_nuclear;
 }
+
+namespace detail {
+/// @param[in] oper an Operator object
+/// @return true if \c oper is one of the vector-valued magnetic operators
+/// (Operator::giao_overlap, Operator::giao_kinetic, Operator::giao_nuclear,
+/// Operator::angular_momentum, Operator::giao_coulomb); their integrals are
+/// real (the factor of \f$ i \f$ is omitted)
+inline constexpr bool is_magnetic_type(Operator oper) {
+  return oper == Operator::giao_overlap || oper == Operator::giao_kinetic ||
+         oper == Operator::giao_nuclear || oper == Operator::angular_momentum ||
+         oper == Operator::giao_coulomb;
+}
+/// @param[in] oper an Operator object
+/// @return true if the integrals of \c oper are defined over London orbitals
+/// (GIAOs), whose phase factors are defined relative to the coordinate origin
+inline constexpr bool is_giao_type(Operator oper) {
+  return oper == Operator::giao_overlap || oper == Operator::giao_kinetic ||
+         oper == Operator::giao_nuclear;
+}
+}  // namespace detail
 
 /// which swaps of the two functions within the bra and within the ket of a
 /// 2-body integral Engine may perform to canonicalize a shell set; the
@@ -396,6 +536,11 @@ struct default_operator_traits {
   // N.B.: Below field means we *should* template specialize operator_traits for
   // Operator::kinetic, but L2 doesn't use that anywhere.
   static constexpr auto intrinsic_deriv_order = 0u;
+  /// the max order of geometric derivatives the Engine can compute for this
+  /// operator (the library may support a lower order, see
+  /// LIBINT2_DERIV_*_ORDER)
+  static constexpr unsigned int max_deriv_order =
+      std::numeric_limits<unsigned int>::max();
   /// which swaps within bra and within ket of a 2-body integral the engine
   /// may perform to canonicalize a shell set
   static constexpr auto pair_swap = PairSwap::independent;
@@ -405,6 +550,10 @@ struct default_operator_traits {
   /// @return the phase acquired by component @p c when the two functions of
   /// the ket (and, if pair_swap is PairSwap::coupled, of the bra) are swapped
   static constexpr int pair_swap_phase(unsigned int /* c */) { return 1; }
+  /// @return the phase acquired by component @p c when the two functions of
+  /// the bra are swapped (only used with PairSwap::independent; with
+  /// PairSwap::coupled pair_swap_phase() describes the simultaneous swap)
+  static constexpr int bra_pair_swap_phase(unsigned int /* c */) { return 1; }
   /// @return the phase acquired by component @p c when bra and ket are
   /// swapped
   static constexpr int braket_swap_phase(unsigned int /* c */) { return 1; }
@@ -565,6 +714,47 @@ struct operator_traits<Operator::sphemultipole>
     : public operator_traits<Operator::emultipole1> {
   static constexpr auto nopers =
       (LIBINT_MULTIPOLE_MAX_ORDER + 1) * (LIBINT_MULTIPOLE_MAX_ORDER + 1);
+  /// geometric derivatives of spherical multipoles are not implemented
+  static constexpr unsigned int max_deriv_order = 0;
+};
+
+/// giao_overlap: 3 Cartesian components of the zero-field London-orbital
+/// derivative of the overlap
+template <>
+struct operator_traits<Operator::giao_overlap>
+    : public detail::default_operator_traits {
+  static constexpr auto nopers = 3u;  //!< x, y, z
+  static constexpr auto intrinsic_deriv_order =
+      1u;  //!< \f$ \vec{r} \f$ raises the angular momentum by 1
+};
+/// giao_kinetic: 3 Cartesian components of the zero-field London-orbital
+/// derivative of the kinetic energy
+template <>
+struct operator_traits<Operator::giao_kinetic>
+    : public operator_traits<Operator::giao_overlap> {};
+/// giao_nuclear: 3 Cartesian components of the zero-field London-orbital
+/// derivative of the point-charge potential.
+/// Inherits point-charge params from nuclear; uses Boys function core eval.
+template <>
+struct operator_traits<Operator::giao_nuclear>
+    : public operator_traits<Operator::nuclear> {
+  static constexpr auto nopers = 3u;  //!< x, y, z
+  static constexpr auto intrinsic_deriv_order =
+      1u;  //!< \f$ \vec{r} \f$ raises the angular momentum by 1
+  /// the integrals are not translationally invariant (the phase origin is
+  /// fixed), the derivatives with respect to the point charges are recovered
+  /// from those with respect to the Gaussian centers plus a correction (see
+  /// Engine::compute1()), implemented for first derivatives only
+  static constexpr unsigned int max_deriv_order = 1;
+};
+/// angular_momentum: 3 Cartesian components of
+/// \f$ (\vec{r} - \vec{O}) \times \nabla \f$.
+/// Inherits the origin param from emultipole1.
+template <>
+struct operator_traits<Operator::angular_momentum>
+    : public operator_traits<Operator::emultipole1> {
+  static constexpr auto nopers = 3u;                 //!< x, y, z
+  static constexpr auto intrinsic_deriv_order = 1u;  //!< one \f$ \nabla \f$
 };
 
 template <>
@@ -750,6 +940,29 @@ struct operator_traits<Operator::truncated_coulomb>
   static oper_params_type default_params() { return oper_params_type{0}; }
   typedef const libint2::os_core_ints::truncated_coulomb_gm_eval<scalar_type>
       core_eval_type;
+};
+
+/// giao_coulomb: 6 components (3 per electron pair) of the zero-field
+/// London-orbital derivative of the Coulomb integrals.
+/// Uses the same core evaluator (Boys function) as Operator::coulomb.
+template <>
+struct operator_traits<Operator::giao_coulomb>
+    : public operator_traits<Operator::coulomb> {
+  static constexpr auto nopers = 6u;  //!< x, y, z for electron 1 and 2 pairs
+  static constexpr auto intrinsic_deriv_order =
+      1u;  //!< \f$ \vec{r} \f$ raises the angular momentum by 1
+  /// swapping the functions of a pair changes the sign of the contribution of
+  /// its London phase factor
+  static constexpr int bra_pair_swap_phase(unsigned int c) {
+    return c < 3 ? -1 : 1;
+  }
+  static constexpr int pair_swap_phase(unsigned int c) {
+    return c < 3 ? 1 : -1;
+  }
+  /// swapping bra and ket swaps the contributions of electrons 1 and 2
+  static constexpr unsigned int braket_swap_remap(unsigned int c) {
+    return (c + 3) % 6;
+  }
 };
 
 /// the runtime version of \c operator_traits<oper>::default_params()
@@ -1444,6 +1657,14 @@ class Engine {
                                                 const Shell& s2, size_t p1,
                                                 size_t p2, size_t oset);
 
+  /// adds to the first derivatives of the Operator::giao_nuclear integrals
+  /// with respect to the coordinates of point charge \p pset the term due
+  /// to the lack of translational invariance (see the implementation);
+  /// must be called after the kernel computed the integrals for \p pset ,
+  /// overwrites the stack
+  __libint2_engine_inline void giao_nuclear_charge_deriv_correction(
+      const Shell& s1, const Shell& s2, size_t pset);
+
  public:
   /// 3-dim array of pointers to help dispatch efficiently based on oper_,
   /// braket_, and deriv_order_
@@ -1468,11 +1689,18 @@ class Engine {
   //-------
   unsigned int nparams() const;
   unsigned int nopers() const;
+  /// @return the index of the first component (in the sense of
+  /// operator_traits) that is computed for the current braket; nonzero only
+  /// for the 3-center Operator::giao_coulomb integrals
+  unsigned int first_component() const;
   unsigned int intrinsic_deriv_order() const;
+  /// @return operator_traits<oper_>::max_deriv_order
+  unsigned int max_deriv_order() const;
   /// operator_traits<oper_>::pair_swap etc. (see \ref rkb_operators)
   PairSwap pair_swap() const;
   bool braket_swap() const;
   int pair_swap_phase(unsigned int c) const;
+  int bra_pair_swap_phase(unsigned int c) const;
   int braket_swap_phase(unsigned int c) const;
   unsigned int braket_swap_remap(unsigned int c) const;
   /// if Params == operator_traits<oper>::oper_params_type, will return
