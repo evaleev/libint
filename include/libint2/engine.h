@@ -363,9 +363,27 @@ enum class Operator {
   /// Component ordering of results():
   /// \f$ X^{(1)}_x, X^{(1)}_y, X^{(1)}_z, X^{(2)}_x, X^{(2)}_y, X^{(2)}_z
   /// \f$.
+  ///
+  /// Geometric derivatives are the derivatives of \f$ X^{(1)}_k \f$ and
+  /// \f$ X^{(2)}_k \f$ *including* the dependence of the London phase
+  /// factors on the centers, i.e. the mixed derivatives with respect to the
+  /// centers and the magnetic field at zero field; shell sets are ordered as
+  /// derivative index * 6 + component. Since the phase factors refer to the
+  /// coordinate origin, the integrals are not translationally invariant:
+  /// the sum of the first derivatives with respect to coordinate \f$ x \f$
+  /// of all 4 centers is
+  /// \f$ \frac{1}{2} (\vec{R}_{AB} \times \vec{e}_x)_k (ab|cd) \f$ for
+  /// \f$ X^{(1)}_k \f$ (and similarly for \f$ X^{(2)}_k \f$ ).
   /// \note only available if the library was configured with
-  /// LIBINT2_ENABLE_GIAO_ERI=ON ; only BraKet::xx_xx is supported;
-  /// geometric derivatives are not supported
+  /// LIBINT2_ENABLE_GIAO_ERI=N , where N>=0 is the max order of geometric
+  /// derivatives (otherwise Engine::compute() throws
+  /// Engine::missing_kernel); only BraKet::xx_xx is supported
+  /// \note primitive integrals are screened using the estimates of the
+  /// Coulomb integrals, which do not account for the factors
+  /// \f$ \vec{R}_{AB} \f$ and \f$ \vec{r} \f$; hence the absolute precision
+  /// of the integrals degrades with the distance of the centers from the
+  /// coordinate origin (tighten the precision accordingly, see
+  /// Engine::set_precision() )
   giao_coulomb,
   // do not modify this
   invalid = -1,

@@ -583,8 +583,10 @@ void try_main(int argc, char* argv[]) {
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI; ++d) {
     taskmgr.add(task_label("eri", d));
   }
-#ifdef LIBINT_ENABLE_GIAO_ERI
-  taskmgr.add("giao_eri");  // N.B. no geometric derivatives
+#ifdef LIBINT_INCLUDE_GIAO_ERI
+  for (unsigned int d = 0; d <= LIBINT_INCLUDE_GIAO_ERI; ++d) {
+    taskmgr.add(task_label("giao_eri", d));
+  }
 #endif
 #endif
 
@@ -756,11 +758,18 @@ void try_main(int argc, char* argv[]) {
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI; ++d) {
     cparams->num_bf(task_label("eri", d), 4);
   }
-#ifdef LIBINT_ENABLE_GIAO_ERI
-  // same angular momentum limits as the (undifferentiated) ERIs
-  cparams->max_am("giao_eri", cparams->max_am("eri"));
-  cparams->max_am_opt("giao_eri", cparams->max_am_opt("eri"));
-  cparams->num_bf("giao_eri", 4);
+#ifdef LIBINT_INCLUDE_GIAO_ERI
+#if LIBINT_INCLUDE_GIAO_ERI > LIBINT_INCLUDE_ERI
+#error "LIBINT_INCLUDE_GIAO_ERI cannot exceed LIBINT_INCLUDE_ERI"
+#endif
+  // same angular momentum limits as the ERIs of the same derivative order
+  for (unsigned int d = 0; d <= LIBINT_INCLUDE_GIAO_ERI; ++d) {
+    cparams->max_am(task_label("giao_eri", d),
+                    cparams->max_am(task_label("eri", d)));
+    cparams->max_am_opt(task_label("giao_eri", d),
+                        cparams->max_am_opt(task_label("eri", d)));
+    cparams->num_bf(task_label("giao_eri", d), 4);
+  }
 #endif
 #endif
 
@@ -1093,8 +1102,10 @@ void try_main(int argc, char* argv[]) {
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI; ++d) {
     build_TwoPRep_2b_2k<TwoPRep>(os, "eri", cparams, iface, d);
   }
-#ifdef LIBINT_ENABLE_GIAO_ERI
-  build_TwoPRep_2b_2k<GIAOTwoPRep>(os, "giao_eri", cparams, iface, 0);
+#ifdef LIBINT_INCLUDE_GIAO_ERI
+  for (unsigned int d = 0; d <= LIBINT_INCLUDE_GIAO_ERI; ++d) {
+    build_TwoPRep_2b_2k<GIAOTwoPRep>(os, "giao_eri", cparams, iface, d);
+  }
 #endif
 #endif
 #endif
@@ -1202,8 +1213,11 @@ void print_config(std::ostream& os) {
   if (LIBINT_INCLUDE_ERI > 0)
     os << "(deriv order = " << LIBINT_INCLUDE_ERI << ")";
   os << endl;
-#ifdef LIBINT_ENABLE_GIAO_ERI
-  os << "Will support GIAO ERI" << endl;
+#ifdef LIBINT_INCLUDE_GIAO_ERI
+  os << "Will support GIAO ERI";
+  if (LIBINT_INCLUDE_GIAO_ERI > 0)
+    os << " (deriv order = " << LIBINT_INCLUDE_GIAO_ERI << ")";
+  os << endl;
 #endif
 #endif
 #ifdef LIBINT_INCLUDE_ERI3
@@ -2517,8 +2531,10 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
 #endif
 #ifdef LIBINT_INCLUDE_ERI
   iface->to_params(iface->macro_define("SUPPORT_ERI", 1));
-#ifdef LIBINT_ENABLE_GIAO_ERI
+#ifdef LIBINT_INCLUDE_GIAO_ERI
   iface->to_params(iface->macro_define("SUPPORT_GIAO_ERI", 1));
+  iface->to_params(
+      iface->macro_define("DERIV_GIAO_ERI_ORDER", LIBINT_INCLUDE_GIAO_ERI));
 #endif
   iface->to_params(iface->macro_define("DERIV_ERI_ORDER", LIBINT_INCLUDE_ERI));
   max_deriv_order = std::max(max_deriv_order, LIBINT_INCLUDE_ERI);
