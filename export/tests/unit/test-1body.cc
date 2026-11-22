@@ -1521,3 +1521,26 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "python correctness",
   }
 #endif  // LIBINT2_SUPPORT_ONEBODY
 }
+
+TEST_CASE("Engine rejects derivatives beyond operator_traits::max_deriv_order",
+          "[engine][1-body]") {
+#if defined(LIBINT2_SUPPORT_ONEBODY) && LIBINT2_MAX_DERIV_ORDER > 0 && \
+    LIBINT2_TASK_EXISTS_2overlap1
+  using libint2::Engine;
+  using libint2::Operator;
+  using libint2::Shell;
+  // geometric derivatives of spherical multipoles are not implemented
+  constexpr auto sphemultipole_max_deriv_order =
+      libint2::operator_traits<Operator::sphemultipole>::max_deriv_order;
+  REQUIRE(sphemultipole_max_deriv_order == 0);
+  REQUIRE_THROWS_AS(Engine(Operator::sphemultipole, 1, 1, 1),
+                    std::invalid_argument);
+  // switching an engine for derivatives to such operator throws and leaves no
+  // kernels behind, i.e. compute() does not dispatch the kernels of the
+  // previous operator
+  Engine engine(Operator::overlap, 1, 1, 1);
+  REQUIRE_THROWS_AS(engine.set(Operator::sphemultipole), std::invalid_argument);
+  const Shell s{{1.0}, {{0, false, {1.0}}}, {{0.0, 0.0, 0.0}}};
+  REQUIRE_THROWS_AS(engine.compute(s, s), Engine::missing_kernel);
+#endif
+}
