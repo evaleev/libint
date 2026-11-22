@@ -43,15 +43,22 @@ jobs:
             opt_am: 1
           # exercise derivatives of 1-body property operators (multipoles,
           # opemuop) in one lane only, to save compile time; derivatives of
-          # opVop and op_q_gau_op are generated (and tested) in every lane
+          # opVop and op_q_gau_op are generated (and tested) in every lane;
+          # this lane also generates the 2nd derivatives of the 1-body
+          # integrals, e.g. to test those of the magnetic integrals
           - build_type: Debug
             os: ubuntu-24.04
             subproject: OFF
             disable_onebody_property_derivs: OFF
+            onebody_deriv_order: 2
+            max_am: '2;2;2'
+          # check that the library and the tests build without the magnetic
+          # 1-body integrals (the default; the other lanes enable them)
           - build_type: Release
             build_shared_libs: ON
             os: macos-15
             do_fortran: ON
+            onebody_magnetic: OFF
           # exercise a center-dependent AM table for the 3-center RKB ERIs,
           # per-derivative AM lists, and 2nd geometric derivatives of the
           # 4-center ERIs in one lane only; the 2nd-derivative ERIs must cover
@@ -90,8 +97,9 @@ jobs:
         -D LIBINT2_ENABLE_RKB_ERI=0
         -D LIBINT2_ENABLE_RKB_ERI3=0
         -D LIBINT2_RKB_ERI3_MAX_AM=${{ matrix.rkb_eri3_max_am || 2 }}
-        -D LIBINT2_ENABLE_ONEBODY=1
+        -D LIBINT2_ENABLE_ONEBODY=${{ matrix.onebody_deriv_order || 1 }}
         -D LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS=${{ matrix.disable_onebody_property_derivs || 'ON' }}
+        -D LIBINT2_ENABLE_ONEBODY_MAGNETIC=${{ matrix.onebody_magnetic || 'ON' }}
         -D LIBINT2_MULTIPOLE_MAX_ORDER=2
         -D LIBINT2_REQUIRE_CXX_API_COMPILED=ON
         -D LIBINT2_ENABLE_FORTRAN=${{ matrix.do_fortran }}
@@ -319,6 +327,7 @@ jobs:
           -D LIBINT2_ENABLE_ERI3=${{ matrix.eri_deriv_order }} \
           -D LIBINT2_ENABLE_ERI2=${{ matrix.eri_deriv_order }} \
           -D LIBINT2_ENABLE_ONEBODY=1 \
+          -D LIBINT2_ENABLE_ONEBODY_MAGNETIC=ON \
           -D LIBINT2_MULTIPOLE_MAX_ORDER=2 \
           -D LIBINT2_CONTRACTED_INTS=OFF \
           -D LIBINT2_ACCUM_INTS=${{ matrix.accum_ints }} \
@@ -348,6 +357,11 @@ jobs:
               -D CMAKE_EXE_LINKER_FLAGS="-Wl,-rpath-link,${CONDA_PREFIX}/lib"
             testargs: ""
 
+          # N.B. the MSVC STL of the runner image (14.52+) requires a newer
+          # clang-cl than the one bundled with Visual Studio (STL1000), hence
+          # _ALLOW_COMPILER_AND_STL_VERSION_MISMATCH; the _INIT flags keep the
+          # default MSVC flags (/EHsc etc.); N.B. -D, not /D, since the MSYS
+          # bash running cmake converts arguments starting with / into paths
           - runs-on: windows-latest
             lane: windows-clang-cl
             libargs: >
@@ -356,11 +370,13 @@ jobs:
               -D BUILD_SHARED_LIBS=OFF
               -D CMAKE_CXX_COMPILER=clang-cl
               -D CMAKE_C_COMPILER=clang-cl
+              -D CMAKE_CXX_FLAGS_INIT=-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH
             testargs: >
               -G Ninja
               -D CMAKE_BUILD_TYPE=Release
               -D CMAKE_CXX_COMPILER=clang-cl
               -D CMAKE_C_COMPILER=clang-cl
+              -D CMAKE_CXX_FLAGS_INIT=-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH
 
           - runs-on: macos-15
             lane: macos-clang

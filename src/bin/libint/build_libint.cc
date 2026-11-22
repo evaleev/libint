@@ -57,6 +57,7 @@
 #include <libint2/deriv_iter.h>
 #include <libint2/shgshell_ordering.h>
 #include <master_ints_list.h>
+#include <onebody_task_traits.h>
 #include <policy_spec.h>
 #include <purgeable.h>
 #include <rr.h>
@@ -352,10 +353,10 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
                          std::shared_ptr<Libint2Iface>& iface,
                          unsigned int deriv_level) {
   // implement overlap as a special case of cartesian emultipole
-  using OperType =
-      typename std::conditional<std::is_same<_OperType, OverlapOper>::value,
-                                CartesianMultipoleOper<3u>, _OperType>::type;
+  using OperType = OnebodyTaskOper<_OperType>;
   const std::string task = task_label(label, deriv_level);
+  // this task was not registered (see try_main())
+  if (!onebody_task_enabled<_OperType>(deriv_level)) return;
   typedef CGShell BFType;
   typedef typename OperType::Descriptor OperDescrType;
   typedef GenIntegralSet_1_1<CGShell, OperType,
@@ -374,29 +375,6 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
   iface->to_params(iface->macro_define(std::string("MAX_AM_") + task, lmax));
 
   const auto nullaux = typename Onebody_sh_1_1::AuxIndexType(0u);
-
-  // optionally skip derivative property ints; the operators of the (scalar
-  // and X2C) core Hamiltonian are not properties, their geometric derivatives
-  // are needed for nuclear gradients, hence they are never skipped.
-  // N.B. keep this list in sync with the DERIV_ONEBODY_PROPERTY_ORDER comment
-  // in config_to_api() and with the description of
-  // LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS in CMakeLists.txt and INSTALL.md
-#ifdef LIBINT_DISABLE_ONEBODY_PROPERTY_DERIVS
-  const auto property_operator =
-      !(std::is_same<_OperType, OverlapOper>::value ||
-        std::is_same<_OperType, KineticOper>::value ||
-        std::is_same<_OperType, ElecPotOper>::value ||
-        std::is_same<_OperType, σpVσpOper>::value);
-  if (property_operator && deriv_level > 0) return;
-#endif
-  // derivatives of spherical multipole integrals are not implemented
-  {
-    if (std::is_same<_OperType, SphericalMultipoleOper>::value &&
-        deriv_level > 0)
-      return;
-    // throw std::invalid_argument(
-    //     "derivatives of spherical multipole ints are not yet implemented");
-  }
 
   //
   // Construct graphs for each desired target integral and
@@ -431,64 +409,9 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
         /////////////////////////////////
         // loop over operator components
         /////////////////////////////////
-        // most important operators have 1 component ...
-        std::vector<OperDescrType> descrs(1);  // operator descriptors
-        // important EXCEPTION: multipole moments
-        if (std::is_same<_OperType, CartesianMultipoleOper<3u>>::value) {
-          // reset descriptors array
-          descrs.resize(0);
-
-          // parse the label ... 1emultipole means include multipoles of order 0
-          // (overlap) and 1 (dipole)
-          unsigned int max_multipole_order = 0;
-          assert(label != "overlap");
-          auto key_pos = label.find("emultipole");
-          assert(key_pos != std::string::npos);
-          std::string tmp = label;
-          tmp.erase(key_pos, std::string::npos);
-          istringstream iss(tmp);
-          iss >> max_multipole_order;
-          assert(max_multipole_order > 0);
-
-          // iterate over operators and construct their descriptors
-          for (int multipole_order = 0; multipole_order <= max_multipole_order;
-               ++multipole_order) {
-            // we iterate over them same way as over cartesian Gaussian shells
-            int x, y, z;
-            LIBINT2_FOR_CART(x, y, z, multipole_order)
-            descrs.push_back(make_descr<OperDescrType>(x, y, z));
-            LIBINT2_END_FOR_CART
-          }
-        }
-        if (std::is_same<_OperType, SphericalMultipoleOper>::value) {
-          // reset descriptors array
-          descrs.resize(0);
-          // iterate over operators and construct their descriptors
-          for (int l = 0; l <= LIBINT_MULTIPOLE_MAX_ORDER; ++l) {
-            // we iterate over them using the *standard* solid harmonic Gaussian
-            // ordering
-            int m;
-            LIBINT2_FOR_SOLIDHARM_STANDARD(l, m)
-            descrs.push_back(make_descr<OperDescrType>(l, m));
-            LIBINT2_END_FOR_SOLIDHARM
-          }
-        }
-        if (std::is_same<_OperType, σpVσpOper>::value) {
-          // reset descriptors array
-          descrs.resize(0);
-          // iterate over pauli components
-          for (int p = 0; p != 4; ++p) {
-            descrs.emplace_back(make_descr<OperDescrType>(p));
-          }
-        }
-        if (std::is_same<_OperType, σpeμσpOper>::value) {
-          // reset descriptors array
-          descrs.resize(0);
-          // iterate over 12 = 3 dipole directions × 4 Pauli components
-          for (int p = 0; p != 12; ++p) {
-            descrs.emplace_back(make_descr<OperDescrType>(p));
-          }
-        }
+        // operator components, see OnebodyTaskTraits
+        const std::vector<OperDescrType> descrs =
+            OnebodyTaskTraits<_OperType>::components(label);
 
         // derivative index is the outermost (slowest running)
         // operator component is second slowest
@@ -623,23 +546,31 @@ void try_main(int argc, char* argv[]) {
 #ifdef LIBINT_INCLUDE_ONEBODY
 
 // overlap, kinetic, elecpot cannot be omitted
-#define BOOST_PP_ONEBODY_TASK_TUPLE                                  \
-  (overlap, kinetic, elecpot, 1emultipole, 2emultipole, 3emultipole, \
-   sphemultipole, opVop, opemuop)
+#define BOOST_PP_ONEBODY_TASK_TUPLE                                         \
+  (overlap, kinetic, elecpot, 1emultipole, 2emultipole, 3emultipole,        \
+   sphemultipole, opVop, opemuop, giao_overlap, giao_kinetic, giao_elecpot, \
+   angmom)
 #define BOOST_PP_ONEBODY_TASK_OPER_TUPLE                              \
   (OverlapOper, KineticOper, ElecPotOper, CartesianMultipoleOper<3u>, \
    CartesianMultipoleOper<3u>, CartesianMultipoleOper<3u>,            \
-   SphericalMultipoleOper, σpVσpOper, σpeμσpOper)
+   SphericalMultipoleOper, σpVσpOper, σpeμσpOper, GIAOOverlapOper,    \
+   GIAOKineticOper, GIAOElecPotOper, AngularMomentumOper)
 #define BOOST_PP_ONEBODY_TASK_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_ONEBODY_TASK_TUPLE)
 #define BOOST_PP_ONEBODY_TASK_OPER_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_ONEBODY_TASK_OPER_TUPLE)
 
+  // N.B. tasks that are not registered here keep their place in
+  // BOOST_PP_ONEBODY_TASK_LIST, so that config_to_api() declares them as
+  // nonexistent (LIBINT2_TASK_EXISTS_* = 0)
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ONEBODY; ++d) {
-#define BOOST_PP_ONEBODY_MCR1(r, data, elem) \
-  taskmgr.add(task_label(BOOST_PP_STRINGIZE(elem), d));
+#define BOOST_PP_ONEBODY_MCR1(r, data, i, elem)                              \
+  if (onebody_task_enabled<BOOST_PP_LIST_AT(BOOST_PP_ONEBODY_TASK_OPER_LIST, \
+                                            i)>(d))                          \
+    taskmgr.add(task_label(BOOST_PP_STRINGIZE(elem), d));
 
-    BOOST_PP_LIST_FOR_EACH(BOOST_PP_ONEBODY_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
+    BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_ONEBODY_MCR1, _,
+                             BOOST_PP_ONEBODY_TASK_LIST)
 #undef BOOST_PP_ONEBODY_MCR1
   }
 #endif
@@ -748,38 +679,53 @@ void try_main(int argc, char* argv[]) {
 #ifdef LIBINT_INCLUDE_ONEBODY
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ONEBODY; ++d) {
 #if defined(LIBINT_ONEBODY_MAX_AM_LIST)
-#define BOOST_PP_ONEBODY_MCR2(r, data, elem)   \
-  cparams->max_am(                             \
-      task_label(BOOST_PP_STRINGIZE(elem), d), \
-                 token<unsigned int>(LIBINT_ONEBODY_MAX_AM_LIST, ',', d));
-    BOOST_PP_LIST_FOR_EACH(BOOST_PP_ONEBODY_MCR2, _, BOOST_PP_ONEBODY_TASK_LIST)
+#define BOOST_PP_ONEBODY_MCR2(r, data, i, elem)                              \
+  if (onebody_task_enabled<BOOST_PP_LIST_AT(BOOST_PP_ONEBODY_TASK_OPER_LIST, \
+                                            i)>(d))                          \
+    cparams->max_am(                                                         \
+        task_label(BOOST_PP_STRINGIZE(elem), d),                             \
+                   token<unsigned int>(LIBINT_ONEBODY_MAX_AM_LIST, ',', d));
+    BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_ONEBODY_MCR2, _,
+                             BOOST_PP_ONEBODY_TASK_LIST)
 #undef BOOST_PP_ONEBODY_MCR2
 #elif defined(LIBINT_ONEBODY_MAX_AM)
-#define BOOST_PP_ONEBODY_MCR3(r, data, elem)               \
-  cparams->max_am(task_label(BOOST_PP_STRINGIZE(elem), d), \
-                             LIBINT_ONEBODY_MAX_AM);
-    BOOST_PP_LIST_FOR_EACH(BOOST_PP_ONEBODY_MCR3, _, BOOST_PP_ONEBODY_TASK_LIST)
+#define BOOST_PP_ONEBODY_MCR3(r, data, i, elem)                              \
+  if (onebody_task_enabled<BOOST_PP_LIST_AT(BOOST_PP_ONEBODY_TASK_OPER_LIST, \
+                                            i)>(d))                          \
+    cparams->max_am(task_label(BOOST_PP_STRINGIZE(elem), d),                 \
+                               LIBINT_ONEBODY_MAX_AM);
+    BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_ONEBODY_MCR3, _,
+                             BOOST_PP_ONEBODY_TASK_LIST)
 #undef BOOST_PP_ONEBODY_MCR3
 #endif
 #if defined(LIBINT_ONEBODY_OPT_AM_LIST)
-#define BOOST_PP_ONEBODY_MCR4(r, data, elem)   \
-  cparams->max_am_opt(                         \
-      task_label(BOOST_PP_STRINGIZE(elem), d), \
-                 token<unsigned int>(LIBINT_ONEBODY_OPT_AM_LIST, ',', d));
-    BOOST_PP_LIST_FOR_EACH(BOOST_PP_ONEBODY_MCR4, _, BOOST_PP_ONEBODY_TASK_LIST)
+#define BOOST_PP_ONEBODY_MCR4(r, data, i, elem)                              \
+  if (onebody_task_enabled<BOOST_PP_LIST_AT(BOOST_PP_ONEBODY_TASK_OPER_LIST, \
+                                            i)>(d))                          \
+    cparams->max_am_opt(                                                     \
+        task_label(BOOST_PP_STRINGIZE(elem), d),                             \
+                   token<unsigned int>(LIBINT_ONEBODY_OPT_AM_LIST, ',', d));
+    BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_ONEBODY_MCR4, _,
+                             BOOST_PP_ONEBODY_TASK_LIST)
 #undef BOOST_PP_ONEBODY_MCR4
 #elif defined(LIBINT_ONEBODY_OPT_AM)
-#define BOOST_PP_ONEBODY_MCR5(r, data, elem)                   \
-  cparams->max_am_opt(task_label(BOOST_PP_STRINGIZE(elem), d), \
-                                 LIBINT_ONEBODY_OPT_AM);
-    BOOST_PP_LIST_FOR_EACH(BOOST_PP_ONEBODY_MCR5, _, BOOST_PP_ONEBODY_TASK_LIST)
+#define BOOST_PP_ONEBODY_MCR5(r, data, i, elem)                              \
+  if (onebody_task_enabled<BOOST_PP_LIST_AT(BOOST_PP_ONEBODY_TASK_OPER_LIST, \
+                                            i)>(d))                          \
+    cparams->max_am_opt(task_label(BOOST_PP_STRINGIZE(elem), d),             \
+                                   LIBINT_ONEBODY_OPT_AM);
+    BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_ONEBODY_MCR5, _,
+                             BOOST_PP_ONEBODY_TASK_LIST)
 #undef BOOST_PP_ONEBODY_MCR5
 #endif
   }
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ONEBODY; ++d) {
-#define BOOST_PP_ONEBODY_MCR6(r, data, elem) \
-  cparams->num_bf(task_label(BOOST_PP_STRINGIZE(elem), d), 2);
-    BOOST_PP_LIST_FOR_EACH(BOOST_PP_ONEBODY_MCR6, _, BOOST_PP_ONEBODY_TASK_LIST)
+#define BOOST_PP_ONEBODY_MCR6(r, data, i, elem)                              \
+  if (onebody_task_enabled<BOOST_PP_LIST_AT(BOOST_PP_ONEBODY_TASK_OPER_LIST, \
+                                            i)>(d))                          \
+    cparams->num_bf(task_label(BOOST_PP_STRINGIZE(elem), d), 2);
+    BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_ONEBODY_MCR6, _,
+                             BOOST_PP_ONEBODY_TASK_LIST)
 #undef BOOST_PP_ONEBODY_MCR6
   }
 #endif  // LIBINT_INCLUDE_ONEBODY
@@ -2536,9 +2482,11 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
   iface->to_params(
       iface->macro_define("DERIV_ONEBODY_ORDER", LIBINT_INCLUDE_ONEBODY));
   // DERIV_ONEBODY_ORDER is the max derivative order of the core Hamiltonian
-  // operators (overlap, kinetic, elecpot, and σpVσp, i.e. Operator::opVop and
-  // Operator::op_q_gau_op), DERIV_ONEBODY_PROPERTY_ORDER that of the rest
-  // (multipoles, σpeμσp)
+  // operators (OnebodyTaskTraits::core_hamiltonian: overlap, kinetic, elecpot,
+  // and σpVσp, i.e. Operator::opVop and Operator::op_q_gau_op),
+  // DERIV_ONEBODY_PROPERTY_ORDER that of the rest, capped by
+  // OnebodyTaskTraits::max_deriv_order (e.g. 0 for sphemultipole); use
+  // TASK_EXISTS_* to query the availability of a particular task
 #ifdef LIBINT_DISABLE_ONEBODY_PROPERTY_DERIVS
   iface->to_params(iface->macro_define("DERIV_ONEBODY_PROPERTY_ORDER", 0));
 #else
