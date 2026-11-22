@@ -741,12 +741,13 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
         std::to_string(static_cast<int>(oper_)) +
         " (max order = " + std::to_string(max_deriv_order()) + ")");
   }
-  if (oper_ == Operator::giao_coulomb && braket_ != BraKet::invalid &&
-      braket_ != BraKet::xx_xx) {
+  if (oper_ == Operator::giao_coulomb && braket_ == BraKet::xs_xs) {
     buildfnptrs_ = nullptr;
     throw std::invalid_argument(
-        "Engine::initialize -- Operator::giao_coulomb only supports "
-        "BraKet::xx_xx");
+        "Engine::initialize -- Operator::giao_coulomb does not support "
+        "BraKet::xs_xs: unpaired (fitting) functions have no London phase "
+        "factors, hence the 2-center integrals do not depend on the magnetic "
+        "field (use Operator::coulomb)");
   }
 
   // initialize braket, if needed
@@ -893,7 +894,18 @@ __libint2_engine_inline unsigned int Engine::nparams() const {
   }
   return 1;
 }
+__libint2_engine_inline unsigned int Engine::first_component() const {
+  // 3-center giao_coulomb integrals: the fitting function has no London
+  // phase factor, only the components of the AO pair (3-5) are computed
+  return (oper_ == Operator::giao_coulomb &&
+          (braket_ == BraKet::xs_xx || braket_ == BraKet::xx_xs))
+             ? 3
+             : 0;
+}
 __libint2_engine_inline unsigned int Engine::nopers() const {
+  const auto first = first_component();
+  if (first != 0)
+    return operator_traits<Operator::giao_coulomb>::nopers - first;
   switch (static_cast<int>(oper_)) {
 #define LIBINT2_PP_NBODYENGINE_MCR4(r, data, i, elem) \
   case i:                                             \
@@ -2326,14 +2338,14 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
         // the kernels may have been generated assuming that the fitting
         // (bra) shell will be transformed to solid harmonics
-        // (LIBINT2_ERI3_PURE_SH); this never applies to the RKB 3-center
-        // kernels, nor to derivative kernels (the generator marks the fitting
-        // shell pure only for derivative order 0, see build_libint.cc). Such
-        // kernels produce garbage for a cartesian shell, hence check in all
-        // builds
+        // (LIBINT2_ERI3_PURE_SH); this never applies to the RKB and GIAO
+        // 3-center kernels, nor to derivative kernels (the generator marks the
+        // fitting shell pure only for derivative order 0, see build_libint.cc).
+        // Such kernels produce garbage for a cartesian shell, hence check in
+        // all builds
         if (detail::eri3_pure_sh && deriv_order_ == 0 &&
-            !detail::is_rkb_2body(oper_) && bra1.contr[0].l > 1 &&
-            !bra1.contr[0].pure)
+            !detail::is_rkb_2body(oper_) && oper_ != Operator::giao_coulomb &&
+            bra1.contr[0].l > 1 && !bra1.contr[0].pure)
           throw std::invalid_argument(
               "Engine::compute2 -- this library assumes that the fitting "
               "(bra) shell of 3-center 2-body integrals is a solid harmonics "
@@ -2464,12 +2476,16 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           const auto nopers = this->nopers();
           const auto component = s % nopers;
           const auto deriv_index = s / nopers;
+          // the component as defined by operator_traits (for the 4-center
+          // kernels); the phases refer to the shell set as computed, e.g. for
+          // BraKet::xx_xs the paired functions are in the ket (xs_xx)
+          const auto trait_component = this->first_component() + component;
           const value_type component_phase =
-              (swap_ket ? this->pair_swap_phase(component) : 1) *
+              (swap_ket ? this->pair_swap_phase(trait_component) : 1) *
               (swap_bra && this->pair_swap() == PairSwap::independent
-                   ? this->bra_pair_swap_phase(component)
+                   ? this->bra_pair_swap_phase(trait_component)
                    : 1) *
-              (swap_braket ? this->braket_swap_phase(component) : 1);
+              (swap_braket ? this->braket_swap_phase(trait_component) : 1);
 
           // if permuting derivatives ints must update their derivative index
           // Additional BraKet types would require adding support to
@@ -2574,7 +2590,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
       // swapping bra and ket may permute the components (see
       // operator_traits::braket_swap_remap)
-      if (permute && swap_braket) {
+      // (N.B. not for 3-center integrals: BraKet::xx_xs is computed as xs_xx,
+      // both have the components of the one AO pair only)
+      if (permute && swap_braket && braket_ == BraKet::xx_xx) {
         const auto nopers = this->nopers();
         bool trivial = true;
         for (auto c = 0u; c != nopers && trivial; ++c)

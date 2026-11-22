@@ -80,6 +80,12 @@
 #undef LIBINT_INCLUDE_GIAO_ERI
 #endif
 
+/* Support 3-center GIAO ERI derivatives up to this order */
+#define LIBINT_INCLUDE_GIAO_ERI3 @LIBINT_INCLUDE_GIAO_ERI3@
+#if @LIBINT_INCLUDE_GIAO_ERI3@ == -1
+#undef LIBINT_INCLUDE_GIAO_ERI3
+#endif
+
 /* Support ERI derivatives up to this order */
 #define LIBINT_INCLUDE_ERI @LIBINT_INCLUDE_ERI@
 #if @LIBINT_INCLUDE_ERI@ == -1

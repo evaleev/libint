@@ -162,13 +162,19 @@ option_with_default(LIBINT2_ENABLE_GIAO_ERI
   "Compile with support for up to N-th geometric derivatives of the zero-field London-orbital (GIAO) derivatives of
    4-center electron repulsion integrals, Operator::giao_coulomb (-1 for OFF); N=0 is needed for GIAO NMR shieldings.
    Uses the angular momentum limits of the ERIs of the same derivative order, hence requires `LIBINT2_ENABLE_ERI>=N`." -1)
-if (NOT LIBINT2_ENABLE_GIAO_ERI MATCHES "^(-1|[0-9]+)$")
-    message(FATAL_ERROR "LIBINT2_ENABLE_GIAO_ERI=${LIBINT2_ENABLE_GIAO_ERI}: expected the max geometric derivative order (0 for no derivatives) or -1 for OFF")
-endif()
-if (LIBINT2_ENABLE_GIAO_ERI GREATER LIBINT2_ENABLE_ERI)
-    message(FATAL_ERROR "LIBINT2_ENABLE_GIAO_ERI=${LIBINT2_ENABLE_GIAO_ERI} requires LIBINT2_ENABLE_ERI>=${LIBINT2_ENABLE_GIAO_ERI} (given: ${LIBINT2_ENABLE_ERI})")
-endif()
-set(LIBINT_INCLUDE_GIAO_ERI ${LIBINT2_ENABLE_GIAO_ERI})
+option_with_default(LIBINT2_ENABLE_GIAO_ERI3
+  "Compile with support for up to N-th geometric derivatives of the 3-center counterparts of the GIAO electron repulsion integrals
+   (Operator::giao_coulomb with BraKet::xs_xx), in which only the 2 paired functions are London orbitals (-1 for OFF).
+   Uses the angular momentum limits of the 3-center ERIs of the same derivative order, hence requires `LIBINT2_ENABLE_ERI3>=N`." -1)
+foreach(_cls ERI;ERI3)
+    if (NOT LIBINT2_ENABLE_GIAO_${_cls} MATCHES "^(-1|[0-9]+)$")
+        message(FATAL_ERROR "LIBINT2_ENABLE_GIAO_${_cls}=${LIBINT2_ENABLE_GIAO_${_cls}}: expected the max geometric derivative order (0 for no derivatives) or -1 for OFF")
+    endif()
+    if (LIBINT2_ENABLE_GIAO_${_cls} GREATER LIBINT2_ENABLE_${_cls})
+        message(FATAL_ERROR "LIBINT2_ENABLE_GIAO_${_cls}=${LIBINT2_ENABLE_GIAO_${_cls}} requires LIBINT2_ENABLE_${_cls}>=${LIBINT2_ENABLE_GIAO_${_cls}} (given: ${LIBINT2_ENABLE_${_cls}})")
+    endif()
+    set(LIBINT_INCLUDE_GIAO_${_cls} ${LIBINT2_ENABLE_GIAO_${_cls}})
+endforeach()
 option_with_print(LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS
   "Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot, and σpVσp, i.e. opVop and op_q_gau_op).
    Some operators support lower derivative orders only: none for sphemultipole, first for giao_nuclear.

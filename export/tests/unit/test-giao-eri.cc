@@ -28,8 +28,8 @@
 #include "catch.hpp"
 #include "fixture.h"
 
-// see LIBINT2_ENABLE_GIAO_ERI
-#if defined(LIBINT2_SUPPORT_GIAO_ERI)
+// see LIBINT2_ENABLE_GIAO_ERI and LIBINT2_ENABLE_GIAO_ERI3
+#if defined(LIBINT2_SUPPORT_GIAO_ERI) || defined(LIBINT2_SUPPORT_GIAO_ERI3)
 
 namespace {
 
@@ -135,7 +135,60 @@ Matrices compute_quartet(Engine& engine, const std::array<Shell, 4>& s) {
   return result;
 }
 
+/// requires \p computed to agree with the central finite difference
+/// (\p plus - \p minus) / (2 \p h) to within \p margin (absolute) or 1e-6
+/// (relative); reports the worst element only
+void require_close_to_fd(const std::vector<double>& computed,
+                         const std::vector<double>& plus,
+                         const std::vector<double>& minus, double h,
+                         double margin = 1e-8) {
+  double worst_excess = 0;
+  size_t worst = 0;
+  for (size_t i = 0; i != computed.size(); ++i) {
+    const auto ref = (plus[i] - minus[i]) / (2 * h);
+    const auto excess =
+        std::abs(computed[i] - ref) - std::max(margin, 1e-6 * std::abs(ref));
+    if (excess > worst_excess) {
+      worst_excess = excess;
+      worst = i;
+    }
+  }
+  INFO("element " << worst << ": " << computed[worst] << " vs "
+                  << (plus[worst] - minus[worst]) / (2 * h));
+  REQUIRE(worst_excess <= 0);
+}
+
+/// @return \p s displaced by \p d along \p xyz
+Shell moved(Shell s, int xyz, double d) {
+  auto O = s.O;
+  O[xyz] += d;
+  s.move(O);
+  return s;
+}
+
+/// contracted and solid-harmonic shells on 4 centers, used to test the
+/// geometric derivatives
+const std::vector<Shell>& deriv_test_shells() {
+  static const std::vector<Shell> shells = {
+      Shell{{1.3, 0.4}, {{0, false, {0.5, 0.6}}}, {{0.1, -0.2, 0.05}}},
+      Shell{{0.9, 0.35}, {{1, false, {0.7, 0.4}}}, {{1.5, 0.3, 1.1}}},
+      Shell{{0.7}, {{2, true, {1.0}}}, {{-1.2, 1.3, -0.6}}},
+      Shell{{0.8}, {{1, false, {1.0}}}, {{0.4, -1.1, 0.9}}}};
+  return shells;
+}
+
+/// (R x e_x)_k
+std::array<double, 3> cross_with_unit_vector(const std::array<double, 3>& R,
+                                             size_t x) {
+  std::array<double, 3> result = {{0, 0, 0}};
+  result[(x + 1) % 3] = R[(x + 2) % 3];
+  result[(x + 2) % 3] = -R[(x + 1) % 3];
+  return result;
+}
+
 }  // namespace
+
+#if defined(LIBINT2_SUPPORT_GIAO_ERI)
 
 TEST_CASE("GIAO electron repulsion integrals match libcint",
           "[engine][2-body][giao]") {
@@ -328,8 +381,15 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture,
   }
 
   SECTION("unsupported uses throw") {
+    // 2-center integrals do not depend on the magnetic field
     Engine e(Operator::giao_coulomb, 1, 1);
-    REQUIRE_THROWS_AS(e.set(libint2::BraKet::xs_xx), std::invalid_argument);
+    REQUIRE_THROWS_AS(e.set(libint2::BraKet::xs_xs), std::invalid_argument);
+#if !defined(LIBINT2_SUPPORT_GIAO_ERI3)
+    Engine e3(Operator::giao_coulomb, 1, 1);
+    e3.set(libint2::BraKet::xs_xx);
+    REQUIRE_THROWS_AS(e3.compute(shells[0], shells[0], shells[0]),
+                      Engine::missing_kernel);
+#endif
 #if LIBINT2_MAX_DERIV_ORDER > LIBINT2_DERIV_GIAO_ERI_ORDER
     // geometric derivatives beyond LIBINT2_ENABLE_GIAO_ERI are not generated
     Engine e1(Operator::giao_coulomb, 1, 1, LIBINT2_DERIV_GIAO_ERI_ORDER + 1);
@@ -345,19 +405,9 @@ TEST_CASE("geometric derivatives of GIAO electron repulsion integrals",
   // the derivatives include those of the London phase factors, check them
   // against central finite differences of the integrals;
   // contracted and solid-harmonic shells on 4 centers
-  const std::vector<Shell> all_shells = {
-      Shell{{1.3, 0.4}, {{0, false, {0.5, 0.6}}}, {{0.1, -0.2, 0.05}}},
-      Shell{{0.9, 0.35}, {{1, false, {0.7, 0.4}}}, {{1.5, 0.3, 1.1}}},
-      Shell{{0.7}, {{2, true, {1.0}}}, {{-1.2, 1.3, -0.6}}},
-      Shell{{0.8}, {{1, false, {1.0}}}, {{0.4, -1.1, 0.9}}}};
+  const auto& all_shells = deriv_test_shells();
   const double h = 1e-4;  // finite-difference step
 
-  auto moved = [](Shell s, int xyz, double d) {
-    auto O = s.O;
-    O[xyz] += d;
-    s.move(O);
-    return s;
-  };
   // the integrals with the center of function c / 3 displaced along
   // coordinate c % 3; N.B. only that function is displaced, even if other
   // functions of the quartet are on the same center
@@ -365,24 +415,6 @@ TEST_CASE("geometric derivatives of GIAO electron repulsion integrals",
                             double d) {
     q[c / 3] = moved(q[c / 3], c % 3, d);
     return compute_quartet(engine, q);
-  };
-  auto require_close = [](const std::vector<double>& computed,
-                          const std::vector<double>& plus,
-                          const std::vector<double>& minus, double h) {
-    double worst_excess = 0;
-    size_t worst = 0;
-    for (size_t i = 0; i != computed.size(); ++i) {
-      const auto ref = (plus[i] - minus[i]) / (2 * h);
-      const auto excess =
-          std::abs(computed[i] - ref) - std::max(1e-8, 1e-6 * std::abs(ref));
-      if (excess > worst_excess) {
-        worst_excess = excess;
-        worst = i;
-      }
-    }
-    INFO("element " << worst << ": " << computed[worst] << " vs "
-                    << (plus[worst] - minus[worst]) / (2 * h));
-    REQUIRE(worst_excess <= 0);
   };
   // all quartets of the shells with angular momenta up to lmax; these involve
   // every shell permutation done by the Engine
@@ -417,7 +449,7 @@ TEST_CASE("geometric derivatives of GIAO electron repulsion integrals",
           INFO("shells (" << idx[0] << "," << idx[1] << "|" << idx[2] << ","
                           << idx[3] << "), coordinate " << c << ", component "
                           << k);
-          require_close(d1[c * 6 + k], plus[k], minus[k], h);
+          require_close_to_fd(d1[c * 6 + k], plus[k], minus[k], h);
         }
       }
 
@@ -431,10 +463,7 @@ TEST_CASE("geometric derivatives of GIAO electron repulsion integrals",
         const std::array<double, 3> R = {
             {s1.O[0] - s2.O[0], s1.O[1] - s2.O[1], s1.O[2] - s2.O[2]}};
         for (size_t x = 0; x != 3; ++x) {
-          // (R x e_x)_k
-          std::array<double, 3> R_x_e = {{0, 0, 0}};
-          R_x_e[(x + 1) % 3] = R[(x + 2) % 3];
-          R_x_e[(x + 2) % 3] = -R[(x + 1) % 3];
+          const auto R_x_e = cross_with_unit_vector(R, x);
           for (size_t k = 0; k != 3; ++k) {
             for (size_t e = 0; e != eri.size(); ++e) {
               double sum = 0;
@@ -474,8 +503,9 @@ TEST_CASE("geometric derivatives of GIAO electron repulsion integrals",
             INFO("shells (" << idx[0] << "," << idx[1] << "|" << idx[2] << ","
                             << idx[3] << "), coordinates (" << c1 << "," << c2
                             << "), component " << k);
-            require_close(d2[c12 * 6 + k], plus[c1 * 6 + k], minus[c1 * 6 + k],
-                          h);
+            // N.B. looser: the differentiated functions vary faster
+            require_close_to_fd(d2[c12 * 6 + k], plus[c1 * 6 + k],
+                                minus[c1 * 6 + k], h, 1e-7);
           }
         }
       }
@@ -486,3 +516,218 @@ TEST_CASE("geometric derivatives of GIAO electron repulsion integrals",
 #endif  // LIBINT2_DERIV_GIAO_ERI_ORDER > 0
 
 #endif  // defined(LIBINT2_SUPPORT_GIAO_ERI)
+
+#if defined(LIBINT2_SUPPORT_GIAO_ERI3)
+
+namespace {
+
+/// the integrals of \p engine over a shell triplet, [shell set][element]
+Matrices compute_triplet(Engine& engine, const std::array<Shell, 3>& s,
+                         libint2::BraKet braket = libint2::BraKet::xs_xx) {
+  if (braket == libint2::BraKet::xs_xx)
+    engine.compute(s[0], s[1], s[2]);
+  else  // xx_xs: the unpaired function is last
+    engine.compute(s[1], s[2], s[0]);
+  const auto n = s[0].size() * s[1].size() * s[2].size();
+  Matrices result;
+  for (const auto* r : engine.results()) {
+    REQUIRE(r != nullptr);
+    result.emplace_back(r, r + n);
+  }
+  return result;
+}
+
+/// calls \p f for all triplets of the test shells with angular momenta up to
+/// \p lmax ; these involve every shell permutation done by the Engine
+void for_each_triplet(
+    int lmax, const std::function<void(const std::array<size_t, 3>&,
+                                       const std::array<Shell, 3>&)>& f) {
+  std::vector<Shell> shells;
+  for (const auto& s : deriv_test_shells())
+    if (s.contr[0].l <= lmax) shells.push_back(s);
+  const auto n = shells.size();
+  for (size_t i = 0; i != n; ++i)
+    for (size_t j = 0; j != n; ++j)
+      for (size_t k = 0; k != n; ++k)
+        f({{i, j, k}}, {{shells[i], shells[j], shells[k]}});
+}
+
+/// an Engine for the 3-center integrals of \p oper
+Engine make_engine3(Operator oper, int lmax, int deriv_order,
+                    libint2::BraKet braket = libint2::BraKet::xs_xx) {
+  return Engine(
+      oper, 2, lmax, deriv_order, std::numeric_limits<double>::epsilon(),
+      libint2::operator_traits<Operator::coulomb>::default_params(), braket);
+}
+
+}  // namespace
+
+TEST_CASE("3-center GIAO electron repulsion integrals",
+          "[engine][2-body][giao]") {
+  // the fitting function X has no London phase factor, hence
+  // X_k = 1/2 (R_CD x (X|c r d))_k
+  const int lmax =
+      std::min(2, std::min(static_cast<int>(LIBINT2_MAX_AM_3giao_eri),
+                           static_cast<int>(LIBINT2_MAX_AM_default)));
+  auto engine = make_engine3(Operator::giao_coulomb, lmax, 0);
+  auto engine_xx_xs =
+      make_engine3(Operator::giao_coulomb, lmax, 0, libint2::BraKet::xx_xs);
+  auto eri_engine = make_engine3(Operator::coulomb, lmax, 0);
+
+  for_each_triplet(lmax, [&](const std::array<size_t, 3>& idx,
+                             const std::array<Shell, 3>& t) {
+    INFO("shells (" << idx[0] << "|" << idx[1] << "," << idx[2] << ")");
+    const auto X = compute_triplet(engine, t);
+    REQUIRE(X.size() == 3);
+    const auto n0 = t[0].size(), n1 = t[1].size(), n2 = t[2].size();
+
+    // antisymmetric w.r.t. c<->d
+    const auto X_dc = compute_triplet(engine, {{t[0], t[2], t[1]}});
+    // BraKet::xx_xs: (cd|X)
+    const auto X_xx_xs =
+        compute_triplet(engine_xx_xs, t, libint2::BraKet::xx_xs);
+    REQUIRE(X_xx_xs.size() == 3);
+    for (size_t k = 0; k != 3; ++k)
+      for (size_t x = 0; x != n0; ++x)
+        for (size_t c = 0; c != n1; ++c)
+          for (size_t d = 0; d != n2; ++d) {
+            const auto value = X[k][(x * n1 + c) * n2 + d];
+            REQUIRE(value == Approx(-X_dc[k][(x * n2 + d) * n1 + c])
+                                 .epsilon(1e-10)
+                                 .margin(1e-12));
+            REQUIRE(value == Approx(X_xx_xs[k][(c * n2 + d) * n0 + x])
+                                 .epsilon(1e-10)
+                                 .margin(1e-12));
+          }
+
+    // translation by d shifts X by 1/2 (R_CD x d) (X|cd)
+    const std::array<double, 3> d = {{0.7, -1.1, 0.4}};
+    auto t_shifted = t;
+    for (auto& s : t_shifted)
+      for (int xyz = 0; xyz != 3; ++xyz) s = moved(s, xyz, d[xyz]);
+    const auto X_shifted = compute_triplet(engine, t_shifted);
+    const auto eri = compute_triplet(eri_engine, t)[0];
+    const std::array<double, 3> R = {
+        {t[1].O[0] - t[2].O[0], t[1].O[1] - t[2].O[1], t[1].O[2] - t[2].O[2]}};
+    for (size_t k = 0; k != 3; ++k) {
+      const auto l = (k + 1) % 3, m = (k + 2) % 3;
+      const auto R_x_d = R[l] * d[m] - R[m] * d[l];
+      for (size_t e = 0; e != eri.size(); ++e)
+        REQUIRE(X_shifted[k][e] == Approx(X[k][e] + 0.5 * R_x_d * eri[e])
+                                       .epsilon(1e-10)
+                                       .margin(1e-11));
+    }
+
+#if defined(LIBINT2_SUPPORT_GIAO_ERI)
+    // = the components of the ket pair of the 4-center integrals with a unit
+    // function in the bra
+    if (lmax <= static_cast<int>(LIBINT2_MAX_AM_giao_eri)) {
+      Engine engine4(Operator::giao_coulomb, 2, lmax);
+      const auto X4 =
+          compute_quartet(engine4, {{t[0], Shell::unit(), t[1], t[2]}});
+      REQUIRE(X4.size() == 6);
+      for (size_t k = 0; k != 3; ++k)
+        for (size_t e = 0; e != X[k].size(); ++e)
+          REQUIRE(X[k][e] == Approx(X4[3 + k][e]).epsilon(1e-10).margin(1e-12));
+    }
+#endif
+  });
+
+  // 2-center integrals do not depend on the magnetic field
+  REQUIRE_THROWS_AS(engine.set(libint2::BraKet::xs_xs), std::invalid_argument);
+}
+
+#if LIBINT2_DERIV_GIAO_ERI3_ORDER > 0
+TEST_CASE("geometric derivatives of 3-center GIAO electron repulsion integrals",
+          "[engine][2-body][giao][deriv]") {
+  const double h = 1e-4;  // finite-difference step
+  // the integrals with the center of function c / 3 displaced along
+  // coordinate c % 3
+  auto displaced_ints = [&](Engine& engine, std::array<Shell, 3> t, size_t c,
+                            double d) {
+    t[c / 3] = moved(t[c / 3], c % 3, d);
+    return compute_triplet(engine, t);
+  };
+
+  SECTION("first derivatives") {
+    const int lmax =
+        std::min(2, std::min(static_cast<int>(LIBINT2_MAX_AM_3giao_eri1),
+                             static_cast<int>(LIBINT2_MAX_AM_default1)));
+    auto engine0 = make_engine3(Operator::giao_coulomb, lmax, 0);
+    auto engine1 = make_engine3(Operator::giao_coulomb, lmax, 1);
+    auto eri_engine = make_engine3(Operator::coulomb, lmax, 0);
+    for_each_triplet(lmax, [&](const std::array<size_t, 3>& idx,
+                               const std::array<Shell, 3>& t) {
+      // shell sets are ordered as coordinate * 3 + component
+      const auto d1 = compute_triplet(engine1, t);
+      REQUIRE(d1.size() == 9 * 3);
+      for (size_t c = 0; c != 9; ++c) {
+        const auto plus = displaced_ints(engine0, t, c, h);
+        const auto minus = displaced_ints(engine0, t, c, -h);
+        for (size_t k = 0; k != 3; ++k) {
+          INFO("shells (" << idx[0] << "|" << idx[1] << "," << idx[2]
+                          << "), coordinate " << c << ", component " << k);
+          require_close_to_fd(d1[c * 3 + k], plus[k], minus[k], h);
+        }
+      }
+
+      // sum_centers d X_k / d x = 1/2 (R_CD x e_x)_k (X|cd)
+      const auto eri = compute_triplet(eri_engine, t)[0];
+      const std::array<double, 3> R = {{t[1].O[0] - t[2].O[0],
+                                        t[1].O[1] - t[2].O[1],
+                                        t[1].O[2] - t[2].O[2]}};
+      for (size_t x = 0; x != 3; ++x) {
+        const auto R_x_e = cross_with_unit_vector(R, x);
+        for (size_t k = 0; k != 3; ++k)
+          for (size_t e = 0; e != eri.size(); ++e) {
+            double sum = 0;
+            for (size_t center = 0; center != 3; ++center)
+              sum += d1[(3 * center + x) * 3 + k][e];
+            INFO("shells (" << idx[0] << "|" << idx[1] << "," << idx[2]
+                            << "), x " << x << ", component " << k
+                            << ", element " << e);
+            REQUIRE(
+                sum ==
+                Approx(0.5 * R_x_e[k] * eri[e]).epsilon(1e-10).margin(1e-11));
+          }
+      }
+    });
+  }
+
+#if LIBINT2_DERIV_GIAO_ERI3_ORDER > 1
+  SECTION("second derivatives") {
+    const int lmax =
+        std::min(2, std::min(static_cast<int>(LIBINT2_MAX_AM_3giao_eri2),
+                             static_cast<int>(LIBINT2_MAX_AM_default2)));
+    auto engine1 = make_engine3(Operator::giao_coulomb, lmax, 1);
+    auto engine2 = make_engine3(Operator::giao_coulomb, lmax, 2);
+    for_each_triplet(lmax, [&](const std::array<size_t, 3>& idx,
+                               const std::array<Shell, 3>& t) {
+      // upper triangle of the 9x9 coordinates, ordered as pair * 3 + component
+      const auto d2 = compute_triplet(engine2, t);
+      REQUIRE(d2.size() == 45 * 3);
+      for (size_t c2 = 0; c2 != 9; ++c2) {
+        const auto plus = displaced_ints(engine1, t, c2, h);
+        const auto minus = displaced_ints(engine1, t, c2, -h);
+        for (size_t c1 = 0; c1 != 9; ++c1) {
+          const auto i = std::min(c1, c2), j = std::max(c1, c2);
+          const auto c12 = i * (2 * 9 - i - 1) / 2 + j;
+          for (size_t k = 0; k != 3; ++k) {
+            INFO("shells (" << idx[0] << "|" << idx[1] << "," << idx[2]
+                            << "), coordinates (" << c1 << "," << c2
+                            << "), component " << k);
+            // N.B. looser: the differentiated functions vary faster
+            require_close_to_fd(d2[c12 * 3 + k], plus[c1 * 3 + k],
+                                minus[c1 * 3 + k], h, 1e-7);
+          }
+        }
+      }
+    });
+  }
+#endif  // LIBINT2_DERIV_GIAO_ERI3_ORDER > 1
+}
+#endif  // LIBINT2_DERIV_GIAO_ERI3_ORDER > 0
+
+#endif  // defined(LIBINT2_SUPPORT_GIAO_ERI3)
+
+#endif  // LIBINT2_SUPPORT_GIAO_ERI || LIBINT2_SUPPORT_GIAO_ERI3

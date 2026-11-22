@@ -377,7 +377,19 @@ enum class Operator {
   /// \note only available if the library was configured with
   /// LIBINT2_ENABLE_GIAO_ERI=N , where N>=0 is the max order of geometric
   /// derivatives (otherwise Engine::compute() throws
-  /// Engine::missing_kernel); only BraKet::xx_xx is supported
+  /// Engine::missing_kernel)
+  ///
+  /// 3-center integrals (BraKet::xs_xx and BraKet::xx_xs): the unpaired
+  /// (fitting) function is a conventional Gaussian, without a London phase
+  /// factor, as is customary in density fitting with London orbitals. Hence
+  /// only the 3 components of the pair are computed,
+  /// \f$ \frac{1}{2} \left( \vec{R}_{CD} \times (X|c \vec{r}_2 d)
+  /// \right)_k \f$ for BraKet::xs_xx, and shell sets are ordered as
+  /// derivative index * 3 + component. For the same reason the 2-center
+  /// integrals (BraKet::xs_xs) do not depend on the magnetic field and are
+  /// not supported; use Operator::coulomb.
+  /// \note the 3-center integrals are only available if the library was
+  /// configured with LIBINT2_ENABLE_GIAO_ERI3=N
   /// \note primitive integrals are screened using the estimates of the
   /// Coulomb integrals, which do not account for the factors
   /// \f$ \vec{R}_{AB} \f$ and \f$ \vec{r} \f$; hence the absolute precision
@@ -1677,6 +1689,10 @@ class Engine {
   //-------
   unsigned int nparams() const;
   unsigned int nopers() const;
+  /// @return the index of the first component (in the sense of
+  /// operator_traits) that is computed for the current braket; nonzero only
+  /// for the 3-center Operator::giao_coulomb integrals
+  unsigned int first_component() const;
   unsigned int intrinsic_deriv_order() const;
   /// @return operator_traits<oper_>::max_deriv_order
   unsigned int max_deriv_order() const;

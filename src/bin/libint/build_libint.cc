@@ -647,6 +647,11 @@ void try_main(int argc, char* argv[]) {
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI3; ++d) {
     taskmgr.add(task_label("3eri", d));
   }
+#ifdef LIBINT_INCLUDE_GIAO_ERI3
+  for (unsigned int d = 0; d <= LIBINT_INCLUDE_GIAO_ERI3; ++d) {
+    taskmgr.add(task_label("3giao_eri", d));
+  }
+#endif
 #endif
 #ifdef LIBINT_INCLUDE_ERI2
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI2; ++d) {
@@ -909,6 +914,23 @@ void try_main(int argc, char* argv[]) {
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI3; ++d) {
     cparams->num_bf(task_label("3eri", d), 3);
   }
+#ifdef LIBINT_INCLUDE_GIAO_ERI3
+#if LIBINT_INCLUDE_GIAO_ERI3 > LIBINT_INCLUDE_ERI3
+#error "LIBINT_INCLUDE_GIAO_ERI3 cannot exceed LIBINT_INCLUDE_ERI3"
+#endif
+  // same angular momentum limits (of the fitting and of the paired centers)
+  // as the 3-center ERIs of the same derivative order
+  for (unsigned int d = 0; d <= LIBINT_INCLUDE_GIAO_ERI3; ++d) {
+    const auto giao_task = task_label("3giao_eri", d);
+    const auto eri_task = task_label("3eri", d);
+    const auto& const_cparams =
+        const_cast<const CompilationParameters&>(*cparams);
+    for (unsigned int c = 0; c != 3; ++c)
+      cparams->max_am(giao_task, const_cparams.max_am(eri_task, c), c);
+    cparams->max_am_opt(giao_task, const_cparams.max_am_opt(eri_task));
+    cparams->num_bf(giao_task, 3);
+  }
+#endif
 #endif
 #ifdef LIBINT_INCLUDE_ERI2
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI2; ++d) {
@@ -1136,6 +1158,11 @@ void try_main(int argc, char* argv[]) {
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI3; ++d) {
     build_TwoPRep_1b_2k<TwoPRep>(os, "3eri", cparams, iface, d);
   }
+#ifdef LIBINT_INCLUDE_GIAO_ERI3
+  for (unsigned int d = 0; d <= LIBINT_INCLUDE_GIAO_ERI3; ++d) {
+    build_TwoPRep_1b_2k<GIAOTwoPRep>(os, "3giao_eri", cparams, iface, d);
+  }
+#endif
 #if LIBINT_ERI3_PURE_SH
   iface->to_params(iface->macro_define("ERI3_PURE_SH", 1));
 #endif
@@ -1221,6 +1248,12 @@ void print_config(std::ostream& os) {
 #endif
 #endif
 #ifdef LIBINT_INCLUDE_ERI3
+#ifdef LIBINT_INCLUDE_GIAO_ERI3
+  os << "Will support 3-center GIAO ERI";
+  if (LIBINT_INCLUDE_GIAO_ERI3 > 0)
+    os << " (deriv order = " << LIBINT_INCLUDE_GIAO_ERI3 << ")";
+  os << endl;
+#endif
   os << "Will support 3-center ERI";
   if (LIBINT_INCLUDE_ERI3 > 0)
     os << "(deriv order = " << LIBINT_INCLUDE_ERI3 << ")";
@@ -1503,6 +1536,19 @@ static void build_TwoPRep_2b_2k(
 
 #if defined(LIBINT_INCLUDE_ERI3) || defined(LIBINT_INCLUDE_RKB_ERI3)
 
+/// the first component of the operator described by \c OperDescr to generate
+/// for 3-center integrals (fitting function in the bra, AO pair in the ket)
+template <typename OperDescr>
+constexpr unsigned int threecenter_first_key() {
+  return 0;
+}
+/// the fitting function has no London phase factor, hence only the components
+/// of the ket (AO) pair (3-5) contribute
+template <>
+constexpr unsigned int threecenter_first_key<GIAOTwoPRep_Descr>() {
+  return 3;
+}
+
 // Templated on OperType so the same dummy-center "3-center via 4-center"
 // machinery serves plain TwoPRep (ERI3) and RKB CoulombσpσpOper (RKB_ERI3).
 // The composite recurrence (CR_11_Coulombσpσp_11) decomposes σ·p_c σ·p_d into
@@ -1586,9 +1632,11 @@ static void build_TwoPRep_1b_2k(
               new FourCenter_OS_Tactic(dummy_center == 0 ? 0 : lbra,
                                        dummy_center == 1 ? 0 : lbra, lc, ld));
 
-          // one target per operator component
+          // one target per operator component (for GIAOTwoPRep: the
+          // components of the AO pair only, see threecenter_first_key)
           std::vector<OperDescrType> descrs;
-          for (unsigned int p = 0; p != OperDescrType::max_key; ++p)
+          for (unsigned int p = threecenter_first_key<OperDescrType>();
+               p != OperDescrType::max_key; ++p)
             descrs.emplace_back(make_descr<OperDescrType>(p));
           const auto nopers = descrs.size();
 
@@ -2555,6 +2603,11 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
   iface->to_params(iface->macro_define("SUPPORT_ERI3", 1));
   iface->to_params(
       iface->macro_define("DERIV_ERI3_ORDER", LIBINT_INCLUDE_ERI3));
+#ifdef LIBINT_INCLUDE_GIAO_ERI3
+  iface->to_params(iface->macro_define("SUPPORT_GIAO_ERI3", 1));
+  iface->to_params(
+      iface->macro_define("DERIV_GIAO_ERI3_ORDER", LIBINT_INCLUDE_GIAO_ERI3));
+#endif
   max_deriv_order = std::max(max_deriv_order, LIBINT_INCLUDE_ERI3);
 #endif
 #ifdef LIBINT_INCLUDE_ERI2
