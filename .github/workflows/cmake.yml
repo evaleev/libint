@@ -53,7 +53,7 @@ jobs:
             onebody_deriv_order: 2
             max_am: '2;2;2'
           # check that the library and the tests build without the magnetic
-          # 1-body integrals
+          # 1-body integrals (the default; the other lanes enable them)
           - build_type: Release
             build_shared_libs: ON
             os: macos-15
@@ -327,6 +327,7 @@ jobs:
           -D LIBINT2_ENABLE_ERI3=${{ matrix.eri_deriv_order }} \
           -D LIBINT2_ENABLE_ERI2=${{ matrix.eri_deriv_order }} \
           -D LIBINT2_ENABLE_ONEBODY=1 \
+          -D LIBINT2_ENABLE_ONEBODY_MAGNETIC=ON \
           -D LIBINT2_MULTIPOLE_MAX_ORDER=2 \
           -D LIBINT2_CONTRACTED_INTS=OFF \
           -D LIBINT2_ACCUM_INTS=${{ matrix.accum_ints }} \
