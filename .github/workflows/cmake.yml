@@ -43,11 +43,15 @@ jobs:
             opt_am: 1
           # exercise derivatives of 1-body property operators (multipoles,
           # opemuop) in one lane only, to save compile time; derivatives of
-          # opVop and op_q_gau_op are generated (and tested) in every lane
+          # opVop and op_q_gau_op are generated (and tested) in every lane;
+          # this lane also generates the 2nd derivatives of the 1-body
+          # integrals, e.g. to test those of the magnetic integrals
           - build_type: Debug
             os: ubuntu-24.04
             subproject: OFF
             disable_onebody_property_derivs: OFF
+            onebody_deriv_order: 2
+            max_am: '2;2;2'
           # check that the library and the tests build without the magnetic
           # 1-body integrals
           - build_type: Release
@@ -93,7 +97,7 @@ jobs:
         -D LIBINT2_ENABLE_RKB_ERI=0
         -D LIBINT2_ENABLE_RKB_ERI3=0
         -D LIBINT2_RKB_ERI3_MAX_AM=${{ matrix.rkb_eri3_max_am || 2 }}
-        -D LIBINT2_ENABLE_ONEBODY=1
+        -D LIBINT2_ENABLE_ONEBODY=${{ matrix.onebody_deriv_order || 1 }}
         -D LIBINT2_DISABLE_ONEBODY_PROPERTY_DERIVS=${{ matrix.disable_onebody_property_derivs || 'ON' }}
         -D LIBINT2_ENABLE_ONEBODY_MAGNETIC=${{ matrix.onebody_magnetic || 'ON' }}
         -D LIBINT2_MULTIPOLE_MAX_ORDER=2
