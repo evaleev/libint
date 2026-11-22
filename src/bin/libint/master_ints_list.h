@@ -132,6 +132,9 @@ typedef GenIntegralSet_11_11<CGShell, σpCoulombσpOper, mType>
 typedef GenIntegralSet_11_11<CGF, σpCoulombσpOper, mType> σpCoulombσp_11_11_int;
 typedef GenIntegralSet_11_11<CGShell, CoulombσpOper, mType> Coulombσp_11_11_sq;
 typedef GenIntegralSet_11_11<CGF, CoulombσpOper, mType> Coulombσp_11_11_int;
+typedef GenIntegralSet_11_11<CGShell, GIAOTwoPRep, mType>
+    GIAOTwoPRep_11_11_sq;
+typedef GenIntegralSet_11_11<CGF, GIAOTwoPRep, mType> GIAOTwoPRep_11_11_int;
 typedef GenIntegralSet_11_11<CGShell, R12kG12, mType> R12kG12_11_11_sq;
 typedef GenIntegralSet_11_11<CGF, R12kG12, mType> R12kG12_11_11_int;
 typedef GenIntegralSet_11_11<CGShell, R12kR12lG12, EmptySet>
@@ -182,7 +185,8 @@ typedef boost::mpl::list<
     R12kR12lG12_11_11_sq, R12kR12lG12_11_11_int, TiG12_11_11_sq,
     TiG12_11_11_int, G12TiG12_11_11_sq, G12TiG12_11_11_int,
     DivG12prime_xTx_11_11_sq, DivG12prime_xTx_11_11_int,
-    DummySymmIntegral_11_11_sq, DummySymmIntegral_11_11_int>
+    DummySymmIntegral_11_11_sq, DummySymmIntegral_11_11_int,
+    GIAOTwoPRep_11_11_sq, GIAOTwoPRep_11_11_int>
     MasterIntegralTypeList_2body_part;
 typedef boost::mpl::joint_view<MasterIntegralTypeList_1body_part,
                                MasterIntegralTypeList_2body_part>

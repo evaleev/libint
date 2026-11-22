@@ -532,6 +532,47 @@ struct TwoPRep_Descr : public Contractable<TwoPRep_Descr> {
 };
 typedef GenOper<TwoPRep_Descr> TwoPRep;
 
+/** GIAOTwoPRep describes the zero-field derivatives of the two-body repulsion
+   integrals over London orbitals (GIAOs) with respect to the magnetic field:
+   \f$ \partial (ab|cd) / \partial B_k = i (X^{(1)}_k + X^{(2)}_k) \f$, with
+   \f$ X^{(1)}_k = \frac{1}{2} (\vec{R}_{AB} \times (a \vec{r}_1 b|cd))_k \f$
+   and \f$ X^{(2)}_k = \frac{1}{2} (\vec{R}_{CD} \times (ab|c \vec{r}_2 d))_k
+   \f$. Its 6 components are \f$ X^{(1)}_{x,y,z} \f$ followed by
+   \f$ X^{(2)}_{x,y,z} \f$.
+ */
+struct GIAOTwoPRep_Descr : public Contractable<GIAOTwoPRep_Descr> {
+  typedef OperatorProperties<2, false, PermutationalSymmetry::nonsymm>
+      Properties;
+  /// swapping bra and ket swaps the components of electrons 1 and 2 (handled
+  /// by the engine)
+  static constexpr bool p1p2_swappable = true;
+  /// swapping the functions of a pair changes the sign of the components of
+  /// that pair (handled by the engine)
+  static constexpr PairSwap pair_swap = PairSwap::independent;
+
+  GIAOTwoPRep_Descr(unsigned int component = 0) : component_(component) {
+    assert(component < max_key);
+  }
+
+  static const unsigned int max_key = 6;
+  unsigned int key() const { return component_; }
+  /// @return the electron (0 or 1) whose pair density carries the London phase
+  unsigned int particle() const { return component_ / 3; }
+  /// @return the Cartesian component index (0=x, 1=y, 2=z)
+  unsigned int axis() const { return component_ % 3; }
+  std::string description() const {
+    return std::string("GIAOTwoPRep[") + std::to_string(particle() + 1) +
+           "XYZ"[axis()] + "]";
+  }
+  std::string label() const { return description(); }
+  int psymm(int i, int j) const { abort(); }
+  int hermitian(int i) const { return 0; }
+
+ private:
+  unsigned int component_;
+};
+typedef GenOper<GIAOTwoPRep_Descr> GIAOTwoPRep;
+
 /** Coulombσpσp: (a b | 1/r_{12} | σ·p c σ·p d), the Coulomb operator with
  *  σ·p acting on both functions of particle 2. The Dirac identity
  *  σ_i σ_j = δ_ij + i ε_ijk σ_k folds the Pauli matrices into 4 quaternion

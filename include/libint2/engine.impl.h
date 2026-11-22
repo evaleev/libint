@@ -107,7 +107,8 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
                                   (opop_coulomb_opop, /* opop_coulomb_opop */ \
                                    (op_coulomb_op,    /* op_coulomb_op */     \
                                     (eri,             /* truncated_coulomb */ \
-                                     BOOST_PP_NIL)))))))))))))))))))))))))))))))))))
+                                     (giao_eri,       /* giao_coulomb */      \
+                                      BOOST_PP_NIL))))))))))))))))))))))))))))))))))))
 
 #define LIBINT2_PP_NBODY_OPERATOR_INDEX_TUPLE \
   LIBINT2_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(LIBINT2_PP_NBODY_OPERATOR_LIST))
@@ -740,6 +741,14 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
         std::to_string(static_cast<int>(oper_)) +
         " (max order = " + std::to_string(max_deriv_order()) + ")");
   }
+  if (oper_ == Operator::giao_coulomb && braket_ == BraKet::xs_xs) {
+    buildfnptrs_ = nullptr;
+    throw std::invalid_argument(
+        "Engine::initialize -- Operator::giao_coulomb does not support "
+        "BraKet::xs_xs: unpaired (fitting) functions have no London phase "
+        "factors, hence the 2-center integrals do not depend on the magnetic "
+        "field (use Operator::coulomb)");
+  }
 
   // initialize braket, if needed
   if (braket_ == BraKet::invalid) braket_ = default_braket(oper_);
@@ -885,7 +894,18 @@ __libint2_engine_inline unsigned int Engine::nparams() const {
   }
   return 1;
 }
+__libint2_engine_inline unsigned int Engine::first_component() const {
+  // 3-center giao_coulomb integrals: the fitting function has no London
+  // phase factor, only the components of the AO pair (3-5) are computed
+  return (oper_ == Operator::giao_coulomb &&
+          (braket_ == BraKet::xs_xx || braket_ == BraKet::xx_xs))
+             ? 3
+             : 0;
+}
 __libint2_engine_inline unsigned int Engine::nopers() const {
+  const auto first = first_component();
+  if (first != 0)
+    return operator_traits<Operator::giao_coulomb>::nopers - first;
   switch (static_cast<int>(oper_)) {
 #define LIBINT2_PP_NBODYENGINE_MCR4(r, data, i, elem) \
   case i:                                             \
@@ -942,6 +962,7 @@ LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(unsigned int, max_deriv_order, (), max_de
 #error "giao_elecpot2 task exists, but operator_traits<Operator::giao_nuclear>::max_deriv_order is 1"
 #endif
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(int, pair_swap_phase, (unsigned int c), pair_swap_phase(c))
+LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(int, bra_pair_swap_phase, (unsigned int c), bra_pair_swap_phase(c))
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(int, braket_swap_phase, (unsigned int c), braket_swap_phase(c))
 LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR(unsigned int, braket_swap_remap, (unsigned int c), braket_swap_remap(c))
 #undef LIBINT2_ENGINE_OPERATOR_TRAIT_ACCESSOR
@@ -1797,6 +1818,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb_op);
                 LIBINT2_SIMPLE_CORE_EVAL_CASE(opop_coulomb_opop);
                 LIBINT2_SIMPLE_CORE_EVAL_CASE(op_coulomb_op);
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(giao_coulomb);
                 case Operator::cgtg_x_coulomb: {
                   const auto& core_eval_ptr =
                       any_cast<const detail::core_eval_pack_type<
@@ -2062,6 +2084,28 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #if LIBINT2_DEFINED(eri, oo2z)
               primdata.oo2z[0] = 0.5 * oogammap;
 #endif
+              // GIAO ERIs: positions of the second center of each pair
+              // relative to the coordinate origin (see Operator::giao_coulomb)
+              if (op == Operator::giao_coulomb) {
+#if LIBINT2_DEFINED(eri, BO_x)
+                primdata.BO_x[0] = B[0];
+#endif
+#if LIBINT2_DEFINED(eri, BO_y)
+                primdata.BO_y[0] = B[1];
+#endif
+#if LIBINT2_DEFINED(eri, BO_z)
+                primdata.BO_z[0] = B[2];
+#endif
+#if LIBINT2_DEFINED(eri, DO_x)
+                primdata.DO_x[0] = D[0];
+#endif
+#if LIBINT2_DEFINED(eri, DO_y)
+                primdata.DO_y[0] = D[1];
+#endif
+#if LIBINT2_DEFINED(eri, DO_z)
+                primdata.DO_z[0] = D[2];
+#endif
+              }
 #if LIBINT2_DEFINED(eri, oo2e)
               primdata.oo2e[0] = 0.5 * oogammaq;
 #endif
@@ -2294,14 +2338,14 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
         // the kernels may have been generated assuming that the fitting
         // (bra) shell will be transformed to solid harmonics
-        // (LIBINT2_ERI3_PURE_SH); this never applies to the RKB 3-center
-        // kernels, nor to derivative kernels (the generator marks the fitting
-        // shell pure only for derivative order 0, see build_libint.cc). Such
-        // kernels produce garbage for a cartesian shell, hence check in all
-        // builds
+        // (LIBINT2_ERI3_PURE_SH); this never applies to the RKB and GIAO
+        // 3-center kernels, nor to derivative kernels (the generator marks the
+        // fitting shell pure only for derivative order 0, see build_libint.cc).
+        // Such kernels produce garbage for a cartesian shell, hence check in
+        // all builds
         if (detail::eri3_pure_sh && deriv_order_ == 0 &&
-            !detail::is_rkb_2body(oper_) && bra1.contr[0].l > 1 &&
-            !bra1.contr[0].pure)
+            !detail::is_rkb_2body(oper_) && oper_ != Operator::giao_coulomb &&
+            bra1.contr[0].l > 1 && !bra1.contr[0].pure)
           throw std::invalid_argument(
               "Engine::compute2 -- this library assumes that the fitting "
               "(bra) shell of 3-center 2-body integrals is a solid harmonics "
@@ -2429,10 +2473,19 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           // the phase of this component due to the swaps (see
           // operator_traits); N.B. shell sets are ordered as
           // deriv index * nopers + component
-          const auto component = s % this->nopers();
+          const auto nopers = this->nopers();
+          const auto component = s % nopers;
+          const auto deriv_index = s / nopers;
+          // the component as defined by operator_traits (for the 4-center
+          // kernels); the phases refer to the shell set as computed, e.g. for
+          // BraKet::xx_xs the paired functions are in the ket (xs_xx)
+          const auto trait_component = this->first_component() + component;
           const value_type component_phase =
-              (swap_ket ? this->pair_swap_phase(component) : 1) *
-              (swap_braket ? this->braket_swap_phase(component) : 1);
+              (swap_ket ? this->pair_swap_phase(trait_component) : 1) *
+              (swap_bra && this->pair_swap() == PairSwap::independent
+                   ? this->bra_pair_swap_phase(trait_component)
+                   : 1) *
+              (swap_braket ? this->braket_swap_phase(trait_component) : 1);
 
           // if permuting derivatives ints must update their derivative index
           // Additional BraKet types would require adding support to
@@ -2442,14 +2495,20 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 libint2::DerivMapGenerator::instance(deriv_order_, braket_);
             switch (braket_) {
               case BraKet::xx_xx: {
-                s_target = mapDerivIndex((size_t)swap_braket, (size_t)swap_tbra,
-                                         (size_t)swap_tket, (size_t)s);
+                s_target =
+                    mapDerivIndex((size_t)swap_braket, (size_t)swap_tbra,
+                                  (size_t)swap_tket, (size_t)deriv_index) *
+                        nopers +
+                    component;
               } break;
               case BraKet::xs_xx: {
                 assert(!swap_bra);
                 assert(!swap_braket);
-                s_target = mapDerivIndex((size_t)0, (size_t)0,
-                                         (size_t)swap_tket, (size_t)s);
+                s_target =
+                    mapDerivIndex((size_t)0, (size_t)0, (size_t)swap_tket,
+                                  (size_t)deriv_index) *
+                        nopers +
+                    component;
               } break;
               case BraKet::xs_xs: {
                 assert(!swap_bra);
@@ -2531,7 +2590,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
       // swapping bra and ket may permute the components (see
       // operator_traits::braket_swap_remap)
-      if (permute && swap_braket) {
+      // (N.B. not for 3-center integrals: BraKet::xx_xs is computed as xs_xx,
+      // both have the components of the one AO pair only)
+      if (permute && swap_braket && braket_ == BraKet::xx_xx) {
         const auto nopers = this->nopers();
         bool trivial = true;
         for (auto c = 0u; c != nopers && trivial; ++c)
