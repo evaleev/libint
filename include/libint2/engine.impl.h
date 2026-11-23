@@ -41,14 +41,6 @@
 #include <libint2/boost/preprocessor/facilities/is_1.hpp>
 #endif
 
-// extra PP macros
-
-#define LIBINT2_PP_MAKE_TUPLE_INTERNAL(z, i, last) \
-  i BOOST_PP_COMMA_IF(BOOST_PP_NOT_EQUAL(i, last))
-/// LIBINT2_PP_MAKE_TUPLE(n) returns (0,1,....n-1)
-#define LIBINT2_PP_MAKE_TUPLE(n) \
-  (BOOST_PP_REPEAT(n, LIBINT2_PP_MAKE_TUPLE_INTERNAL, BOOST_PP_DEC(n)))
-
 // the engine will be profiled by default if library was configured with
 // --enable-profile
 #ifdef LIBINT2_PROFILE
@@ -110,29 +102,30 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
                                      (giao_eri,       /* giao_coulomb */      \
                                       BOOST_PP_NIL))))))))))))))))))))))))))))))))))))
 
-#define LIBINT2_PP_NBODY_OPERATOR_INDEX_TUPLE \
-  LIBINT2_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(LIBINT2_PP_NBODY_OPERATOR_LIST))
-#define LIBINT2_PP_NBODY_OPERATOR_INDEX_LIST \
-  BOOST_PP_TUPLE_TO_LIST(LIBINT2_PP_NBODY_OPERATOR_INDEX_TUPLE)
 #define LIBINT2_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX \
   17  // angular_momentum, the 18th member of LIBINT2_PP_NBODY_OPERATOR_LIST, is
       // the last 1-body operator
 
-// make list of braket indices for n-body ints
+// braket indices and ranks for n-body ints
 #define LIBINT2_PP_NBODY_BRAKET_MAX_INDEX 4
-#define LIBINT2_PP_NBODY_BRAKET_INDEX_TUPLE \
-  LIBINT2_PP_MAKE_TUPLE(BOOST_PP_INC(LIBINT2_PP_NBODY_BRAKET_MAX_INDEX))
-#define LIBINT2_PP_NBODY_BRAKET_INDEX_LIST \
-  BOOST_PP_TUPLE_TO_LIST(LIBINT2_PP_NBODY_BRAKET_INDEX_TUPLE)
 #define LIBINT2_PP_NBODY_BRAKET_RANK_TUPLE (2, 3, 4)
 #define LIBINT2_PP_NBODY_BRAKET_RANK_LIST \
   BOOST_PP_TUPLE_TO_LIST(LIBINT2_PP_NBODY_BRAKET_RANK_TUPLE)
 
-// make list of derivative orders for n-body ints
-#define LIBINT2_PP_NBODY_DERIV_ORDER_TUPLE \
-  LIBINT2_PP_MAKE_TUPLE(BOOST_PP_INC(LIBINT2_MAX_DERIV_ORDER))
-#define LIBINT2_PP_NBODY_DERIV_ORDER_LIST \
-  BOOST_PP_TUPLE_TO_LIST(LIBINT2_PP_NBODY_DERIV_ORDER_TUPLE)
+// the dispatch tables below are generated from these lists, hence they must
+// match Operator and BraKet
+static_assert(BOOST_PP_LIST_SIZE(LIBINT2_PP_NBODY_OPERATOR_LIST) ==
+                  static_cast<int>(Operator::last_oper) + 1,
+              "LIBINT2_PP_NBODY_OPERATOR_LIST must have an entry for every "
+              "Operator");
+static_assert(LIBINT2_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX ==
+                  static_cast<int>(Operator::last_1body_oper),
+              "LIBINT2_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX must be the index "
+              "of Operator::last_1body_oper");
+static_assert(LIBINT2_PP_NBODY_BRAKET_MAX_INDEX ==
+                  static_cast<int>(BraKet::last_braket),
+              "LIBINT2_PP_NBODY_BRAKET_MAX_INDEX must be the index of "
+              "BraKet::last_braket");
 
 /// the runtime version of \c operator_traits<oper>::default_params()
 __libint2_engine_inline libint2::any default_params(const Operator& oper) {
@@ -598,48 +591,49 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
 
 // generic _initializer
 __libint2_engine_inline void Engine::_initialize() {
-#define LIBINT2_PP_NBODYENGINE_MCR3_ncenter(product) \
-  BOOST_PP_TUPLE_ELEM(3, 1, product)
+#define LIBINT2_PP_NBODYENGINE_MCR3_ncenter(args) \
+  BOOST_PP_TUPLE_ELEM(4, 1, args)
 
-#define LIBINT2_PP_NBODYENGINE_MCR3_default_ncenter(product)                   \
-  BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(3, 0, product),            \
+#define LIBINT2_PP_NBODYENGINE_MCR3_default_ncenter(args)                      \
+  BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(4, 0, args),               \
                                 LIBINT2_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX), \
                4, 2)
 
-#define LIBINT2_PP_NBODYENGINE_MCR3_NCENTER(product)                      \
-  BOOST_PP_IIF(BOOST_PP_NOT_EQUAL(                                        \
-                   LIBINT2_PP_NBODYENGINE_MCR3_ncenter(product),          \
-                   LIBINT2_PP_NBODYENGINE_MCR3_default_ncenter(product)), \
-               LIBINT2_PP_NBODYENGINE_MCR3_ncenter(product), BOOST_PP_EMPTY())
+#define LIBINT2_PP_NBODYENGINE_MCR3_NCENTER(args)                            \
+  BOOST_PP_IIF(                                                              \
+      BOOST_PP_NOT_EQUAL(LIBINT2_PP_NBODYENGINE_MCR3_ncenter(args),          \
+                         LIBINT2_PP_NBODYENGINE_MCR3_default_ncenter(args)), \
+      LIBINT2_PP_NBODYENGINE_MCR3_ncenter(args), BOOST_PP_EMPTY())
 
-#define LIBINT2_PP_NBODYENGINE_MCR3_OPER(product)  \
-  BOOST_PP_LIST_AT(LIBINT2_PP_NBODY_OPERATOR_LIST, \
-                   BOOST_PP_TUPLE_ELEM(3, 0, product))
+#define LIBINT2_PP_NBODYENGINE_MCR3_OPER(args) BOOST_PP_TUPLE_ELEM(4, 3, args)
 
-#define LIBINT2_PP_NBODYENGINE_MCR3_DERIV(product)                      \
-  BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(3, 2, product), 0), \
-               BOOST_PP_TUPLE_ELEM(3, 2, product), BOOST_PP_EMPTY())
+#define LIBINT2_PP_NBODYENGINE_MCR3_DERIV(args)                      \
+  BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(4, 2, args), 0), \
+               BOOST_PP_TUPLE_ELEM(4, 2, args), BOOST_PP_EMPTY())
 
-#define LIBINT2_PP_NBODYENGINE_MCR3_task(product)                         \
-  BOOST_PP_CAT(BOOST_PP_CAT(LIBINT2_PP_NBODYENGINE_MCR3_ncenter(product), \
-                            LIBINT2_PP_NBODYENGINE_MCR3_OPER(product)),   \
-               LIBINT2_PP_NBODYENGINE_MCR3_DERIV(product))
+#define LIBINT2_PP_NBODYENGINE_MCR3_task(args)                         \
+  BOOST_PP_CAT(BOOST_PP_CAT(LIBINT2_PP_NBODYENGINE_MCR3_ncenter(args), \
+                            LIBINT2_PP_NBODYENGINE_MCR3_OPER(args)),   \
+               LIBINT2_PP_NBODYENGINE_MCR3_DERIV(args))
 
-#define LIBINT2_PP_NBODYENGINE_MCR3_TASK(product)                             \
-  BOOST_PP_IIF(                                                               \
-      BOOST_PP_CAT(LIBINT2_TASK_EXISTS_,                                      \
-                   LIBINT2_PP_NBODYENGINE_MCR3_task(product)),                \
-      BOOST_PP_CAT(BOOST_PP_CAT(LIBINT2_PP_NBODYENGINE_MCR3_NCENTER(product), \
-                                LIBINT2_PP_NBODYENGINE_MCR3_OPER(product)),   \
-                   LIBINT2_PP_NBODYENGINE_MCR3_DERIV(product)),               \
+#define LIBINT2_PP_NBODYENGINE_MCR3_TASK(args)                             \
+  BOOST_PP_IIF(                                                            \
+      BOOST_PP_CAT(LIBINT2_TASK_EXISTS_,                                   \
+                   LIBINT2_PP_NBODYENGINE_MCR3_task(args)),                \
+      BOOST_PP_CAT(BOOST_PP_CAT(LIBINT2_PP_NBODYENGINE_MCR3_NCENTER(args), \
+                                LIBINT2_PP_NBODYENGINE_MCR3_OPER(args)),   \
+                   LIBINT2_PP_NBODYENGINE_MCR3_DERIV(args)),               \
       default)
 
-#define LIBINT2_PP_NBODYENGINE_MCR3(r, product)                                \
-  if (static_cast<int>(oper_) == BOOST_PP_TUPLE_ELEM(3, 0, product) &&         \
-      static_cast<int>(rank(braket_)) == BOOST_PP_TUPLE_ELEM(3, 1, product) && \
-      deriv_order_ == BOOST_PP_TUPLE_ELEM(3, 2, product)) {                    \
+// args = (operator index, braket rank, derivative order, task name); the task
+// name is last so that the indices of the other elements are those of the
+// (operator, rank, derivative order) product of earlier versions
+#define LIBINT2_PP_NBODYENGINE_MCR3(args)                                      \
+  if (static_cast<int>(oper_) == BOOST_PP_TUPLE_ELEM(4, 0, args) &&            \
+      static_cast<int>(rank(braket_)) == BOOST_PP_TUPLE_ELEM(4, 1, args) &&    \
+      deriv_order_ == BOOST_PP_TUPLE_ELEM(4, 2, args)) {                       \
     buildfnptrs_ = to_ptr1(LIBINT2_PREFIXED_NAME(BOOST_PP_CAT(                 \
-        libint2_build_, LIBINT2_PP_NBODYENGINE_MCR3_TASK(product))));          \
+        libint2_build_, LIBINT2_PP_NBODYENGINE_MCR3_TASK(args))));             \
     /* missing tasks resolve to the placeholder `default` task, i.e. there */  \
     /* are no kernels for this task; compute*() will throw missing_kernel  */  \
     if (buildfnptrs_ ==                                                        \
@@ -653,36 +647,32 @@ __libint2_engine_inline void Engine::_initialize() {
       scratch2_ = nullptr;                                                     \
       return;                                                                  \
     }                                                                          \
-    task_name_ =                                                               \
-        BOOST_PP_STRINGIZE(LIBINT2_PP_NBODYENGINE_MCR3_TASK(product));         \
+    task_name_ = BOOST_PP_STRINGIZE(LIBINT2_PP_NBODYENGINE_MCR3_TASK(args));   \
     hard_lmax_ = BOOST_PP_CAT(LIBINT2_MAX_AM_,                                 \
-                              LIBINT2_PP_NBODYENGINE_MCR3_TASK(product)) +     \
+                              LIBINT2_PP_NBODYENGINE_MCR3_TASK(args)) +        \
                  1;                                                            \
     hard_default_lmax_ = BOOST_PP_IF(                                          \
-        BOOST_PP_IS_1(                                                         \
-            BOOST_PP_CAT(LIBINT2_CENTER_DEPENDENT_MAX_AM_,                     \
-                         LIBINT2_PP_NBODYENGINE_MCR3_task(product))),          \
-        BOOST_PP_CAT(LIBINT2_MAX_AM_,                                          \
-                     BOOST_PP_CAT(default, LIBINT2_PP_NBODYENGINE_MCR3_DERIV(  \
-                                               product))) +                    \
+        BOOST_PP_IS_1(BOOST_PP_CAT(LIBINT2_CENTER_DEPENDENT_MAX_AM_,           \
+                                   LIBINT2_PP_NBODYENGINE_MCR3_task(args))),   \
+        BOOST_PP_CAT(                                                          \
+            LIBINT2_MAX_AM_,                                                   \
+            BOOST_PP_CAT(default, LIBINT2_PP_NBODYENGINE_MCR3_DERIV(args))) +  \
             1,                                                                 \
         std::numeric_limits<int>::max());                                      \
-    const auto lmax =                                                          \
-        BOOST_PP_IF(BOOST_PP_IS_1(BOOST_PP_CAT(                                \
-                        LIBINT2_CENTER_DEPENDENT_MAX_AM_,                      \
-                        LIBINT2_PP_NBODYENGINE_MCR3_task(product))),           \
-                    std::max(hard_lmax_, hard_default_lmax_), hard_lmax_);     \
+    const auto lmax = BOOST_PP_IF(                                             \
+        BOOST_PP_IS_1(BOOST_PP_CAT(LIBINT2_CENTER_DEPENDENT_MAX_AM_,           \
+                                   LIBINT2_PP_NBODYENGINE_MCR3_task(args))),   \
+        std::max(hard_lmax_, hard_default_lmax_), hard_lmax_);                 \
     if (lmax_ >= lmax) {                                                       \
       buildfnptrs_ = nullptr; /* leave no table for kernels we cannot use */   \
-      throw Engine::lmax_exceeded(BOOST_PP_STRINGIZE(LIBINT2_PP_NBODYENGINE_MCR3_TASK(product)), lmax - 1, lmax_);        \
+      throw Engine::lmax_exceeded(BOOST_PP_STRINGIZE(LIBINT2_PP_NBODYENGINE_MCR3_TASK(args)), lmax - 1, lmax_);           \
     }                                                                          \
     if (stack_size_ > 0)                                                       \
       LIBINT2_PREFIXED_NAME(libint2_cleanup_default)(&primdata_[0]);           \
     stack_size_ = LIBINT2_PREFIXED_NAME(BOOST_PP_CAT(                          \
-        libint2_need_memory_, LIBINT2_PP_NBODYENGINE_MCR3_TASK(product)))(     \
-        lmax_);                                                                \
-    LIBINT2_PREFIXED_NAME(BOOST_PP_CAT(                                        \
-        libint2_init_, LIBINT2_PP_NBODYENGINE_MCR3_TASK(product)))             \
+        libint2_need_memory_, LIBINT2_PP_NBODYENGINE_MCR3_TASK(args)))(lmax_); \
+    LIBINT2_PREFIXED_NAME(                                                     \
+        BOOST_PP_CAT(libint2_init_, LIBINT2_PP_NBODYENGINE_MCR3_TASK(args)))   \
     (&primdata_[0], lmax_, 0);                                                 \
     BOOST_PP_IF(BOOST_PP_IS_1(LIBINT2_FLOP_COUNT),                             \
                 LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)(               \
@@ -692,10 +682,31 @@ __libint2_engine_inline void Engine::_initialize() {
     return;                                                                    \
   }
 
-  BOOST_PP_LIST_FOR_EACH_PRODUCT(
-      LIBINT2_PP_NBODYENGINE_MCR3, 3,
-      (LIBINT2_PP_NBODY_OPERATOR_INDEX_LIST, LIBINT2_PP_NBODY_BRAKET_RANK_LIST,
-       LIBINT2_PP_NBODY_DERIV_ORDER_LIST))
+  // the product (operator, braket rank, derivative order) as nested loops, not
+  // BOOST_PP_LIST_FOR_EACH_PRODUCT: the loop over the operator list hands each
+  // operator's task name to the body, which otherwise looks it up with
+  // BOOST_PP_LIST_AT over the whole list for every element of the product;
+  // that expansion took most of the memory and time of preprocessing this
+  // header. The loops are LIST_FOR_EACH_I > REPEAT > REPEAT_z, hence one
+  // dimension of BOOST_PP_REPEAT is left for the body of MCR3.
+  // idx_name = (operator index, task name)
+  // idx_rank_name = (operator index, braket rank, task name)
+#define LIBINT2_PP_NBODYENGINE_MCR3_D(z, d, idx_rank_name)                  \
+  LIBINT2_PP_NBODYENGINE_MCR3((BOOST_PP_TUPLE_ELEM(3, 0, idx_rank_name),    \
+                               BOOST_PP_TUPLE_ELEM(3, 1, idx_rank_name), d, \
+                               BOOST_PP_TUPLE_ELEM(3, 2, idx_rank_name)))
+#define LIBINT2_PP_NBODYENGINE_MCR3_R(z, n, idx_name)                          \
+  BOOST_PP_REPEAT_##z(BOOST_PP_INC(LIBINT2_MAX_DERIV_ORDER),                   \
+                      LIBINT2_PP_NBODYENGINE_MCR3_D,                           \
+                      (BOOST_PP_TUPLE_ELEM(2, 0, idx_name),                    \
+                       BOOST_PP_LIST_AT(LIBINT2_PP_NBODY_BRAKET_RANK_LIST, n), \
+                       BOOST_PP_TUPLE_ELEM(2, 1, idx_name)))
+#define LIBINT2_PP_NBODYENGINE_MCR3_O(r, data, i, name)                  \
+  BOOST_PP_REPEAT(BOOST_PP_LIST_SIZE(LIBINT2_PP_NBODY_BRAKET_RANK_LIST), \
+                  LIBINT2_PP_NBODYENGINE_MCR3_R, (i, name))
+
+  BOOST_PP_LIST_FOR_EACH_I(LIBINT2_PP_NBODYENGINE_MCR3_O, _,
+                           LIBINT2_PP_NBODY_OPERATOR_LIST)
 
   assert(false &&
          "missing case in switch");  // either deriv_order_ or oper_ is wrong
@@ -823,32 +834,46 @@ init_compute2_ptrs() {
   auto max_ncompute2_ptrs = nopers_2body * nbrakets_2body * nderivorders_2body;
   std::vector<Engine::compute2_ptr_type> result(max_ncompute2_ptrs, nullptr);
 
-#define LIBINT2_PP_NBODYENGINE_MCR7(r, product)                               \
-  if (BOOST_PP_TUPLE_ELEM(3, 0, product) >=                                   \
+// args = (operator index, braket index, derivative order)
+#define LIBINT2_PP_NBODYENGINE_MCR7(args)                                     \
+  if (BOOST_PP_TUPLE_ELEM(3, 0, args) >=                                      \
           static_cast<int>(Operator::first_2body_oper) &&                     \
-      BOOST_PP_TUPLE_ELEM(3, 0, product) <=                                   \
+      BOOST_PP_TUPLE_ELEM(3, 0, args) <=                                      \
           static_cast<int>(Operator::last_2body_oper) &&                      \
-      BOOST_PP_TUPLE_ELEM(3, 1, product) >=                                   \
+      BOOST_PP_TUPLE_ELEM(3, 1, args) >=                                      \
           static_cast<int>(BraKet::first_2body_braket) &&                     \
-      BOOST_PP_TUPLE_ELEM(3, 1, product) <=                                   \
+      BOOST_PP_TUPLE_ELEM(3, 1, args) <=                                      \
           static_cast<int>(BraKet::last_2body_braket)) {                      \
-    auto compute_ptr_idx = ((BOOST_PP_TUPLE_ELEM(3, 0, product) -             \
+    auto compute_ptr_idx = ((BOOST_PP_TUPLE_ELEM(3, 0, args) -                \
                              static_cast<int>(Operator::first_2body_oper)) *  \
                                 nbrakets_2body +                              \
-                            (BOOST_PP_TUPLE_ELEM(3, 1, product) -             \
+                            (BOOST_PP_TUPLE_ELEM(3, 1, args) -                \
                              static_cast<int>(BraKet::first_2body_braket))) * \
                                nderivorders_2body +                           \
-                           BOOST_PP_TUPLE_ELEM(3, 2, product);                \
+                           BOOST_PP_TUPLE_ELEM(3, 2, args);                   \
     result.at(compute_ptr_idx) = &Engine::compute2<                           \
-        static_cast<Operator>(BOOST_PP_TUPLE_ELEM(3, 0, product)),            \
-        static_cast<BraKet>(BOOST_PP_TUPLE_ELEM(3, 1, product)),              \
-        BOOST_PP_TUPLE_ELEM(3, 2, product)>;                                  \
+        static_cast<Operator>(BOOST_PP_TUPLE_ELEM(3, 0, args)),               \
+        static_cast<BraKet>(BOOST_PP_TUPLE_ELEM(3, 1, args)),                 \
+        BOOST_PP_TUPLE_ELEM(3, 2, args)>;                                     \
   }
 
-  BOOST_PP_LIST_FOR_EACH_PRODUCT(
-      LIBINT2_PP_NBODYENGINE_MCR7, 3,
-      (LIBINT2_PP_NBODY_OPERATOR_INDEX_LIST, LIBINT2_PP_NBODY_BRAKET_INDEX_LIST,
-       LIBINT2_PP_NBODY_DERIV_ORDER_LIST))
+  // the product (operator, braket, derivative order) of indices as nested
+  // loops (cheaper to preprocess than BOOST_PP_LIST_FOR_EACH_PRODUCT). The
+  // loops are LIST_FOR_EACH_I > REPEAT > REPEAT_z, as in _initialize(), hence
+  // one dimension of BOOST_PP_REPEAT is left for the body of MCR7.
+  // oidx_bidx = (operator index, braket index)
+#define LIBINT2_PP_NBODYENGINE_MCR7_D(z, d, oidx_bidx)               \
+  LIBINT2_PP_NBODYENGINE_MCR7((BOOST_PP_TUPLE_ELEM(2, 0, oidx_bidx), \
+                               BOOST_PP_TUPLE_ELEM(2, 1, oidx_bidx), d))
+#define LIBINT2_PP_NBODYENGINE_MCR7_B(z, bidx, oidx)         \
+  BOOST_PP_REPEAT_##z(BOOST_PP_INC(LIBINT2_MAX_DERIV_ORDER), \
+                      LIBINT2_PP_NBODYENGINE_MCR7_D, (oidx, bidx))
+#define LIBINT2_PP_NBODYENGINE_MCR7_O(r, data, oidx, name)         \
+  BOOST_PP_REPEAT(BOOST_PP_INC(LIBINT2_PP_NBODY_BRAKET_MAX_INDEX), \
+                  LIBINT2_PP_NBODYENGINE_MCR7_B, oidx)
+
+  BOOST_PP_LIST_FOR_EACH_I(LIBINT2_PP_NBODYENGINE_MCR7_O, _,
+                           LIBINT2_PP_NBODY_OPERATOR_LIST)
 
   return result;
 }
@@ -2639,19 +2664,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   return targets_;
 }
 
-#undef LIBINT2_PP_MAKE_TUPLE_INTERNAL
-#undef LIBINT2_PP_MAKE_TUPLE
 #undef LIBINT2_PP_NBODY_OPERATOR_LIST
 #undef LIBINT2_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX
 #undef LIBINT2_PP_NBODY_BRAKET_MAX_INDEX
 #undef LIBINT2_PP_NBODY_BRAKET_RANK_TUPLE
 #undef LIBINT2_PP_NBODY_BRAKET_RANK_LIST
-#undef LIBINT2_PP_NBODY_OPERATOR_INDEX_TUPLE
-#undef LIBINT2_PP_NBODY_OPERATOR_INDEX_LIST
-#undef LIBINT2_PP_NBODY_BRAKET_INDEX_TUPLE
-#undef LIBINT2_PP_NBODY_BRAKET_INDEX_LIST
-#undef LIBINT2_PP_NBODY_DERIV_ORDER_TUPLE
-#undef LIBINT2_PP_NBODY_DERIV_ORDER_LIST
 #undef LIBINT2_PP_NBODYENGINE_MCR1
 #undef LIBINT2_PP_NBODYENGINE_MCR3
 #undef LIBINT2_PP_NBODYENGINE_MCR3_ncenter
@@ -2661,12 +2678,18 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #undef LIBINT2_PP_NBODYENGINE_MCR3_DERIV
 #undef LIBINT2_PP_NBODYENGINE_MCR3_task
 #undef LIBINT2_PP_NBODYENGINE_MCR3_TASK
+#undef LIBINT2_PP_NBODYENGINE_MCR3_D
+#undef LIBINT2_PP_NBODYENGINE_MCR3_R
+#undef LIBINT2_PP_NBODYENGINE_MCR3_O
 #undef LIBINT2_PP_NBODYENGINE_MCR4
 #undef LIBINT2_PP_NBODYENGINE_MCR5
 #undef LIBINT2_PP_NBODYENGINE_MCR5A
 #undef LIBINT2_PP_NBODYENGINE_MCR5B
 #undef LIBINT2_PP_NBODYENGINE_MCR6
 #undef LIBINT2_PP_NBODYENGINE_MCR7
+#undef LIBINT2_PP_NBODYENGINE_MCR7_D
+#undef LIBINT2_PP_NBODYENGINE_MCR7_B
+#undef LIBINT2_PP_NBODYENGINE_MCR7_O
 #undef LIBINT2_PP_NBODYENGINE_MCR9
 
 #ifdef LIBINT2_DOES_NOT_INLINE_ENGINE

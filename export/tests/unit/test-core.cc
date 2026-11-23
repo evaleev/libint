@@ -20,6 +20,13 @@
 
 #include <libint2/solidharmonics.h>
 
+#include <array>
+#include <limits>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "catch.hpp"
 #include "fixture.h"
 
@@ -74,6 +81,134 @@ TEST_CASE("Engine::set", "[engine]") {
                       .set(Operator::overlap)
                       .prescale_by(1.3)
                       .set(BraKet::x_x));
+}
+
+namespace {
+
+// the task name of each Operator, in the order of Operator; an independent copy
+// of LIBINT2_PP_NBODY_OPERATOR_LIST in engine.impl.h, from which the dispatch
+// tables of Engine are generated
+constexpr const char* task_names[] = {
+    "overlap",       "kinetic",       "elecpot",
+    "elecpot",       "elecpot",       "elecpot",
+    "elecpot",       "1emultipole",   "2emultipole",
+    "3emultipole",   "sphemultipole", "opVop",
+    "opVop",         "opemuop",       "giao_overlap",
+    "giao_kinetic",  "giao_elecpot",  "angmom",
+    "eri",           "eri",           "eri",
+    "eri",           "eri",           "eri",
+    "eri",           "eri",           "eri",
+    "eri",           "eri",           "eri",
+    "coulomb_opop",  "coulomb_op",    "opop_coulomb_opop",
+    "op_coulomb_op", "eri",           "giao_eri"};
+static_assert(sizeof(task_names) / sizeof(task_names[0]) ==
+                  static_cast<std::size_t>(Operator::last_oper) + 1,
+              "add the task name of the new Operator to task_names");
+
+/// @return the name of the task that computes the integrals of operator @p o
+/// over braket @p bk with derivative order @p d, as reported by Engine (the
+/// number of centers is omitted if it is the default for the rank of @p o)
+std::string task_name(Operator o, BraKet bk, int d) {
+  const auto default_ncenter = libint2::rank(o) == 1 ? 2 : 4;
+  const auto ncenter = libint2::rank(bk);
+  return (ncenter != default_ncenter ? std::to_string(ncenter)
+                                     : std::string{}) +
+         task_names[static_cast<int>(o)] +
+         (d > 0 ? std::to_string(d) : std::string{});
+}
+
+// whether Engine::compute2_ptrs()[I] is Engine::compute2<o,bk,d> of the
+// (o,bk,d) that I encodes, for each I
+template <std::size_t... I>
+std::array<bool, sizeof...(I)> compute2_ptrs_match(
+    const std::vector<Engine::compute2_ptr_type>& ptrs,
+    std::index_sequence<I...>) {
+  constexpr auto o0 = static_cast<std::size_t>(Operator::first_2body_oper);
+  constexpr auto bk0 = static_cast<std::size_t>(BraKet::first_2body_braket);
+  constexpr auto nbk = libint2::nbrakets_2body;
+  constexpr auto nd = libint2::nderivorders_2body;
+  return {{(ptrs.at(I) ==
+            static_cast<Engine::compute2_ptr_type>(
+                &Engine::compute2<static_cast<Operator>(o0 + I / (nbk * nd)),
+                                  static_cast<BraKet>(bk0 + (I / nd) % nbk),
+                                  I % nd>))...}};
+}
+
+}  // namespace
+
+TEST_CASE("Engine::compute2_ptrs", "[engine]") {
+  constexpr auto n = libint2::nopers_2body * libint2::nbrakets_2body *
+                     libint2::nderivorders_2body;
+  const auto& ptrs = Engine{}.compute2_ptrs();
+  REQUIRE(ptrs.size() == n);
+  const auto match = compute2_ptrs_match(ptrs, std::make_index_sequence<n>{});
+  for (std::size_t i = 0; i != n; ++i) {
+    INFO("compute2_ptrs()[" << i << "]");
+    CHECK(match[i]);
+  }
+}
+
+// _initialize() selects the kernels for (Operator, rank of BraKet, derivative
+// order). With max_l beyond the kernels it throws lmax_exceeded, which names
+// the selected task. If the library has no kernels for the combination it
+// throws nothing, or Engine rejects the combination (std::invalid_argument).
+TEST_CASE("Engine selects the kernels of each operator", "[engine]") {
+  // beyond the kernels of any task: LIBINT2_MAX_AM is not, e.g. the 3-center
+  // ERIs can have higher angular momenta (LIBINT2_ERI3_MAX_AM); without kernels
+  // Engine builds the core evaluators for max_l, and those with tables throw
+  // std::invalid_argument
+  const auto max_l = 64;
+  std::set<std::string> tasks_found;
+  for (int oi = static_cast<int>(Operator::first_oper);
+       oi <= static_cast<int>(Operator::last_oper); ++oi) {
+    const auto o = static_cast<Operator>(oi);
+    const auto brakets =
+        libint2::rank(o) == 1
+            ? std::vector<BraKet>{BraKet::x_x}
+            : std::vector<BraKet>{BraKet::xx_xx, BraKet::xs_xx, BraKet::xx_xs,
+                                  BraKet::xs_xs};
+    for (auto bk : brakets) {
+      for (int d = 0; d <= LIBINT2_MAX_DERIV_ORDER; ++d) {
+        const auto expected = task_name(o, bk, d);
+        INFO("Operator #" << oi << " BraKet #" << static_cast<int>(bk)
+                          << " deriv_order=" << d << ": expected task "
+                          << expected);
+        try {
+          Engine(o, 1, max_l, d, std::numeric_limits<double>::epsilon(),
+                 libint2::default_params(o), bk);
+        } catch (const Engine::lmax_exceeded& e) {
+          CHECK(std::string(e.task_name()) == expected);
+          tasks_found.insert(e.task_name());
+        } catch (const std::exception&) {
+          // the combination is rejected, or there are no kernels for it
+        }
+      }
+    }
+  }
+  // the kernels of these tasks, if the library has them, must be found
+  // (LIBINT2_TASK_EXISTS_* always include the number of centers)
+  const auto check_found = [&](const char* task) {
+    INFO("task " << task);
+    CHECK(tasks_found.count(task) == 1);
+  };
+#if LIBINT2_TASK_EXISTS_2overlap
+  check_found("overlap");
+#endif
+#if LIBINT2_TASK_EXISTS_2elecpot1
+  check_found("elecpot1");
+#endif
+#if LIBINT2_TASK_EXISTS_4eri
+  check_found("eri");
+#endif
+#if LIBINT2_TASK_EXISTS_4eri1
+  check_found("eri1");
+#endif
+#if LIBINT2_TASK_EXISTS_3eri
+  check_found("3eri");
+#endif
+#if LIBINT2_TASK_EXISTS_2eri
+  check_found("2eri");
+#endif
 }
 
 template <typename RealBuf>
