@@ -153,7 +153,11 @@ TEST_CASE("Engine::compute2_ptrs", "[engine]") {
 // the selected task. If the library has no kernels for the combination it
 // throws nothing, or Engine rejects the combination (std::invalid_argument).
 TEST_CASE("Engine selects the kernels of each operator", "[engine]") {
-  const auto max_l = LIBINT2_MAX_AM + 1;
+  // beyond the kernels of any task: LIBINT2_MAX_AM is not, e.g. the 3-center
+  // ERIs can have higher angular momenta (LIBINT2_ERI3_MAX_AM); without kernels
+  // Engine builds the core evaluators for max_l, and those with tables throw
+  // std::invalid_argument
+  const auto max_l = 64;
   std::set<std::string> tasks_found;
   for (int oi = static_cast<int>(Operator::first_oper);
        oi <= static_cast<int>(Operator::last_oper); ++oi) {
