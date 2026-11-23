@@ -38,6 +38,8 @@ include(CheckFunctionExists)
 
 option_with_default(CMAKE_BUILD_TYPE
   "Build type" Release)
+option_with_default(CMAKE_POSITION_INDEPENDENT_CODE
+  "Build position independent code" ON)
 option_with_print(BUILD_SHARED_LIBS
   "Build Libint library as shared, not static" OFF)
 option_with_print(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS
@@ -372,26 +374,13 @@ if (LIBINT2_REQUIRE_CXX_API_COMPILED)
 
 endif()
 
-# plan shared, static, or both, then set fpic accordingly
+# plan shared, static, or both
 
 if (LIBINT2_BUILD_SHARED_AND_STATIC_LIBS OR BUILD_SHARED_LIBS)
     set(L2_BUILD_SHARED_LIBS 1)
 endif()
 if (LIBINT2_BUILD_SHARED_AND_STATIC_LIBS OR (NOT BUILD_SHARED_LIBS))
     set(L2_BUILD_STATIC_LIBS 1)
-endif()
-if (L2_BUILD_SHARED_LIBS OR (LIBINT2_ENABLE_PYTHON AND NOT MSVC))
-    if (TARGET int-cxx-obj)
-        set(tgts int-obj int-cxx-obj)
-    else()
-        set(tgts int-obj)
-    endif()
-
-    set_target_properties(
-      ${tgts}
-      PROPERTIES
-        POSITION_INDEPENDENT_CODE 1
-      )
 endif()
 
 
@@ -750,12 +739,6 @@ if (LIBINT2_ENABLE_FORTRAN)
       PROPERTIES
         Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/${BUILDTREE_FMODDIR}
       )
-    # N.B. use L2_BUILD_SHARED_LIBS (set above from LIBINT2_BUILD_SHARED_AND_STATIC_LIBS
-    #   or BUILD_SHARED_LIBS), same as int-obj, since these objects end up in the
-    #   installed int_f library that may be shared or linked against the shared libint2
-    if (L2_BUILD_SHARED_LIBS)
-        set_target_properties(libint_f PROPERTIES POSITION_INDEPENDENT_CODE 1)
-    endif()
     target_include_directories(
       libint_f
       PUBLIC

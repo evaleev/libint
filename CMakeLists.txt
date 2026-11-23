@@ -107,6 +107,7 @@ message(STATUS "Building using CMake ${CMAKE_VERSION} Generator ${CMAKE_GENERATO
 #  <<<  General  >>>
 
 option_with_default(CMAKE_BUILD_TYPE "Build type (Release or Debug)" Release)
+option_with_default(CMAKE_POSITION_INDEPENDENT_CODE "Build position independent code" ON)
 
 ### compiler-only
 option_with_print(LIBINT2_BUILD_LIBRARY_AS_SUBPROJECT
