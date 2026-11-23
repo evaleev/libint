@@ -445,8 +445,7 @@ jobs:
               -D BUILD_SHARED_LIBS=OFF
               -D CMAKE_CXX_COMPILER=clang-cl
               -D CMAKE_C_COMPILER=clang-cl
-              -D CMAKE_CXX_FLAGS="-wd4996"
-              -D CMAKE_CXX_FLAGS_INIT=-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH
+              -D CMAKE_CXX_FLAGS="-wd4996 -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
             testargs: >
               -G Ninja
               -D CMAKE_BUILD_TYPE=Release
