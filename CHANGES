@@ -3,7 +3,20 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- unreleased:
+- unreleased
+  N.B. compatibility notes:
+    - the installed CMake targets file libint2-targets.cmake is split into libint2-targets-C.cmake
+      (C and C++ targets) and libint2-targets-Fortran.cmake (Libint2::fortran, if
+      LIBINT2_ENABLE_FORTRAN=ON), so that C and Fortran can be packaged separately; update explicit
+      lists of installed files and any direct include() of libint2-targets.cmake (use
+      find_package(Libint2) instead)
+  - PR #470: CMake components C and Fortran (fortran remains an alias); libint2-config.cmake loads
+    the Fortran targets only if present and ignores, with a warning unless Fortran is required, a
+    Fortran targets file that does not match the C library (other version, configuration, or
+    library type); a build tree reconfigured without Fortran removes its Fortran targets file
+  - PR #470: find_package(Libint2) checks the requested components before importing targets, so that
+    it does not leave Libint2 targets behind when it fails
+  - PR #470: fixed MSVC/clang-cl build of the library with a user-set CMAKE_CXX_FLAGS lacking /EHsc
   - PR #474: 1-body integrals for magnetic properties, with geometric derivatives (HT @0xWOLAND)
   - PR #475: Operator::giao_coulomb, the London-orbital (GIAO) 4- and 3-center ERIs, with geometric
     derivatives; enable with LIBINT2_ENABLE_GIAO_ERI and LIBINT2_ENABLE_GIAO_ERI3 (HT @0xWOLAND)

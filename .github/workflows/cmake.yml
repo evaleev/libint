@@ -284,6 +284,74 @@ jobs:
         cmake --build build
         ./build/fortran_example
 
+    - name: Test installed Libint library (separately packaged C and Fortran targets)
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.do_fortran == 'ON' }}
+      shell: bash
+      working-directory: ${{github.workspace}}/build/library_test
+      run: |
+        # libint2-config.cmake loads libint2-targets-Fortran.cmake only if present (a C-only
+        #   package), and ignores it if it does not match the C library (left over from another
+        #   installation), unless the Fortran component is required
+        f_targets=$(find "${{github.workspace}}/build/library" -name libint2-targets-Fortran.cmake)
+        test -n "$f_targets"
+        f_dir=$(dirname "$f_targets")
+        mkdir split && cd split
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.16)
+        project(libint2-split-consumer C CXX)
+        find_package(Libint2 REQUIRED)
+        if (TARGET Libint2::fortran)
+          message(FATAL_ERROR "Libint2::fortran must not exist for ${CASE}")
+        endif()
+        find_package(Libint2 QUIET COMPONENTS Fortran)
+        if (Libint2_FOUND)
+          message(FATAL_ERROR "find_package(Libint2 COMPONENTS Fortran) must fail for ${CASE}")
+        endif()
+        message(STATUS "Libint2_NOT_FOUND_MESSAGE: ${Libint2_NOT_FOUND_MESSAGE}")
+        EOF
+        mkdir aside && cp "$f_dir"/libint2-targets-Fortran*.cmake aside/
+        prefix="${{github.workspace}}/build/library;/opt/homebrew/opt/eigen@3"
+        # C-only: Fortran targets not installed
+        rm "$f_dir"/libint2-targets-Fortran*.cmake
+        cmake -S . -B build-c-only -D CASE=c-only -D CMAKE_PREFIX_PATH="$prefix" 2>&1 | tee c-only.out
+        grep -q "Fortran targets file .* not found" c-only.out
+        # a failed find_package(Libint2) must not leave targets behind if the missing component
+        #   is known before importing them (here: Fortran targets file absent; integral class not built)
+        mkdir fresh && cat > fresh/CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.16)
+        project(libint2-fresh-consumer C CXX)
+        find_package(Libint2 QUIET COMPONENTS ${COMPONENT})
+        if (Libint2_FOUND)
+          message(FATAL_ERROR "find_package(Libint2 COMPONENTS ${COMPONENT}) must fail")
+        endif()
+        foreach(_t Libint2::int2 Libint2::int-shared Libint2::int-static Libint2::cxx Libint2::int_f Libint2::fortran)
+          if (TARGET ${_t})
+            message(FATAL_ERROR "a failed find_package(Libint2 COMPONENTS ${COMPONENT}) left ${_t} behind")
+          endif()
+        endforeach()
+        message(STATUS "Libint2_NOT_FOUND_MESSAGE: ${Libint2_NOT_FOUND_MESSAGE}")
+        EOF
+        cmake -S fresh -B build-fresh-fortran -D COMPONENT=Fortran -D CMAKE_PREFIX_PATH="$prefix" 2>&1 | tee fresh-fortran.out
+        grep -q "Fortran targets file .* not found" fresh-fortran.out
+        cmake -S fresh -B build-fresh-class -D COMPONENT=eri_hhhh_d9 -D CMAKE_PREFIX_PATH="$prefix" 2>&1 | tee fresh-class.out
+        grep -q "built without the requested component(s) eri_hhhh_d9" fresh-class.out
+        # stale: references a C library target that is not installed (other library type)
+        cp aside/libint2-targets-Fortran*.cmake "$f_dir"/
+        perl -pi -e 's/Libint2::int-(shared|static)\b/Libint2::int-bogus/g' "$f_targets"
+        cmake -S . -B build-stale-type -D CASE=stale-type -D CMAKE_PREFIX_PATH="$prefix" 2>&1 | tee stale-type.out
+        grep -q "does not match the Libint2 C library" stale-type.out
+        # a repeated find_package(Libint2), which does not re-include the targets file, reports the cause too
+        grep -q "Libint2_NOT_FOUND_MESSAGE: .*does not match the Libint2 C library" stale-type.out
+        # stale: same library type, other version
+        cp aside/libint2-targets-Fortran.cmake "$f_targets"
+        perl -pi -e 's/Libint2_VERSION "[^"]*"/Libint2_VERSION "0.0.0"/' "$f_targets"
+        grep -q 'Libint2_VERSION "0.0.0"' "$f_targets"
+        cmake -S . -B build-stale-version -D CASE=stale-version -D CMAKE_PREFIX_PATH="$prefix" 2>&1 | tee stale-version.out
+        grep -q "Fortran library is version 0.0.0" stale-version.out
+        # a repeated find_package(Libint2), which does not re-include the targets file, reports the cause too
+        grep -q "Libint2_NOT_FOUND_MESSAGE: .*does not match the Libint2 C library" stale-version.out
+        cp aside/libint2-targets-Fortran*.cmake "$f_dir"/
+
   # a library without contracted integrals (C API only, since the C++ API
   # requires contracted integrals), with and without accumulated targets
   # N.B. with accumulated targets only nondifferentiated ERIs are generated,
@@ -366,6 +434,9 @@ jobs:
           # _ALLOW_COMPILER_AND_STL_VERSION_MISMATCH; the _INIT flags keep the
           # default MSVC flags (/EHsc etc.); N.B. -D, not /D, since the MSYS
           # bash running cmake converts arguments starting with / into paths
+          # wd4996: a user-set CMAKE_CXX_FLAGS replaces CMake's default for MSVC-like compilers,
+          #   including /EHsc, which the library targets must then add themselves
+          #   (dash form, so that MSYS bash does not take /wd4996 for a path)
           - runs-on: windows-latest
             lane: windows-clang-cl
             libargs: >
@@ -374,7 +445,7 @@ jobs:
               -D BUILD_SHARED_LIBS=OFF
               -D CMAKE_CXX_COMPILER=clang-cl
               -D CMAKE_C_COMPILER=clang-cl
-              -D CMAKE_CXX_FLAGS_INIT=-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH
+              -D CMAKE_CXX_FLAGS="-wd4996 -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
             testargs: >
               -G Ninja
               -D CMAKE_BUILD_TYPE=Release
@@ -517,7 +588,11 @@ jobs:
           ${{ matrix.cfg.c_only && '-D LIBINT2_REQUIRE_CXX_API=OFF' || '-D LIBINT2_REQUIRE_CXX_API_COMPILED=ON -D LIBINT2_ENABLE_PYTHON=ON' }} \
           -D CMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
           ${{ matrix.cfg.libargs }}
-        cmake --build build --target install ${{ !matrix.cfg.c_only && 'libint2-python-test' || '' }}
+        # build the Python module only after the library: in one build, g++ compiles
+        #   src/engine.cpp (~6.5 GB) alongside the module's two sources (~5.5 GB each),
+        #   which exhausts the 16 GB of a Linux runner and kills it
+        cmake --build build --target install
+        ${{ !matrix.cfg.c_only && 'cmake --build build --target libint2-python-test' || '' }}
 
     - name: Test Libint library - DESTDIR install and absolute data dir
       if: ${{ runner.os != 'Windows' }}
@@ -549,6 +624,26 @@ jobs:
         if [[ "${{ matrix.cfg.c_only }}" != "true" ]]; then
           grep -rqF 'LIBINT_DATADIR=\"/opt/libint2-data\"' build-absdata/CMakeFiles/Export || { echo "exported LIBINT_DATADIR does not use the absolute data dir"; exit 1; }
         fi
+
+    - name: Test Libint library - build tree reconfigured without Fortran drops its Fortran targets
+      if: ${{ contains(matrix.cfg.libargs, 'LIBINT2_ENABLE_FORTRAN=ON') }}
+      shell: bash -l {0}
+      working-directory: ${{github.workspace}}/libint
+      run: |
+        # libint2-config.cmake loads libint2-targets-Fortran.cmake if present, so a build tree
+        #   reconfigured with LIBINT2_ENABLE_FORTRAN=OFF must remove the one export() wrote
+        #   earlier (configure only: export() writes the targets files at generate time)
+        source "${{github.workspace}}/compilers.sh"
+        cmake \
+          -S . \
+          -B build-refortran \
+          -G Ninja \
+          -D CMAKE_CXX_COMPILER=${CXX} \
+          -D CMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
+          ${{ matrix.cfg.libargs }}
+        test -f build-refortran/libint2-targets-Fortran.cmake || { echo "Fortran build tree has no libint2-targets-Fortran.cmake"; exit 1; }
+        cmake -S . -B build-refortran -D LIBINT2_ENABLE_FORTRAN=OFF
+        if [[ -e build-refortran/libint2-targets-Fortran.cmake ]]; then echo "stale libint2-targets-Fortran.cmake kept in build tree"; exit 1; fi
 
     - name: Test Libint library - unit tests
       shell: bash -l {0}
@@ -596,6 +691,16 @@ jobs:
         cmake -S . -B from_install_tree -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
         cmake --build from_install_tree --target c_consumer
         from_install_tree/c_consumer
+        # a failed find_package(Libint2 COMPONENTS CXX) must not leave targets behind
+        mkdir fresh_cxx && cat > fresh_cxx/CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.8)
+        project(c_consumer_fresh C)
+        find_package(Libint2 QUIET COMPONENTS CXX)
+        if (Libint2_FOUND OR TARGET Libint2::int2)
+          message(FATAL_ERROR "a failed find_package(Libint2 COMPONENTS CXX) must not leave Libint2::int2 behind")
+        endif()
+        EOF
+        cmake -S fresh_cxx -B fresh_cxx/build -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
 
     - name: Test Libint library - consume installation for SCF [from build+install]
       if: ${{ !matrix.cfg.c_only }}
