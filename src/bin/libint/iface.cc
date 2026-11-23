@@ -569,6 +569,18 @@ void Libint2Iface::generate_inteval_type(std::ostream& os) {
       os << var_declare_v<double>(*s);
     }
 
+    // The Engine accesses these radial seed prefixes as contiguous storage.
+    // Report their generated lengths so it can verify the layout.
+    for (const auto& radial :
+         {std::make_pair("ERI_SEED_COUNT",
+                         "_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_"),
+          std::make_pair("ELECPOT_SEED_COUNT",
+                         "_aB_s___0___ElecPot_s___0___Ab__up_")}) {
+      const auto it = prefix_symbols.find(radial.second);
+      if (it != prefix_symbols.end())
+        os << macro_define(tlabel, radial.first, it->second.second + 1);
+    }
+
     // Declare members common to all evaluators
     os << ctext_->comment("Scratch buffer to hold intermediates") << std::endl;
     os << ctext_->declare(

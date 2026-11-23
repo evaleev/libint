@@ -58,27 +58,53 @@ TEST_CASE("Reuse one-body primitive pairs across angular momenta",
     CAPTURE(static_cast<int>(op));
     CAPTURE(deriv);
     Engine engine(op, 2, lmax, deriv);
-    if (op == Operator::nuclear) {
+    if (op == Operator::nuclear || op == Operator::giao_nuclear) {
       using Charges = libint2::operator_traits<Operator::nuclear>::oper_params_type;
       engine.set_params(Charges{{1.1, {{.73, .14, -.6}}},
                                 {-.3, {{-.4, .2, .11}}}});
     }
     engine.prescale_by(-.82);
-    Shell A{{.8, 2.1}, {{0, false, {1., -.2}}}, {{.1, .3, -.2}}, false};
-    Shell B{{1.3}, {{0, true, {1.}}}, {{-.3, .2, .7}}, false};
+    engine.set(CartesianShellNormalization::uniform);
+    const auto make_A = [](int l, bool normalize) {
+      return Shell{
+          {.8, 2.1}, {{l, false, {1., -.2}}}, {{.1, .3, -.2}}, normalize};
+    };
+    const auto make_B = [](int l, bool normalize) {
+      return Shell{
+          {1.3, .4}, {{l, true, {1., .3}}}, {{-.3, .2, .7}}, normalize};
+    };
+    auto A = make_A(0, true);
+    auto B = make_B(0, true);
     auto prepared = engine.prepare_one_body(A, B);
     const std::array<std::array<int, 2>, 6> cases{
         {{{0, 0}}, {{lmax, 1}}, {{1, lmax}}, {{0, 1}}, {{1, 0}}, {{0, 0}}}};
-    for (const auto& l : cases) {
-      A.contr[0].l = l[0];
-      B.contr[0].l = l[1];
-      const auto& ordinary = engine.compute1(A, B);
-      const auto& reused = prepared.compute(l[0], l[1]);
-      REQUIRE(reused.size() == ordinary.size());
-      for (std::size_t s = 0; s < reused.size(); ++s)
-        for (std::size_t i = 0; i < A.size() * B.size(); ++i)
-          CHECK(reused[s][i] == Approx(ordinary[s][i]).margin(2e-14));
+    for (const bool normalize : {true, false}) {
+      prepared.bind(make_A(0, normalize), make_B(0, normalize));
+      for (const auto& l : cases) {
+        A = make_A(l[0], normalize);
+        B = make_B(l[1], normalize);
+        const auto& ordinary = engine.compute1(A, B);
+        const auto size = A.size() * B.size();
+        std::vector<std::vector<double>> expected;
+        for (const auto* target : ordinary)
+          expected.emplace_back(target, target + size);
+        if (normalize)
+          prepared.bind(A, B);
+        else
+          prepared.bind_fixed_coefficients(l[0], l[1]);
+        const auto& reused = engine.compute1(prepared);
+        REQUIRE(reused.size() == expected.size());
+        for (std::size_t s = 0; s < reused.size(); ++s)
+          for (std::size_t i = 0; i < size; ++i)
+            CHECK(reused[s][i] == Approx(expected[s][i]).margin(2e-14));
+      }
     }
+    B.move({{.2, .3, .4}});
+    CHECK_THROWS_AS(prepared.bind(A, B), std::invalid_argument);
+    Engine copy(engine);
+    CHECK_THROWS_AS(copy.compute1(prepared), std::invalid_argument);
+    engine.prescale_by(1.);
+    CHECK_THROWS_AS(engine.compute1(prepared), std::invalid_argument);
   };
   compare(Operator::overlap, 0, std::min(2, LIBINT2_MAX_AM_overlap));
   compare(Operator::kinetic, 0, std::min(2, LIBINT2_MAX_AM_kinetic));
@@ -89,6 +115,9 @@ TEST_CASE("Reuse one-body primitive pairs across angular momenta",
 #endif
 #if LIBINT2_TASK_EXISTS_2elecpot1
   compare(Operator::nuclear, 1, std::min(2, LIBINT2_MAX_AM_elecpot1));
+#endif
+#if LIBINT2_TASK_EXISTS_2giao_elecpot1
+  compare(Operator::giao_nuclear, 1, std::min(2, LIBINT2_MAX_AM_giao_elecpot1));
 #endif
 }
 #endif

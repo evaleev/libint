@@ -398,7 +398,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1_impl(
                 }
               }
               if (oper_ == Operator::giao_nuclear)
-                giao_nuclear_charge_deriv_correction(s1, s2, pset);
+                giao_nuclear_charge_deriv_correction(s1, s2, pset, data);
             } break;
 
             case 2: {
@@ -727,6 +727,7 @@ __libint2_engine_inline void Engine::_initialize() {
 }  // _initialize<R>()
 
 __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
+  one_body_context_.reset();
   assert(libint2::initialized() && "libint is not initialized");
   // if the arguments are rejected leave no table for the previous
   // operator/braket (set() has already changed them), so that compute()
@@ -1205,7 +1206,7 @@ __libint2_engine_inline void Engine::init_core_ints_params(const any& params) {
 /// \vec{e}_x)_k V_{ab} \f$. compute1() computes the first two terms, this
 /// adds the last one.
 __libint2_engine_inline void Engine::giao_nuclear_charge_deriv_correction(
-    const Shell& s1, const Shell& s2, size_t pset) {
+    const Shell& s1, const Shell& s2, size_t pset, Libint_t* data) {
   const auto l1 = s1.contr[0].l;
   const auto l2 = s2.contr[0].l;
   const auto ncart12 = s1.cartesian_size() * s2.cartesian_size();
@@ -1213,8 +1214,8 @@ __libint2_engine_inline void Engine::giao_nuclear_charge_deriv_correction(
   const value_type* V = nullptr;
   value_type V_ss = 0;
   if (l1 == 0 && l2 == 0) {  // no elecpot kernel for (s|s)
-    for (auto p12 = 0; p12 != primdata_[0].contrdepth; ++p12)
-      V_ss += primdata_[p12].LIBINT_T_S_ELECPOT_S(0)[0];
+    for (auto p12 = 0; p12 != data->contrdepth; ++p12)
+      V_ss += data[p12].LIBINT_T_S_ELECPOT_S(0)[0];
     V = &V_ss;
   } else {
 #if LIBINT2_TASK_EXISTS_2elecpot
@@ -1224,10 +1225,10 @@ __libint2_engine_inline void Engine::giao_nuclear_charge_deriv_correction(
     const auto elecpot_buildfnidx = l1 * (LIBINT2_MAX_AM_elecpot + 1) + l2;
     assert(elecpot_buildfnptrs[elecpot_buildfnidx] &&
            "null build function ptr");
-    // N.B. primdata_ was computed for the giao_elecpot1 kernel, see
+    // N.B. data was computed for the giao_elecpot1 kernel, see
     // compute_primdata() for what the elecpot kernels need of it
-    elecpot_buildfnptrs[elecpot_buildfnidx](&primdata_[0]);
-    V = primdata_[0].targets[0];
+    elecpot_buildfnptrs[elecpot_buildfnidx](data);
+    V = data->targets[0];
 #else
     assert(false && "the elecpot kernels are missing");
     abort();
@@ -1251,12 +1252,12 @@ __libint2_engine_inline void Engine::giao_nuclear_charge_deriv_correction(
   }
 }
 
+template <bool PreparePair>
 __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
                                                       const Shell& s1,
                                                       const Shell& s2,
                                                       size_t p1, size_t p2,
-                                                      size_t oset,
-                                                      bool prepare_both_hrr) {
+                                                      size_t oset) {
   const auto& A = s1.O;
   const auto& B = s2.O;
 
@@ -1294,8 +1295,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   // unlike the 2-body ints, can go both ways, determine which way to go (the
   // logic must match TwoCenter_OS_Tactic)
   const bool hrr_ket_to_bra = l1 >= l2;
-  if (use_hrr || prepare_both_hrr) {
-    if (hrr_ket_to_bra || prepare_both_hrr) {
+  if (use_hrr || PreparePair) {
+    if (hrr_ket_to_bra || PreparePair) {
 #if LIBINT2_DEFINED(eri, AB_x)
       primdata.AB_x[0] = AB_x;
 #endif
@@ -1306,7 +1307,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
       primdata.AB_z[0] = AB_z;
 #endif
     }
-    if (!hrr_ket_to_bra || prepare_both_hrr) {
+    if (!hrr_ket_to_bra || PreparePair) {
 #if LIBINT2_DEFINED(eri, BA_x)
       primdata.BA_x[0] = -AB_x;
 #endif
@@ -1419,7 +1420,9 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
 
   decltype(c1) sqrt_PI(1.77245385090551602729816748334);
   const auto xyz_pfac = sqrt_PI * sqrt(oogammap);
-  const auto ovlp_ss_x = exp(-rhop * AB2_x) * xyz_pfac * c1 * c2 * scale_;
+  auto ovlp_ss_x = exp(-rhop * AB2_x) * xyz_pfac;
+  if (!PreparePair) ovlp_ss_x = ovlp_ss_x * c1 * c2;
+  ovlp_ss_x *= scale_;
   const auto ovlp_ss_y = exp(-rhop * AB2_y) * xyz_pfac;
   const auto ovlp_ss_z = exp(-rhop * AB2_z) * xyz_pfac;
 
@@ -1560,13 +1563,30 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   }
 }  // Engine::compute_primdata()
 
+namespace detail {
+#ifdef LIBINT2_ELECPOT_SEED_COUNT
+constexpr auto elecpot_seed_offset =
+    offsetof(Libint_t, LIBINT_T_S_ELECPOT_S(0));
+#define LIBINT2_CHECK_ELECPOT_SEED(z, m, unused)                  \
+  static_assert(offsetof(Libint_t, LIBINT_T_S_ELECPOT_S(m)) ==    \
+                    elecpot_seed_offset + m * sizeof(value_type), \
+                "Expected contiguous scalar electrostatic potential seeds");
+#if LIBINT2_MAX_VECLEN == 1
+BOOST_PP_REPEAT(LIBINT2_ELECPOT_SEED_COUNT, LIBINT2_CHECK_ELECPOT_SEED, _)
+#endif
+#undef LIBINT2_CHECK_ELECPOT_SEED
+#endif
+}  // namespace detail
+
 __libint2_engine_inline Engine::PreparedOneBody Engine::prepare_one_body(
-    const Shell& s1, const Shell& s2) const {
+    const Shell& s1, const Shell& s2) {
   if (operator_rank() != 1 || LIBINT2_MAX_VECLEN != 1)
     throw std::invalid_argument("prepare_one_body requires a scalar one-body kernel");
   if (!buildfnptrs_) throw missing_kernel();
   if (s1.ncontr() != 1 || s2.ncontr() != 1 || s1.nprim() == 0 ||
-      s2.nprim() == 0 || s1.nprim() > max_nprim_ || s2.nprim() > max_nprim_)
+      s2.nprim() == 0 || s1.nprim() > max_nprim_ || s2.nprim() > max_nprim_ ||
+      s1.contr[0].coeff.size() != s1.nprim() ||
+      s2.contr[0].coeff.size() != s2.nprim())
     throw std::invalid_argument("invalid prepared one-body shell pair");
 
   if (s2.nprim() > std::size_t(std::numeric_limits<int>::max()) / s1.nprim())
@@ -1578,8 +1598,26 @@ __libint2_engine_inline Engine::PreparedOneBody Engine::prepare_one_body(
   if (nsets > std::numeric_limits<std::size_t>::max() / npairs)
     throw std::overflow_error("prepared one-body pair count exceeds its capacity");
 
-  PreparedOneBody batch(*this, s1, s2, nsets * npairs);
-  auto& owner = *batch.engine_;
+  const int offset =
+      is_nuclear_type(oper_) ? deriv_order_ + intrinsic_deriv_order() : -1;
+  const int max_order = offset < 0 ? -1 : 2 * lmax_ + offset;
+  const auto stride = static_cast<std::size_t>(max_order + 2);
+  if (offset >= 0) {
+#ifdef LIBINT2_ELECPOT_SEED_COUNT
+    if (max_order >= LIBINT2_ELECPOT_SEED_COUNT) throw missing_kernel();
+#else
+    throw missing_kernel();
+#endif
+  }
+  if (nsets * npairs > std::numeric_limits<std::size_t>::max() / stride)
+    throw std::overflow_error(
+        "prepared one-body radial data exceeds its capacity");
+
+  if (!one_body_context_)
+    one_body_context_ = std::make_shared<OneBodyContext>();
+  PreparedOneBody batch(*this, s1, s2, nsets * npairs, offset);
+  batch.check_angular_momenta(s1.contr[0].l, s2.contr[0].l);
+  batch.unweighted_.resize(nsets * npairs * stride);
   auto& A = batch.shells_[0];
   auto& B = batch.shells_[1];
   A.contr[0].l = lmax_;
@@ -1587,35 +1625,120 @@ __libint2_engine_inline Engine::PreparedOneBody Engine::prepare_one_body(
   for (std::size_t pset = 0; pset < nsets; ++pset) {
     auto* records = batch.packed_.data() + pset * npairs;
     auto& first = records[0];
-    first.stack = owner.primdata_[0].stack;
-    first.vstack = owner.primdata_[0].vstack;
+    first.stack = primdata_[0].stack;
+    first.vstack = primdata_[0].vstack;
     first.contrdepth = static_cast<int>(npairs);
 #ifdef LIBINT2_PROFILE
-    first.timers = owner.primdata_[0].timers;
+    first.timers = primdata_[0].timers;
 #endif
 #if LIBINT2_FLOP_COUNT
-    // All records refer to the owning Engine's counter.
     for (std::size_t k = 0; k < npairs; ++k)
-      records[k].nflops = owner.primdata_[0].nflops;
+      records[k].nflops = primdata_[0].nflops;
 #endif
     std::size_t k = 0;
     for (std::size_t p1 = 0; p1 < A.nprim(); ++p1)
-      for (std::size_t p2 = 0; p2 < B.nprim(); ++p2)
-        owner.compute_primdata(records[k++], A, B, p1, p2, pset, true);
+      for (std::size_t p2 = 0; p2 < B.nprim(); ++p2, ++k) {
+        auto& record = records[k];
+        compute_primdata<true>(record, A, B, p1, p2, pset);
+        auto* base = batch.unweighted_.data() + (pset * npairs + k) * stride;
+        base[0] = record._0_Overlap_0_x[0];
+#ifdef LIBINT2_ELECPOT_SEED_COUNT
+        if (max_order >= 0)
+          std::memcpy(base + 1,
+                      reinterpret_cast<const unsigned char*>(&record) +
+                          detail::elecpot_seed_offset,
+                      (max_order + 1) * sizeof(value_type));
+#endif
+      }
   }
+  batch.bind_fixed_coefficients(s1.contr[0].l, s2.contr[0].l);
   return batch;
 }
 
-__libint2_engine_inline const Engine::target_ptr_vec&
-Engine::PreparedOneBody::compute(int l1, int l2) {
-  if (!engine_) throw std::logic_error("moved-from prepared one-body pair");
+__libint2_engine_inline void Engine::PreparedOneBody::check_angular_momenta(
+    int l1, int l2) const {
+  if (!context_) throw std::logic_error("moved-from prepared one-body pair");
   if (l1 < 0 || l2 < 0)
     throw std::invalid_argument("negative one-body angular momentum");
-  shells_[0].contr[0].l = l1;
-  shells_[1].contr[0].l = l2;
-  return engine_->compute1_impl(shells_[0], shells_[1], packed_.data());
+  const auto l = std::max(l1, l2);
+  if (l > lmax_) throw lmax_exceeded(task_name_, lmax_, l);
 }
 
+__libint2_engine_inline void Engine::PreparedOneBody::apply_weights(int l1,
+                                                                    int l2) {
+  const int order =
+      radial_order_offset_ < 0 ? -1 : l1 + l2 + radial_order_offset_;
+  if (order <= weighted_order_) return;
+  const auto stride =
+      radial_order_offset_ < 0 ? 1 : 2 * lmax_ + radial_order_offset_ + 2;
+  const auto& c1 = shells_[0].contr[0].coeff;
+  const auto& c2 = shells_[1].contr[0].coeff;
+  const auto npairs = c1.size() * c2.size();
+  const auto* base = unweighted_.data();
+  for (std::size_t set = 0; set < packed_.size(); set += npairs) {
+    auto* data = packed_.data() + set;
+    for (const auto a : c1)
+      for (const auto b : c2) {
+        const auto weight = a * b;
+        if (weighted_order_ == -2) data->_0_Overlap_0_x[0] = base[0] * weight;
+#ifdef LIBINT2_ELECPOT_SEED_COUNT
+        auto* seeds = reinterpret_cast<unsigned char*>(data) +
+                      detail::elecpot_seed_offset;
+        for (int m = std::max(0, weighted_order_ + 1); m <= order; ++m) {
+          const auto seed = base[m + 1] * weight;
+          std::memcpy(seeds + m * sizeof(value_type), &seed,
+                      sizeof(value_type));
+        }
+#endif
+        ++data;
+        base += stride;
+      }
+  }
+  weighted_order_ = order;
+}
+
+__libint2_engine_inline void Engine::PreparedOneBody::bind(const Shell& s1,
+                                                           const Shell& s2) {
+  const std::array<const Shell*, 2> inputs{{&s1, &s2}};
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    const auto& shell = *inputs[i];
+    if (shell.ncontr() != 1 || shell.O != shells_[i].O ||
+        shell.alpha != shells_[i].alpha ||
+        shell.contr[0].coeff.size() != shell.nprim())
+      throw std::invalid_argument(
+          "shell does not match the prepared one-body geometry");
+  }
+  const auto l1 = s1.contr[0].l;
+  const auto l2 = s2.contr[0].l;
+  check_angular_momenta(l1, l2);
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    const auto& input = inputs[i]->contr[0];
+    auto& bound = shells_[i].contr[0];
+    if (bound.coeff != input.coeff) {
+      std::copy(input.coeff.begin(), input.coeff.end(), bound.coeff.begin());
+      weighted_order_ = -2;
+    }
+    bound.pure = input.pure;
+    bound.l = input.l;
+  }
+  apply_weights(l1, l2);
+}
+
+__libint2_engine_inline void Engine::PreparedOneBody::bind_fixed_coefficients(
+    int l1, int l2) {
+  check_angular_momenta(l1, l2);
+  apply_weights(l1, l2);
+  shells_[0].contr[0].l = l1;
+  shells_[1].contr[0].l = l2;
+}
+
+__libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
+    PreparedOneBody& pair) {
+  if (!pair.context_ || pair.context_ != one_body_context_)
+    throw std::invalid_argument(
+        "prepared one-body pair requires its current Engine context");
+  return compute1_impl(pair.shells_[0], pair.shells_[1], pair.packed_.data());
+}
 
 namespace detail {
 // Shared by the shell-based and externally prepared ERI paths.
@@ -1906,6 +2029,16 @@ inline void build_eri_ssss(const Libint_t* data) {
     result += data[i].LIBINT_T_SS_EREP_SS(0)[0];
   const_cast<Libint_t*>(data)->targets[0] = data->stack;
 }
+
+constexpr auto eri_seed_offset = offsetof(Libint_t, LIBINT_T_SS_EREP_SS(0));
+#define LIBINT2_CHECK_ERI_SEED(z, m, unused)                  \
+  static_assert(offsetof(Libint_t, LIBINT_T_SS_EREP_SS(m)) == \
+                    eri_seed_offset + m * sizeof(value_type), \
+                "Expected contiguous scalar ERI seeds");
+#if LIBINT2_MAX_VECLEN == 1
+BOOST_PP_REPEAT(LIBINT2_ERI_SEED_COUNT, LIBINT2_CHECK_ERI_SEED, _)
+#endif
+#undef LIBINT2_CHECK_ERI_SEED
 }  // namespace detail
 
 __libint2_engine_inline void Engine::eval_eri_core(
@@ -1927,8 +2060,8 @@ __libint2_engine_inline void Engine::eval_eri_core_impl(
   case Operator::OP: {                                              \
     const auto& core_eval_ptr =                                     \
         any_cast<const detail::core_eval_pack_type<Operator::OP>&>( \
-core_eval_pack_)                                        \
-.first();                                               \
+            core_eval_pack_)                                        \
+            .first();                                               \
     core_eval_ptr->eval(gm_ptr, T, mmax);                           \
   } break
   switch (oper_) {
@@ -2136,7 +2269,7 @@ __libint2_engine_inline Engine::PreparedEri Engine::prepare_eri(
   for (int extent : extents) max_order += std::min(lmax_, extent - 1);
   if (!primitives || count == 0 ||
       count > std::size_t(std::numeric_limits<int>::max()) ||
-      mmax < deriv_order_ || mmax > max_order)
+      mmax < deriv_order_ || mmax > max_order || mmax >= LIBINT2_ERI_SEED_COUNT)
     throw std::invalid_argument("invalid prepared ERI batch size or radial order");
 
   const bool individual = mode == PreparedEri::Mode::individual;
@@ -2146,14 +2279,16 @@ __libint2_engine_inline Engine::PreparedEri Engine::prepare_eri(
   std::array<value_type, 3> first_AB{}, first_CD{};
   const bool paired_bra = braket == BraKet::xx_xx;
   const bool paired_ket = braket != BraKet::xs_xs;
+  const auto finite = [](value_type x) { return std::isfinite(x); };
   for (std::size_t i = 0; i < count; ++i) {
     const auto& p = primitives[i];
     if (!p.seeds || p.seed_count <= std::size_t(mmax))
       throw std::invalid_argument("prepared ERI radial seed prefix is too short");
+    if (!std::all_of(p.seeds, p.seeds + mmax + 1, finite))
+      throw std::invalid_argument("nonfinite prepared ERI radial seed");
     auto& out = data[i];
-    // The scalar generator places the radial seeds in consecutive members.
     auto* bytes = reinterpret_cast<unsigned char*>(&out);
-    std::memcpy(bytes + offsetof(Libint_t, LIBINT_T_SS_EREP_SS(0)), p.seeds,
+    std::memcpy(bytes + detail::eri_seed_offset, p.seeds,
                 (mmax + 1) * sizeof(value_type));
     if (mmax == 0) continue;
 
@@ -2165,6 +2300,10 @@ __libint2_engine_inline Engine::PreparedEri Engine::prepare_eri(
     for (int xyz = 0; xyz < 3; ++xyz) {
       AB[xyz] = A[xyz] - B[xyz];
       CD[xyz] = C[xyz] - D[xyz];
+      if (!finite(A[xyz]) || !finite(B[xyz]) || !finite(C[xyz]) ||
+          !finite(D[xyz]) || !finite(p.P[xyz]) || !finite(p.Q[xyz]) ||
+          !finite(p.W[xyz]) || !finite(AB[xyz]) || !finite(CD[xyz]))
+        throw std::invalid_argument("invalid prepared ERI geometry");
     }
     if (!individual) {
       if (i == 0) {
@@ -2181,6 +2320,14 @@ __libint2_engine_inline Engine::PreparedEri Engine::prepare_eri(
     const auto alpha_d = paired_ket ? a[3] : value_type(0);
     const auto gammap = a[0] + alpha_b;
     const auto gammaq = a[2] + alpha_d;
+    const auto positive_finite = [&](value_type x) {
+      return x > 0 && finite(x);
+    };
+    if (a[0] < 0 || a[2] < 0 || alpha_b < 0 || alpha_d < 0 ||
+        !positive_finite(gammap) || !positive_finite(gammaq) ||
+        !positive_finite(p.inverse_p) || !positive_finite(p.inverse_q) ||
+        !positive_finite(p.inverse_p_plus_q) || !positive_finite(p.rho))
+      throw std::invalid_argument("invalid prepared ERI exponents");
     detail::set_eri_recurrence_data(
         out, braket, true, true, A.data(), B.data(), C.data(), D.data(),
         AB.data(), CD.data(), p.P.data(), p.Q.data(), p.W.data(), a[0], alpha_b,

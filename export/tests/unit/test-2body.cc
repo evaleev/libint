@@ -97,6 +97,12 @@ TEST_CASE("Reuse externally prepared four-center ERI seeds", "[engine][2-body]")
   input[1].centers[3][0] += .25;
   CHECK_THROWS_AS(engine.prepare_eri(input.data(), input.size(), 1),
                   std::invalid_argument);
+  input[1].centers[3][0] -= .25;
+  const auto saved_rho = input[1].rho;
+  input[1].rho = std::numeric_limits<double>::quiet_NaN();
+  CHECK_THROWS_AS(engine.prepare_eri(input.data(), input.size(), 1),
+                  std::invalid_argument);
+  input[1].rho = saved_rho;
 
   auto individual = engine.prepare_eri(input.data(), input.size(), 1,
                                        Engine::PreparedEri::Mode::individual);
@@ -121,6 +127,66 @@ TEST_CASE("Reuse externally prepared four-center ERI seeds", "[engine][2-body]")
   };
   auto radial_only = make_radial_only_batch();
   CHECK(radial_only.kernel({{0, 0, 0, 0}})()[0] == -0.75);
+}
+
+TEST_CASE("Contract prepared four-center ERIs with horizontal recurrence",
+          "[engine][2-body]") {
+  const Shell A{{.7, 1.2}, {{1, false, {.8, -.3}}}, {{.1, .2, .3}}, false};
+  const Shell B{{.9}, {{1, false, {1.}}}, {{.4, -.1, .6}}, false};
+  const Shell C{{1.1}, {{1, false, {1.}}}, {{.3, .2, -.5}}, false};
+  const Shell D{{.8}, {{1, false, {1.}}}, {{-.2, .6, .4}}, false};
+  const auto compare = [&](int deriv_order) {
+    CAPTURE(deriv_order);
+    Engine engine(Operator::coulomb, 2, 1, deriv_order, 0.);
+    const int mmax = 4 + deriv_order;
+    std::array<Engine::EriPrimitive, 2> input{};
+    std::array<std::array<double, 6>, 2> seeds{};
+    for (std::size_t i = 0; i < input.size(); ++i) {
+      auto& record = input[i];
+      record.centers = {{A.O, B.O, C.O, D.O}};
+      record.exponents = {{A.alpha[i], B.alpha[0], C.alpha[0], D.alpha[0]}};
+      const auto& a = record.exponents;
+      const auto p = a[0] + a[1];
+      const auto q = a[2] + a[3];
+      record.inverse_p = 1. / p;
+      record.inverse_q = 1. / q;
+      record.inverse_p_plus_q = 1. / (p + q);
+      record.rho = p * q * record.inverse_p_plus_q;
+      double AB2 = 0., CD2 = 0., PQ2 = 0.;
+      for (std::size_t xyz = 0; xyz < 3; ++xyz) {
+        record.P[xyz] = (a[0] * A.O[xyz] + a[1] * B.O[xyz]) / p;
+        record.Q[xyz] = (a[2] * C.O[xyz] + a[3] * D.O[xyz]) / q;
+        record.W[xyz] = (p * record.P[xyz] + q * record.Q[xyz]) / (p + q);
+        const auto AB = A.O[xyz] - B.O[xyz];
+        const auto CD = C.O[xyz] - D.O[xyz];
+        const auto PQ = record.P[xyz] - record.Q[xyz];
+        AB2 += AB * AB;
+        CD2 += CD * CD;
+        PQ2 += PQ * PQ;
+      }
+      libint2::FmEval_Chebyshev7<double>::instance(mmax)->eval(
+          seeds[i].data(), record.rho * PQ2, mmax);
+      const auto prefactor =
+          2. * std::pow(std::acos(-1.), 2.5) / (p * q * std::sqrt(p + q)) *
+          A.contr[0].coeff[i] *
+          std::exp(-a[0] * a[1] / p * AB2 - a[2] * a[3] / q * CD2);
+      for (int m = 0; m <= mmax; ++m) seeds[i][m] *= prefactor;
+      record.seeds = seeds[i].data();
+      record.seed_count = mmax + 1;
+    }
+    auto batch = engine.prepare_eri(input.data(), input.size(), mmax);
+    const auto values = batch.kernel({{1, 1, 1, 1}}).compute();
+    const auto& expected = engine.compute(A, B, C, D);
+    REQUIRE(batch.nshellsets() == expected.size());
+    for (std::size_t s = 0; s < expected.size(); ++s)
+      for (std::size_t i = 0; i < A.size() * B.size() * C.size() * D.size();
+           ++i)
+        CHECK(values[s][i] == Approx(expected[s][i]).margin(2e-14));
+  };
+  compare(0);
+#if LIBINT2_TASK_EXISTS_4eri1 && LIBINT2_MAX_AM_eri1 >= 1
+  compare(1);
+#endif
 }
 #endif
 

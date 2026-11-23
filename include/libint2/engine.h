@@ -1151,6 +1151,7 @@ class Engine {
         core_eval_pack_(std::move(other.core_eval_pack_)),
         params_(std::move(other.params_)),
         core_ints_params_(std::move(other.core_ints_params_)),
+        one_body_context_(std::move(other.one_body_context_)),
         targets_(std::move(other.targets_)),
         set_targets_(other.set_targets_),
         scratch_(std::move(other.scratch_)),
@@ -1208,6 +1209,7 @@ class Engine {
     core_eval_pack_ = std::move(other.core_eval_pack_);
     params_ = std::move(other.params_);
     core_ints_params_ = std::move(other.core_ints_params_);
+    one_body_context_ = std::move(other.one_body_context_);
     targets_ = std::move(other.targets_);
     set_targets_ = other.set_targets_;
     scratch_ = std::move(other.scratch_);
@@ -1299,6 +1301,7 @@ class Engine {
   /// integrals over batches of charges for the sake of parallelism.
   template <typename Params>
   Engine& set_params(const Params& params) {
+    one_body_context_.reset();
     params_ = params;
     init_core_ints_params(params_);
     reset_scratch();
@@ -1374,12 +1377,18 @@ class Engine {
 
   class PreparedOneBody;
 
-  /// Pack a shell pair once for this one-body operator. The prepared pair
-  /// captures both shells' centers, exponents, coefficients, and Cartesian
-  /// or solid-harmonic representation along with the Engine configuration.
-  /// Its compute() accepts new angular momenta with those fixed inputs.
-  __libint2_engine_inline PreparedOneBody prepare_one_body(
-      const Shell& s1, const Shell& s2) const;
+  /// Prepare geometry and radial data for a shell pair and bind its
+  /// coefficients. Bind other shells with the same centers and exponents to
+  /// reuse the data. Execute on this Engine. Changes to its operator parameters,
+  /// prescaling, or kernel configuration invalidate the prepared pair.
+  __libint2_engine_inline PreparedOneBody prepare_one_body(const Shell& s1,
+                                                           const Shell& s2);
+
+  /// Execute a bound one-body pair with the same prescaling, Cartesian
+  /// normalization, and solid-harmonic processing as compute1(Shell, Shell).
+  /// Results borrow this Engine's workspace until its next evaluation.
+  /// See prepare_eri() for the direct Cartesian interface to two-body kernels.
+  __libint2_engine_inline const target_ptr_vec& compute1(PreparedOneBody& pair);
 
   /// Computes target shell sets of 2-body integrals, @code  @endcode
   /// @note result is stored in the "chemists"/Mulliken form, @code (bra1
@@ -1423,7 +1432,8 @@ class Engine {
   /// and rho=p*q/(p+q). P and Q are the pair centers and W=(p*P+q*Q)/(p+q).
   /// For a reduced-center kernel the omitted slots represent unit functions
   /// with zero exponent. Libint ignores their supplied centers and exponents.
-  /// The product centers and inverse exponents must describe the active shells.
+  /// The caller must supply mutually consistent geometry and exponents for
+  /// the active shells. Libint does not recompute the supplied quantities.
   struct EriPrimitive {
     std::array<std::array<value_type, 3>, 4> centers;
     std::array<value_type, 4> exponents;
@@ -1431,6 +1441,8 @@ class Engine {
     value_type inverse_p, inverse_q, inverse_p_plus_q, rho;
     /// Orders start at zero. Each seed is (ss|ss)^(m), including the
     /// primitive prefactor and any caller-supplied weights or scaling.
+    /// The pointer must address at least seed_count readable values during
+    /// prepare_eri(). The batch copies the required prefix.
     const value_type* seeds;
     std::size_t seed_count;
   };
@@ -1484,10 +1496,11 @@ class Engine {
       std::size_t size_;
     };
 
-    /// Bind angular momenta (l_A,l_B,l_C,l_D) in the generated kernel's
-    /// native center order, with angular momentum zero in unit slots. The
-    /// batch must use this same order. Results are
-    /// row major with the last center varying fastest and use the generated
+    /// Bind a canonical angular-momentum tuple (l_A,l_B,l_C,l_D) available in
+    /// this generated library, with zero angular momentum in unit slots.
+    /// Prepare the batch in the chosen native order and map result axes
+    /// and derivative centers back if needed. Results
+    /// are row major with the last center varying fastest and use the native
     /// Cartesian component order. Reuse the handle for repeated calls.
     __libint2_engine_inline Kernel kernel(const std::array<int, 4>& l) &;
     Kernel kernel(const std::array<int, 4>&) && = delete;
@@ -1543,14 +1556,16 @@ class Engine {
   /// the sum of angular momenta plus the derivative order of each bound kernel.
   /// Use native kernel order: (A,B|C,D), (A,unit|C,D), or (A,unit|C,unit).
   /// Derivative sets follow CartesianDerivIterator over the active centers.
-  /// A zero-derivative xx_xs Engine uses the xs_xx layout. Reduced centers
-  /// require the standard shell quartet ordering.
+  /// An xx_xs Engine uses the xs_xx layout. Reduced centers require the
+  /// standard shell quartet ordering.
   /// With nonzero mmax, contracted records must share the displacements of
   /// each active pair for horizontal recurrence after contraction. Kernels
   /// requiring solid-harmonic projection are outside the Cartesian interface.
   /// For mmax = 0 only the seeds are used. The result owns its storage
   /// independently of the input and the Engine. Engine screening, scale,
   /// and output normalization do not apply here.
+  /// See prepare_one_body() and compute1(PreparedOneBody&) for one-body
+  /// reuse with the usual Engine output processing.
   __libint2_engine_inline PreparedEri prepare_eri(
       const EriPrimitive* primitives, std::size_t count, int mmax) const;
 
@@ -1563,6 +1578,9 @@ class Engine {
   /// rho is the reduced exponent and T = rho * |P - Q|^2. Multiply the
   /// values by the primitive Coulomb prefactor (including any contraction
   /// weights) to obtain EriPrimitive::seeds. Output has mmax + 1 entries.
+  /// The radial evaluator supports orders up to braket_rank() times the
+  /// Engine's angular momentum limit, plus its geometric derivative order.
+  /// prepare_eri() uses the limits of the generated kernel's individual axes.
   __libint2_engine_inline void eval_eri_core(value_type* output, int mmax,
                                              scalar_type rho, scalar_type T);
 
@@ -1627,6 +1645,7 @@ class Engine {
   /// @note the default factor is 1
   /// @return reference to @c this for daisy-chaining
   Engine& prescale_by(scalar_type sc) {
+    if (scale_ != sc) one_body_context_.reset();
     scale_ = sc;
     return *this;
   }
@@ -1760,6 +1779,10 @@ class Engine {
   /// e.g. integrals of \f$ f_{12}^2 \f$ are computed from parameters of \f$
   /// f_{12} \f$
   any core_ints_params_;
+  // Identifies the operator context used to prepare one-body records. Created
+  // on demand and replaced whenever the prepared data becomes stale.
+  struct OneBodyContext {};
+  std::shared_ptr<const OneBodyContext> one_body_context_;
   /// makes core ints params from the operator params
   void init_core_ints_params(const any& params);
 
@@ -1810,11 +1833,11 @@ class Engine {
                                          : primdata_[0].stack;
   }
 
+  template <bool PreparePair = false>
   __libint2_engine_inline void compute_primdata(Libint_t& primdata,
                                                 const Shell& s1,
                                                 const Shell& s2, size_t p1,
-                                                size_t p2, size_t oset,
-                                                bool prepare_both_hrr = false);
+                                                size_t p2, size_t oset);
 
   __libint2_engine_inline const target_ptr_vec& compute1_impl(
       const Shell& s1, const Shell& s2, Libint_t* packed);
@@ -1825,7 +1848,7 @@ class Engine {
   /// must be called after the kernel computed the integrals for \p pset ,
   /// overwrites the stack
   __libint2_engine_inline void giao_nuclear_charge_deriv_correction(
-      const Shell& s1, const Shell& s2, size_t pset);
+      const Shell& s1, const Shell& s2, size_t pset, Libint_t* data);
 
   __libint2_engine_inline void eval_eri_core_impl(
       value_type* gm_ptr, int mmax, scalar_type rho, scalar_type T,
@@ -1889,26 +1912,46 @@ class Engine {
   static const bool skip_core_ints = false;
 };  // struct Engine
 
-/// Owns the operator context and the packed primitive pairs. For operators
-/// with multiple centers, one set of primitive pairs is retained per center.
+/// Owns the packed primitive pairs and unweighted radial data. Operators with
+/// multiple centers retain one set of primitive pairs per operator center.
 class Engine::PreparedOneBody {
  public:
   PreparedOneBody(PreparedOneBody&&) noexcept = default;
   PreparedOneBody& operator=(PreparedOneBody&&) noexcept = default;
 
-  /// Returns the same shell-set layout as Engine::compute1(). The next
-  /// call on this object overwrites it. Use separate objects concurrently.
-  __libint2_engine_inline const target_ptr_vec& compute(int l1, int l2);
+  /// Bind the angular momenta, coefficients, and output representations of
+  /// two shells. Their centers and primitive exponents must match those used
+  /// in prepare_one_body(). The effective coefficients of each shell are used
+  /// as supplied, including any normalization already applied by Shell.
+  __libint2_engine_inline void bind(const Shell& s1, const Shell& s2);
+
+  /// Change angular momenta while keeping the currently bound coefficients and
+  /// output representations. Use this only when the same effective primitive
+  /// coefficients are intended for every requested angular momentum.
+  __libint2_engine_inline void bind_fixed_coefficients(int l1, int l2);
 
  private:
   friend class Engine;
   PreparedOneBody(const Engine& engine, const Shell& s1, const Shell& s2,
-                  std::size_t count)
-      : engine_(new Engine(engine)), shells_{{s1, s2}}, packed_(count) {}
+                  std::size_t count, int radial_order_offset)
+      : context_(engine.one_body_context_),
+        shells_{{s1, s2}},
+        packed_(count),
+        lmax_(engine.lmax_),
+        task_name_(engine.task_name_),
+        radial_order_offset_(radial_order_offset) {}
 
-  std::unique_ptr<Engine> engine_;
+  __libint2_engine_inline void check_angular_momenta(int l1, int l2) const;
+  __libint2_engine_inline void apply_weights(int l1, int l2);
+
+  std::shared_ptr<const OneBodyContext> context_;
   std::array<Shell, 2> shells_;
   std::vector<Libint_t> packed_;
+  std::vector<value_type> unweighted_;
+  int lmax_;
+  const char* task_name_;
+  int radial_order_offset_;
+  int weighted_order_ = -2;
 };
 
 }  // namespace libint2
