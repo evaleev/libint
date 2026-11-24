@@ -1379,8 +1379,10 @@ class Engine {
 
   /// Prepare geometry and radial data for a shell pair and bind its
   /// coefficients. Bind other shells with the same centers and exponents to
-  /// reuse the data. Execute on this Engine. Changes to its operator parameters,
-  /// prescaling, or kernel configuration invalidate the prepared pair.
+  /// reuse the data. The pair is tied to this Engine's workspace. Moving the
+  /// Engine transfers that workspace and its prepared pairs. Engine copies
+  /// have independent workspaces. Changes to operator parameters, prescaling,
+  /// or kernel configuration invalidate the pair.
   __libint2_engine_inline PreparedOneBody prepare_one_body(const Shell& s1,
                                                            const Shell& s2);
 
@@ -1447,36 +1449,38 @@ class Engine {
     std::size_t seed_count;
   };
 
-  /// Owns the packed inputs and scratch for one batch of ERIs.
+  /// Holds the packed inputs and scratch for one batch of ERIs.
   class PreparedEri {
    public:
-    /// A contracted batch returns its sum. An individual batch retains one
-    /// result per primitive and supports geometries with different pair
+    /// A contracted batch returns its sum. An individual batch evaluates one
+    /// primitive at a time and supports geometries with different pair
     /// displacements.
     enum class Mode { contracted, individual };
 
-    /// A kernel borrowing this batch's storage. The owning batch must outlive
-    /// all calls through the handle.
+    /// A bound kernel keeps its batch's packed storage and scratch alive, even
+    /// after the batch is destroyed or assigned new storage.
     class Kernel {
      public:
+      Kernel(const Kernel&) noexcept = default;
+      Kernel& operator=(const Kernel&) noexcept = default;
+
       /// Computes and returns the first Cartesian shell set.
       const value_type* operator()() const {
         return compute()[0];
       }
 
-      /// Computes all Cartesian shell sets in native derivative order.
-      /// The next call using the same batch overwrites these results.
-      /// Use distinct batches concurrently.
-      const value_type* const* compute() const {
-        return run(data_);
-      }
+      /// Computes all Cartesian shell sets in native derivative order. For an
+      /// individual batch this selects primitive zero. The results borrow the
+      /// shared scratch and are overwritten by the next call using it.
+      /// Use kernels with distinct storage for concurrent calls.
+      const value_type* const* compute() const { return run(data_.get()); }
 
       /// Computes one primitive from an individual batch. Index zero selects
       /// the contracted result in a contracted batch.
       const value_type* const* compute(std::size_t index) const {
         if (index >= size_)
           throw std::out_of_range("prepared ERI result index");
-        return run(data_ + index);
+        return run(data_.get() + index);
       }
 
      private:
@@ -1489,9 +1493,10 @@ class Engine {
       }
 
       friend class PreparedEri;
-      Kernel(Libint_t* data, void (*build)(const Libint_t*), std::size_t size)
+      Kernel(const std::shared_ptr<Libint_t>& data,
+             void (*build)(const Libint_t*), std::size_t size)
           : data_(data), build_(build), size_(size) {}
-      Libint_t* data_;
+      std::shared_ptr<Libint_t> data_;
       void (*build_)(const Libint_t*);
       std::size_t size_;
     };
@@ -1526,10 +1531,10 @@ class Engine {
       }
     };
     PreparedEri(std::size_t count, std::size_t size, int lmax, int mmax,
-                BraKet braket,
-                int deriv_order, const std::array<int, 4>& extents,
-                const char* task_name, void (**build)(const Libint_t*))
-        : data_(new Libint_t[count]{}),
+                BraKet braket, int deriv_order,
+                const std::array<int, 4>& extents, const char* task_name,
+                void (**build)(const Libint_t*))
+        : data_(new Libint_t[count]{}, Cleanup{}),
           size_(size),
           lmax_(lmax),
           mmax_(mmax),
@@ -1539,7 +1544,7 @@ class Engine {
           task_name_(task_name),
           build_(build) {}
 
-    std::unique_ptr<Libint_t[], Cleanup> data_;
+    std::shared_ptr<Libint_t> data_;
     std::size_t size_;
     int lmax_, mmax_;
     BraKet braket_;
@@ -1564,6 +1569,8 @@ class Engine {
   /// For mmax = 0 only the seeds are used. The result owns its storage
   /// independently of the input and the Engine. Engine screening, scale,
   /// and output normalization do not apply here.
+  /// The caller supplies count readable EriPrimitive records for the duration
+  /// of this call. The batch copies the data it needs.
   /// See prepare_one_body() and compute1(PreparedOneBody&) for one-body
   /// reuse with the usual Engine output processing.
   __libint2_engine_inline PreparedEri prepare_eri(
@@ -1912,8 +1919,12 @@ class Engine {
   static const bool skip_core_ints = false;
 };  // struct Engine
 
-/// Owns the packed primitive pairs and unweighted radial data. Operators with
-/// multiple centers retain one set of primitive pairs per operator center.
+/// Owns nparams * s1.nprim() * s2.nprim() generated Libint_t records. Each
+/// record also keeps an unweighted overlap value and, for nuclear-type
+/// operators, one value per stored radial order. The record size depends on
+/// the generated library. For example, 50 operator centers and two shells of
+/// three primitives each require 450 records per pair. Account for this cost
+/// when retaining many prepared pairs.
 class Engine::PreparedOneBody {
  public:
   PreparedOneBody(PreparedOneBody&&) noexcept = default;
@@ -1927,7 +1938,9 @@ class Engine::PreparedOneBody {
 
   /// Change angular momenta while keeping the currently bound coefficients and
   /// output representations. Use this only when the same effective primitive
-  /// coefficients are intended for every requested angular momentum.
+  /// coefficients are intended for every requested angular momentum. For
+  /// angular-momentum-dependent normalization, use bind() with the actual
+  /// shells.
   __libint2_engine_inline void bind_fixed_coefficients(int l1, int l2);
 
  private:

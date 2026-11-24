@@ -58,10 +58,15 @@ TEST_CASE("Reuse one-body primitive pairs across angular momenta",
     CAPTURE(static_cast<int>(op));
     CAPTURE(deriv);
     Engine engine(op, 2, lmax, deriv);
+    using Charges =
+        libint2::operator_traits<Operator::nuclear>::oper_params_type;
     if (op == Operator::nuclear || op == Operator::giao_nuclear) {
-      using Charges = libint2::operator_traits<Operator::nuclear>::oper_params_type;
       engine.set_params(Charges{{1.1, {{.73, .14, -.6}}},
                                 {-.3, {{-.4, .2, .11}}}});
+    } else if (op == Operator::q_gau) {
+      const std::vector<Atom> atoms{{1, .73, .14, -.6}, {2, -.4, .2, .11}};
+      engine.set_params(std::make_tuple(libint2::make_q_gau_data_erf(.7, atoms),
+                                        make_point_charges(atoms)));
     }
     engine.prescale_by(-.82);
     engine.set(CartesianShellNormalization::uniform);
@@ -103,18 +108,32 @@ TEST_CASE("Reuse one-body primitive pairs across angular momenta",
     CHECK_THROWS_AS(prepared.bind(A, B), std::invalid_argument);
     Engine copy(engine);
     CHECK_THROWS_AS(copy.compute1(prepared), std::invalid_argument);
-    engine.prescale_by(1.);
-    CHECK_THROWS_AS(engine.compute1(prepared), std::invalid_argument);
+    const auto value = engine.compute1(prepared)[0][0];
+    Engine moved(std::move(engine));
+    CHECK(moved.compute1(prepared)[0][0] == value);
+    if (op == Operator::nuclear)
+      moved.set_params(Charges{{.9, {{.2, .3, .4}}}});
+    else
+      moved.prescale_by(1.);
+    CHECK_THROWS_AS(moved.compute1(prepared), std::invalid_argument);
   };
   compare(Operator::overlap, 0, std::min(2, LIBINT2_MAX_AM_overlap));
   compare(Operator::kinetic, 0, std::min(2, LIBINT2_MAX_AM_kinetic));
   compare(Operator::emultipole1, 0, std::min(2, LIBINT2_MAX_AM_1emultipole));
   compare(Operator::nuclear, 0, std::min(2, LIBINT2_MAX_AM_elecpot));
+  compare(Operator::q_gau, 0, std::min(2, LIBINT2_MAX_AM_elecpot));
+#if LIBINT2_TASK_EXISTS_2sphemultipole
+  compare(Operator::sphemultipole, 0,
+          std::min(2, LIBINT2_MAX_AM_sphemultipole));
+#endif
 #if LIBINT2_TASK_EXISTS_2overlap1
   compare(Operator::overlap, 1, std::min(2, LIBINT2_MAX_AM_overlap1));
 #endif
 #if LIBINT2_TASK_EXISTS_2elecpot1
   compare(Operator::nuclear, 1, std::min(2, LIBINT2_MAX_AM_elecpot1));
+#endif
+#if LIBINT2_TASK_EXISTS_2elecpot2
+  compare(Operator::nuclear, 2, std::min(2, LIBINT2_MAX_AM_elecpot2));
 #endif
 #if LIBINT2_TASK_EXISTS_2giao_elecpot1
   compare(Operator::giao_nuclear, 1, std::min(2, LIBINT2_MAX_AM_giao_elecpot1));

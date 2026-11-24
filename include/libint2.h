@@ -21,8 +21,8 @@
 #ifndef _libint2_header_
 #define _libint2_header_
 
-#define LIBINT_T_SS_EREP_SS(mValue) \
-  _aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_##mValue
+#include <libint2/util/radial_seed.h>
+
 #define LIBINT_T_SS_Km1G12_SS(mValue) \
   _aB_s___0__s___1___r12_minus_1_g12_s___0__s___1___Ab__up_##mValue
 #define LIBINT_T_SS_K0G12_SS_0 \
@@ -33,7 +33,6 @@
   _aB_s___0__s___1___r12_4_g12_s___0__s___1___Ab__up_0
 #define LIBINT_T_S_OVERLAP_S _aB_s___0___Overlap_s___0___Ab__up_
 #define LIBINT_T_S_KINETIC_S _aB_s___0___Kinetic_s___0___Ab__up_
-#define LIBINT_T_S_ELECPOT_S(mValue) _aB_s___0___ElecPot_s___0___Ab__up_##mValue
 
 #include <libint2/util/configuration.h>
 #include <libint2/util/generated/libint2_params.h>

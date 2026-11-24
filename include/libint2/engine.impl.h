@@ -2031,6 +2031,8 @@ inline void build_eri_ssss(const Libint_t* data) {
 }
 
 constexpr auto eri_seed_offset = offsetof(Libint_t, LIBINT_T_SS_EREP_SS(0));
+#ifdef LIBINT2_ERI_SEED_COUNT
+constexpr int eri_seed_count = LIBINT2_ERI_SEED_COUNT;
 #define LIBINT2_CHECK_ERI_SEED(z, m, unused)                  \
   static_assert(offsetof(Libint_t, LIBINT_T_SS_EREP_SS(m)) == \
                     eri_seed_offset + m * sizeof(value_type), \
@@ -2039,6 +2041,9 @@ constexpr auto eri_seed_offset = offsetof(Libint_t, LIBINT_T_SS_EREP_SS(0));
 BOOST_PP_REPEAT(LIBINT2_ERI_SEED_COUNT, LIBINT2_CHECK_ERI_SEED, _)
 #endif
 #undef LIBINT2_CHECK_ERI_SEED
+#else
+constexpr int eri_seed_count = 0;
+#endif
 }  // namespace detail
 
 __libint2_engine_inline void Engine::eval_eri_core(
@@ -2226,6 +2231,9 @@ __libint2_engine_inline Engine::PreparedEri Engine::prepare_eri(
     PreparedEri::Mode mode) const {
   if (LIBINT2_MAX_VECLEN != 1)
     throw std::invalid_argument("prepare_eri requires scalar kernels");
+  if (detail::eri_seed_count == 0)
+    throw std::logic_error(
+        "prepare_eri requires ERI seed metadata from the Libint generator");
   if (operator_rank() != 2 || intrinsic_deriv_order() != 0 || nopers() != 1)
     throw std::invalid_argument("prepare_eri requires a scalar ERI task");
   if (!buildfnptrs_) throw missing_kernel();
@@ -2269,7 +2277,7 @@ __libint2_engine_inline Engine::PreparedEri Engine::prepare_eri(
   for (int extent : extents) max_order += std::min(lmax_, extent - 1);
   if (!primitives || count == 0 ||
       count > std::size_t(std::numeric_limits<int>::max()) ||
-      mmax < deriv_order_ || mmax > max_order || mmax >= LIBINT2_ERI_SEED_COUNT)
+      mmax < deriv_order_ || mmax > max_order || mmax >= detail::eri_seed_count)
     throw std::invalid_argument("invalid prepared ERI batch size or radial order");
 
   const bool individual = mode == PreparedEri::Mode::individual;
@@ -2375,11 +2383,10 @@ __libint2_engine_inline Engine::PreparedEri::Kernel Engine::PreparedEri::kernel(
     throw std::invalid_argument(
         "prepared Cartesian ERI requires Cartesian kernel axes");
 #endif
-  auto* data = data_.get();
-  if (order == 0) return Kernel(data, detail::build_eri_ssss, size_);
+  if (order == 0) return Kernel(data_, detail::build_eri_ssss, size_);
   const auto build = build_[index];
   if (!build) throw missing_kernel();
-  return Kernel(data, build, size_);
+  return Kernel(data_, build, size_);
 }
 
 /// Computes a shell set of two-body integrals.

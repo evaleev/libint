@@ -114,19 +114,30 @@ TEST_CASE("Reuse externally prepared four-center ERI seeds", "[engine][2-body]")
     const auto* indexed = individual_ssps.compute(i)[0];
     CHECK(std::equal(single, single + 3, indexed));
   }
+  const auto first_individual = individual_ssps.compute()[0][0];
+  CHECK(first_individual == individual_ssps.compute(0)[0][0]);
   CHECK_THROWS_AS(individual_ssps.compute(input.size()), std::out_of_range);
 
   // A radial-only batch owns its inputs and needs no Engine after packing.
-  auto make_radial_only_batch = [] {
+  auto make_radial_only_batch = [](double weighted_seed) {
     Engine radial_engine(Operator::coulomb, 1, 0);
-    const double weighted_seed = -0.75;
     Primitive primitive{};
     primitive.seeds = &weighted_seed;
     primitive.seed_count = 1;
     return radial_engine.prepare_eri(&primitive, 1, 0);
   };
-  auto radial_only = make_radial_only_batch();
-  CHECK(radial_only.kernel({{0, 0, 0, 0}})()[0] == -0.75);
+  const std::array<int, 4> s_l{{0, 0, 0, 0}};
+  auto radial_only = make_radial_only_batch(-0.75);
+  const auto original_kernel = radial_only.kernel(s_l);
+  radial_only = make_radial_only_batch(0.5);
+  CHECK(original_kernel()[0] == -0.75);
+  CHECK(radial_only.kernel(s_l)()[0] == 0.5);
+
+  const auto kernel_from_destroyed_batch = [&] {
+    auto local_batch = make_radial_only_batch(0.25);
+    return local_batch.kernel(s_l);
+  }();
+  CHECK(kernel_from_destroyed_batch()[0] == 0.25);
 }
 
 TEST_CASE("Contract prepared four-center ERIs with horizontal recurrence",
