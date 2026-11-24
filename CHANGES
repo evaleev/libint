@@ -4,6 +4,9 @@
 Following is a brief summary of changes made in each release of Libint.
 
 - unreleased:
+  - PR #473: Engine can reuse prepared one-body shell pairs and externally
+    prepared ERI primitives. Engine::eval_eri_core computes radial values
+    for use with Engine::prepare_eri.
   - PR #474: 1-body integrals for magnetic properties, with geometric derivatives (HT @0xWOLAND)
   - PR #475: Operator::giao_coulomb, the London-orbital (GIAO) 4- and 3-center ERIs, with geometric
     derivatives; enable with LIBINT2_ENABLE_GIAO_ERI and LIBINT2_ENABLE_GIAO_ERI3 (HT @0xWOLAND)

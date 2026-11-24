@@ -18,6 +18,7 @@
  *
  */
 
+#include <libint2/boys.h>
 #include <libint2/deriv_iter.h>
 
 #include <algorithm>
@@ -35,6 +36,304 @@
 #endif
 
 typedef unsigned int uint;
+
+#if LIBINT2_MAX_VECLEN == 1 && defined(LIBINT2_SUPPORT_ERI) && \
+    LIBINT2_MAX_AM_eri >= 1 &&                                 \
+    LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD
+TEST_CASE("Reuse externally prepared four-center ERI seeds", "[engine][2-body]") {
+  using Primitive = Engine::EriPrimitive;
+  std::array<Primitive, 2> input{};
+  std::array<std::array<double, 2>, 2> seeds{};
+  const std::array<std::array<double, 3>, 4> centers{
+      {{{0., 0., 0.}}, {{.5, 0., 0.}}, {{0., .5, 0.}}, {{.5, .5, 0.}}}};
+  auto shell = [&](int i, int l, double exponent) {
+    return Shell{{exponent}, {{l, false, {1.}}}, centers[i], false};
+  };
+
+  Engine engine(Operator::coulomb, 1, 1, 0, 0.);
+  std::array<double, 3> expected_p{};
+  double expected_s = 0;
+  for (std::size_t i = 0; i < input.size(); ++i) {
+    const double a = 1. + i;
+    auto& p = input[i];
+    p.centers = centers;
+    p.exponents = {{a, 1., 1., 1.}};
+    p.inverse_p = 1. / (a + 1.);
+    p.inverse_q = .5;
+    p.inverse_p_plus_q = 1. / (a + 3.);
+    p.rho = (a + 1.) * 2. * p.inverse_p_plus_q;
+    p.P = {{.5 * p.inverse_p, 0., 0.}};
+    p.Q = {{.25, .5, 0.}};
+    p.W = {{p.inverse_p_plus_q, p.inverse_p_plus_q, 0.}};
+    const double dx = p.P[0] - p.Q[0];
+    const double T = p.rho * (dx * dx + .25);
+    libint2::FmEval_Chebyshev7<double>::instance(1)->eval(seeds[i].data(), T, 1);
+    const double pi = std::acos(-1.);
+    const double prefactor = 2. * std::pow(pi, 2.5) * p.inverse_p * p.inverse_q *
+                             std::sqrt(p.inverse_p_plus_q) *
+                             std::exp(-.25 * (a * p.inverse_p + p.inverse_q));
+    for (auto& seed : seeds[i]) seed *= prefactor;
+    p.seeds = seeds[i].data();
+    p.seed_count = seeds[i].size();
+
+    expected_s += engine.compute(shell(0, 0, a), shell(1, 0, 1.),
+                                 shell(2, 0, 1.), shell(3, 0, 1.))[0][0];
+    const auto* values = engine.compute(shell(0, 0, a), shell(1, 0, 1.),
+                                        shell(2, 1, 1.), shell(3, 0, 1.))[0];
+    for (int xyz = 0; xyz < 3; ++xyz) expected_p[xyz] += values[xyz];
+  }
+
+  auto batch = engine.prepare_eri(input.data(), input.size(), 1);
+  const auto ssss = batch.kernel({{0, 0, 0, 0}});
+  const auto ssps = batch.kernel({{0, 0, 1, 0}});
+  for (int repeat = 0; repeat < 2; ++repeat) {
+    CHECK(ssss()[0] == Approx(expected_s).margin(2e-14));
+    const auto* values = ssps();
+    for (int xyz = 0; xyz < 3; ++xyz)
+      CHECK(values[xyz] == Approx(expected_p[xyz]).margin(2e-14));
+  }
+  CHECK_THROWS_AS(batch.kernel({{0, 0, 1, 1}}), std::invalid_argument);
+  CHECK_THROWS_AS(batch.kernel({{0, 0, -1, 0}}), std::invalid_argument);
+  input[1].centers[3][0] += .25;
+  CHECK_THROWS_AS(engine.prepare_eri(input.data(), input.size(), 1),
+                  std::invalid_argument);
+  input[1].centers[3][0] -= .25;
+  const auto saved_rho = input[1].rho;
+  input[1].rho = std::numeric_limits<double>::quiet_NaN();
+  CHECK_THROWS_AS(engine.prepare_eri(input.data(), input.size(), 1),
+                  std::invalid_argument);
+  input[1].rho = saved_rho;
+
+  auto individual = engine.prepare_eri(input.data(), input.size(), 1,
+                                       Engine::PreparedEri::Mode::individual);
+  const auto individual_ssps = individual.kernel({{0, 0, 1, 0}});
+  REQUIRE(individual.size() == input.size());
+  for (std::size_t i = 0; i < input.size(); ++i) {
+    auto one = engine.prepare_eri(&input[i], 1, 1);
+    const auto* single = one.kernel({{0, 0, 1, 0}})();
+    const auto* indexed = individual_ssps.compute(i)[0];
+    CHECK(std::equal(single, single + 3, indexed));
+  }
+  const auto first_individual = individual_ssps.compute()[0][0];
+  CHECK(first_individual == individual_ssps.compute(0)[0][0]);
+  CHECK_THROWS_AS(individual_ssps.compute(input.size()), std::out_of_range);
+
+  // A radial-only batch owns its inputs and needs no Engine after packing.
+  auto make_radial_only_batch = [](double weighted_seed) {
+    Engine radial_engine(Operator::coulomb, 1, 0);
+    Primitive primitive{};
+    primitive.seeds = &weighted_seed;
+    primitive.seed_count = 1;
+    return radial_engine.prepare_eri(&primitive, 1, 0);
+  };
+  const std::array<int, 4> s_l{{0, 0, 0, 0}};
+  auto radial_only = make_radial_only_batch(-0.75);
+  const auto original_kernel = radial_only.kernel(s_l);
+  radial_only = make_radial_only_batch(0.5);
+  CHECK(original_kernel()[0] == -0.75);
+  CHECK(radial_only.kernel(s_l)()[0] == 0.5);
+
+  const auto kernel_from_destroyed_batch = [&] {
+    auto local_batch = make_radial_only_batch(0.25);
+    return local_batch.kernel(s_l);
+  }();
+  CHECK(kernel_from_destroyed_batch()[0] == 0.25);
+}
+
+TEST_CASE("Contract prepared four-center ERIs with horizontal recurrence",
+          "[engine][2-body]") {
+  const Shell A{{.7, 1.2}, {{1, false, {.8, -.3}}}, {{.1, .2, .3}}, false};
+  const Shell B{{.9}, {{1, false, {1.}}}, {{.4, -.1, .6}}, false};
+  const Shell C{{1.1}, {{1, false, {1.}}}, {{.3, .2, -.5}}, false};
+  const Shell D{{.8}, {{1, false, {1.}}}, {{-.2, .6, .4}}, false};
+  const auto compare = [&](int deriv_order) {
+    CAPTURE(deriv_order);
+    Engine engine(Operator::coulomb, 2, 1, deriv_order, 0.);
+    const int mmax = 4 + deriv_order;
+    std::array<Engine::EriPrimitive, 2> input{};
+    std::array<std::array<double, 6>, 2> seeds{};
+    for (std::size_t i = 0; i < input.size(); ++i) {
+      auto& record = input[i];
+      record.centers = {{A.O, B.O, C.O, D.O}};
+      record.exponents = {{A.alpha[i], B.alpha[0], C.alpha[0], D.alpha[0]}};
+      const auto& a = record.exponents;
+      const auto p = a[0] + a[1];
+      const auto q = a[2] + a[3];
+      record.inverse_p = 1. / p;
+      record.inverse_q = 1. / q;
+      record.inverse_p_plus_q = 1. / (p + q);
+      record.rho = p * q * record.inverse_p_plus_q;
+      double AB2 = 0., CD2 = 0., PQ2 = 0.;
+      for (std::size_t xyz = 0; xyz < 3; ++xyz) {
+        record.P[xyz] = (a[0] * A.O[xyz] + a[1] * B.O[xyz]) / p;
+        record.Q[xyz] = (a[2] * C.O[xyz] + a[3] * D.O[xyz]) / q;
+        record.W[xyz] = (p * record.P[xyz] + q * record.Q[xyz]) / (p + q);
+        const auto AB = A.O[xyz] - B.O[xyz];
+        const auto CD = C.O[xyz] - D.O[xyz];
+        const auto PQ = record.P[xyz] - record.Q[xyz];
+        AB2 += AB * AB;
+        CD2 += CD * CD;
+        PQ2 += PQ * PQ;
+      }
+      libint2::FmEval_Chebyshev7<double>::instance(mmax)->eval(
+          seeds[i].data(), record.rho * PQ2, mmax);
+      const auto prefactor =
+          2. * std::pow(std::acos(-1.), 2.5) / (p * q * std::sqrt(p + q)) *
+          A.contr[0].coeff[i] *
+          std::exp(-a[0] * a[1] / p * AB2 - a[2] * a[3] / q * CD2);
+      for (int m = 0; m <= mmax; ++m) seeds[i][m] *= prefactor;
+      record.seeds = seeds[i].data();
+      record.seed_count = mmax + 1;
+    }
+    auto batch = engine.prepare_eri(input.data(), input.size(), mmax);
+    const auto values = batch.kernel({{1, 1, 1, 1}}).compute();
+    const auto& expected = engine.compute(A, B, C, D);
+    REQUIRE(batch.nshellsets() == expected.size());
+    for (std::size_t s = 0; s < expected.size(); ++s)
+      for (std::size_t i = 0; i < A.size() * B.size() * C.size() * D.size();
+           ++i)
+        CHECK(values[s][i] == Approx(expected[s][i]).margin(2e-14));
+  };
+  compare(0);
+#if LIBINT2_TASK_EXISTS_4eri1 && LIBINT2_MAX_AM_eri1 >= 1
+  compare(1);
+#endif
+}
+#endif
+
+#if LIBINT2_MAX_VECLEN == 1 &&                                        \
+    LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD &&  \
+    (defined(LIBINT2_SUPPORT_ERI) || defined(LIBINT2_SUPPORT_ERI2) || \
+     defined(LIBINT2_SUPPORT_ERI3))
+TEST_CASE("Prepared scalar ERIs share the same input representation",
+          "[engine][2-body]") {
+  auto check = [](Operator op, BraKet braket, int deriv_order = 0) {
+    CAPTURE(deriv_order);
+    CAPTURE(static_cast<int>(braket));
+    constexpr double omega = .7;
+    const bool paired_bra = braket == BraKet::xx_xx;
+    const bool paired_ket = braket != BraKet::xs_xs;
+    const bool reversed = braket == BraKet::xx_xs;
+    const bool erfc = op == Operator::erfc_coulomb;
+    Engine engine(op, 1, 1, deriv_order, 0., libint2::default_params(op),
+                  braket);
+    if (erfc) engine.set_params(omega);
+    Engine::EriPrimitive input{};
+    input.centers = {
+        {{{0., 0., 0.}}, {{.5, 0., 0.}}, {{0., .5, .25}}, {{.5, .5, .25}}}};
+    input.exponents = {{1., paired_bra ? 2. : 0., 3., paired_ket ? 4. : 0.}};
+    const auto& a = input.exponents;
+    const double p = a[0] + a[1], q = a[2] + a[3];
+    input.inverse_p = 1. / p;
+    input.inverse_q = 1. / q;
+    input.inverse_p_plus_q = 1. / (p + q);
+    input.rho = p * q * input.inverse_p_plus_q;
+    double T = 0;
+    for (int xyz = 0; xyz < 3; ++xyz) {
+      const auto& o = input.centers;
+      input.P[xyz] = (a[0] * o[0][xyz] + a[1] * o[1][xyz]) / p;
+      input.Q[xyz] = (a[2] * o[2][xyz] + a[3] * o[3][xyz]) / q;
+      input.W[xyz] = (p * input.P[xyz] + q * input.Q[xyz]) / (p + q);
+      const double delta = input.P[xyz] - input.Q[xyz];
+      T += input.rho * delta * delta;
+    }
+    const int mmax = 2 + deriv_order;
+    const auto boys = libint2::FmEval_Chebyshev7<double>::instance(mmax);
+    std::vector<double> seeds(mmax + 1);
+    boys->eval(seeds.data(), T, mmax);
+    if (erfc) {
+      // The long-range complement rescales both T and each radial order.
+      const double range = omega / std::sqrt(omega * omega + input.rho);
+      std::vector<double> long_range(mmax + 1);
+      boys->eval(long_range.data(), range * range * T, mmax);
+      for (int m = 0; m <= mmax; ++m)
+        seeds[m] -= std::pow(range, 2 * m + 1) * long_range[m];
+    }
+    std::vector<double> core(mmax + 1);
+    engine.eval_eri_core(core.data(), mmax, input.rho, T);
+    for (int m = 0; m <= mmax; ++m)
+      CHECK(core[m] == Approx(seeds[m]).margin(2e-14));
+    const double prefactor =
+        2. * std::pow(std::acos(-1.), 2.5) / (p * q * std::sqrt(p + q)) *
+        std::exp(-.25 * (a[0] * a[1] / p + a[2] * a[3] / q));
+    for (auto& seed : seeds) seed *= prefactor;
+    input.seeds = seeds.data();
+    input.seed_count = seeds.size();
+
+    auto shell = [&](int i, int l) {
+      return Shell{{a[i]}, {{l, false, {1.}}}, input.centers[i], false};
+    };
+    const auto A = shell(0, 1), C = shell(2, 1);
+    const auto B = paired_bra ? shell(1, 0) : Shell::unit();
+    const auto D = paired_ket ? shell(3, 0) : Shell::unit();
+    auto compute = [&](const Shell& bra, const Shell& ket)
+        -> const Engine::target_ptr_vec& {
+      if (paired_bra) return engine.compute(bra, B, ket, D);
+      if (reversed) return engine.compute(ket, D, bra);
+      if (paired_ket) return engine.compute(bra, ket, D);
+      return engine.compute(bra, ket);
+    };
+    const auto& reference = compute(A, C);
+    // The caller need not populate inactive slots as unit shells.
+    if (!paired_bra) input.exponents[1] = 100.;
+    if (!paired_ket) input.exponents[3] = 200.;
+    auto prepared = engine.prepare_eri(&input, 1, mmax);
+    REQUIRE(prepared.nshellsets() == reference.size());
+    const auto values = prepared.kernel({{1, 0, 1, 0}}).compute();
+    for (std::size_t s = 0; s < reference.size(); ++s) {
+      REQUIRE(reference[s] != nullptr);
+      for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+          CHECK(values[s][3 * i + j] ==
+                Approx(reference[s][reversed ? 3 * j + i : 3 * i + j])
+                    .margin(2e-14));
+    }
+    if (deriv_order > 0) {
+      auto records = std::array<Engine::EriPrimitive, 2>{{input, input}};
+      auto individual = engine.prepare_eri(
+          records.data(), records.size(), mmax,
+          Engine::PreparedEri::Mode::individual);
+      const auto second = individual.kernel({{1, 0, 1, 0}}).compute(1);
+      for (std::size_t s = 0; s < prepared.nshellsets(); ++s)
+        CHECK(std::equal(values[s], values[s] + 9, second[s]));
+      const auto& s_reference = compute(shell(0, 0), shell(2, 0));
+      auto radial_prefix = engine.prepare_eri(&input, 1, deriv_order);
+      const auto s_values = radial_prefix.kernel({{0, 0, 0, 0}}).compute();
+      for (std::size_t s = 0; s < s_reference.size(); ++s)
+        CHECK(s_values[s][0] == Approx(s_reference[s][0]).margin(2e-14));
+      CHECK_THROWS_AS(radial_prefix.kernel({{1, 0, 1, 0}}),
+                      std::invalid_argument);
+      CHECK_THROWS_AS(engine.prepare_eri(&input, 1, deriv_order - 1),
+                      std::invalid_argument);
+    }
+    if (!paired_bra)
+      CHECK_THROWS_AS(prepared.kernel({{0, 1, 1, 0}}), Engine::lmax_exceeded);
+    if (!paired_ket)
+      CHECK_THROWS_AS(prepared.kernel({{0, 0, 1, 1}}), Engine::lmax_exceeded);
+  };
+#if defined(LIBINT2_SUPPORT_ERI) && LIBINT2_MAX_AM_eri >= 1
+  check(Operator::erfc_coulomb, BraKet::xx_xx);
+#endif
+#if defined(LIBINT2_SUPPORT_ERI3) && LIBINT2_MAX_AM_3eri >= 1 && \
+    LIBINT2_MAX_AM_default >= 1
+  check(Operator::coulomb, BraKet::xs_xx);
+  check(Operator::coulomb, BraKet::xx_xs);
+#endif
+#if defined(LIBINT2_SUPPORT_ERI2) && LIBINT2_MAX_AM_2eri >= 1
+  check(Operator::coulomb, BraKet::xs_xs);
+#endif
+#if LIBINT2_TASK_EXISTS_4eri1 && LIBINT2_MAX_AM_eri1 >= 1
+  check(Operator::erfc_coulomb, BraKet::xx_xx, 1);
+#endif
+#if LIBINT2_TASK_EXISTS_3eri1 && LIBINT2_MAX_AM_3eri1 >= 1 && \
+    LIBINT2_MAX_AM_default1 >= 1
+  check(Operator::coulomb, BraKet::xs_xx, 1);
+#endif
+#if LIBINT2_TASK_EXISTS_2eri1 && LIBINT2_MAX_AM_2eri1 >= 1
+  check(Operator::coulomb, BraKet::xs_xs, 1);
+#endif
+}
+#endif
 
 TEST_CASE("Slater/Yukawa integrals", "[engine][2-body]") {
 #if defined(LIBINT2_SUPPORT_ERI)

@@ -20,6 +20,7 @@
 
 #include <default_params.h>
 #include <iface.h>
+#include <libint2/util/radial_seed.h>
 
 #include <fstream>
 #include <string>
@@ -567,6 +568,23 @@ void Libint2Iface::generate_inteval_type(std::ostream& os) {
       os << macro_define(tlabel, tmplabel, 1);
       // all symbols are doubles
       os << var_declare_v<double>(*s);
+    }
+
+    // The Engine accesses these radial seed prefixes as contiguous storage.
+    // Report their generated lengths so it can verify the layout.
+#define LIBINT2_SEED_NAME_IMPL(member) #member
+#define LIBINT2_SEED_NAME(member) LIBINT2_SEED_NAME_IMPL(member)
+    const Parser_prefixN eri_seed(LIBINT2_SEED_NAME(LIBINT_T_SS_EREP_SS(0)));
+    const Parser_prefixN elecpot_seed(
+        LIBINT2_SEED_NAME(LIBINT_T_S_ELECPOT_S(0)));
+#undef LIBINT2_SEED_NAME
+#undef LIBINT2_SEED_NAME_IMPL
+    for (const auto& radial :
+         {std::make_pair("ERI_SEED_COUNT", eri_seed.prefix()),
+          std::make_pair("ELECPOT_SEED_COUNT", elecpot_seed.prefix())}) {
+      const auto it = prefix_symbols.find(radial.second);
+      if (it != prefix_symbols.end())
+        os << macro_define(tlabel, radial.first, it->second.second + 1);
     }
 
     // Declare members common to all evaluators
