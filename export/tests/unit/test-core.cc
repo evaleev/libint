@@ -68,6 +68,41 @@ TEST_CASE("Engine ctor", "[engine]") {
   auto a = Engine{};
 }
 
+namespace libint2 {
+namespace detail {
+struct EngineLayoutInspector {
+  /// @return the offset of the first byte of @p member within @p engine
+  template <typename T>
+  static std::ptrdiff_t begin(const Engine& engine, const T& member) {
+    return reinterpret_cast<const char*>(&member) -
+           reinterpret_cast<const char*>(&engine);
+  }
+  /// @return the offset of the byte past @p member within @p engine
+  template <typename T>
+  static std::ptrdiff_t end(const Engine& engine, const T& member) {
+    return begin(engine, member) + static_cast<std::ptrdiff_t>(sizeof(T));
+  }
+
+  // the state of the Engine, in particular spbra_ and spket_ that compute()
+  // writes, must keep a distance of at least LIBINT2_ENGINE_FALSE_SHARING_GUARD
+  // bytes from either end of the object, see
+  // https://github.com/evaleev/libint/issues/478
+  static void check(const Engine& e) {
+    constexpr std::ptrdiff_t guard = LIBINT2_ENGINE_FALSE_SHARING_GUARD;
+    constexpr std::ptrdiff_t size = sizeof(Engine);
+    CHECK(begin(e, e.oper_) >= guard);
+    CHECK(begin(e, e.spbra_) >= guard);
+    CHECK(end(e, e.spket_) <= size - guard);
+    CHECK(end(e, e.buildfnptrs_) <= size - guard);
+  }
+};
+}  // namespace detail
+}  // namespace libint2
+
+TEST_CASE("Engine keeps its state away from its neighbors", "[engine]") {
+  libint2::detail::EngineLayoutInspector::check(Engine{});
+}
+
 TEST_CASE("Engine::set", "[engine]") {
   REQUIRE_THROWS_AS(Engine{}.set(Operator::overlap),
                     Engine::using_default_initialized);

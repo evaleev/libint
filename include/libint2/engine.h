@@ -1038,15 +1038,44 @@ constexpr size_t nbrakets_2body = static_cast<int>(BraKet::last_2body_braket) -
                                   1;
 constexpr size_t nderivorders_2body = LIBINT2_MAX_DERIV_ORDER + 1;
 
+/// the number of bytes of padding that Engine keeps at either end of its state,
+/// so that the members that Engine::compute() writes are never on the same
+/// cache line as anything outside the Engine object (e.g., another Engine
+/// used by another thread); the default, 128, covers 128-byte cache lines and
+/// the adjacent-line prefetching of some x86 processors.
+/// N.B. if overridden, it must have the same value in every translation unit
+/// that uses Engine
+#ifndef LIBINT2_ENGINE_FALSE_SHARING_GUARD
+#define LIBINT2_ENGINE_FALSE_SHARING_GUARD 128
+#endif
+static_assert(LIBINT2_ENGINE_FALSE_SHARING_GUARD > 0,
+              "LIBINT2_ENGINE_FALSE_SHARING_GUARD must be positive");
+
+namespace detail {
+/// gives the unit tests access to the layout of Engine
+struct EngineLayoutInspector;
+}  // namespace detail
+
 /**
  * Engine computes integrals of operators (or operator sets) specified by
  * combination of Operator and BraKet.
  * This class deprecates OneBodyEngine and TwoBodyEngine.
+ *
+ * An Engine is not reentrant: Engine::compute() writes into the Engine
+ * object, hence each thread must use its own copy. The copies may be kept next
+ * to each other (e.g. in a `std::vector<Engine>`): the state that compute()
+ * writes is kept at least LIBINT2_ENGINE_FALSE_SHARING_GUARD bytes away from
+ * either end of the object, so that copies used by different threads do not
+ * share cache lines. On machines with multiple NUMA domains it is still best
+ * to make each copy on the thread that will use it, so that the memory the
+ * copy allocates is local to that thread.
  */
 class Engine {
  private:
   typedef struct {
   } empty_pod;
+
+  friend struct detail::EngineLayoutInspector;
 
  public:
   static constexpr auto max_ntargets =
@@ -1561,6 +1590,10 @@ class Engine {
   };
 
  private:
+  // N.B. guard_front_ and guard_back_ must be the first and the last data
+  // members, see LIBINT2_ENGINE_FALSE_SHARING_GUARD; they hold no state and are
+  // not copied
+  char guard_front_[LIBINT2_ENGINE_FALSE_SHARING_GUARD];
   Operator oper_;
   BraKet braket_;
   std::vector<Libint_t> primdata_;
@@ -1621,6 +1654,7 @@ class Engine {
   typedef void (*buildfnptr_t)(const Libint_t*);
   /// null if the library has no kernels for this operator/braket/deriv order
   buildfnptr_t* buildfnptrs_ = nullptr;
+  char guard_back_[LIBINT2_ENGINE_FALSE_SHARING_GUARD];
 
   /// reports the number of shell sets that each call to compute() produces.
   unsigned int compute_nshellsets() const {
