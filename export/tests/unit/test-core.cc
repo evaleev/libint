@@ -84,12 +84,16 @@ struct EngineLayoutInspector {
   }
 
   // the state of the Engine, in particular spbra_ and spket_ that compute()
-  // writes, must keep a distance of at least LIBINT2_ENGINE_FALSE_SHARING_GUARD
-  // bytes from either end of the object, see
+  // writes, must keep a distance of at least false_sharing_guard_size bytes
+  // from either end of the object, see
   // https://github.com/evaleev/libint/issues/478
   static void check(const Engine& e) {
-    constexpr std::ptrdiff_t guard = LIBINT2_ENGINE_FALSE_SHARING_GUARD;
+    constexpr std::ptrdiff_t guard = Engine::false_sharing_guard_size;
     constexpr std::ptrdiff_t size = sizeof(Engine);
+    // the guards are the first and the last data members, hence any member
+    // added later is between them
+    CHECK(begin(e, e.guard_front_) == 0);
+    CHECK(end(e, e.guard_back_) == size);
     CHECK(begin(e, e.oper_) >= guard);
     CHECK(begin(e, e.spbra_) >= guard);
     CHECK(end(e, e.spket_) <= size - guard);
