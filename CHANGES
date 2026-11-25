@@ -9,6 +9,10 @@ Following is a brief summary of changes made in each release of Libint.
     derivatives; enable with LIBINT2_ENABLE_GIAO_ERI and LIBINT2_ENABLE_GIAO_ERI3 (HT @0xWOLAND)
   - PR #477: compiling against libint2/engine.h takes 2-4.5x less memory and about 2x less time,
     e.g. 2.6 GB instead of 8.3 GB with GCC 15 and the headers of a 2.14.1 library (#472)
+  - PR #479: Engine keeps 128 bytes of padding at either end, so that per-thread engines stored
+    next to each other (e.g. in std::vector<Engine>) do not share cache lines; this made integrals
+    up to 1.6x slower with many threads (#478). N.B. sizeof(Engine) grows by 256 bytes, hence
+    code that embeds Engine in its own binary interface must be recompiled
 
 - 2026-11-10: 2.14.1
   - PR #467: shared code for derivatives via translational invariance (smaller geometric-derivative
