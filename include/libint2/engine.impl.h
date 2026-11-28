@@ -2448,7 +2448,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           // the phase of this component due to the swaps (see
           // operator_traits); N.B. shell sets are ordered as
           // deriv index * nopers + component
-          const unsigned int nopers = traits::nopers;
+          // not traits::nopers: 3-center giao_coulomb computes only 3 of its 6
+          const auto nopers = this->nopers();
           const auto component = s % nopers;
           const auto deriv_index = s / nopers;
           // the component as defined by operator_traits (for the 4-center
