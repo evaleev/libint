@@ -525,7 +525,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
                     }
                   }
                 }  // operator derivs
-              }    // operator components
+              }  // operator components
 
             } break;
 
@@ -535,10 +535,10 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
                   "nuclear-type integrals are not implemented");
 
           }  // deriv_order_ switch
-        }    // reconstruct derivatives
+        }  // reconstruct derivatives
       }
     }  // ltot != 0
-  }    // pset (accumulation batches)
+  }  // pset (accumulation batches)
 
   if (tform_to_solids) {
     set_targets = false;
@@ -567,7 +567,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
       // .. and compute the destination
       targets_[s] = spherical_ints;
     }  // loop cartesian shell set
-  }    // tform to solids
+  }  // tform to solids
 
   if (set_targets) {
     for (auto s = 0ul; s != num_shellsets_computed; ++s) {
@@ -829,6 +829,96 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
 }
 
 namespace detail {
+
+template <Operator Op>
+struct compute2_core_ints_params {
+  using type = typename operator_traits<Op>::oper_params_type;
+};
+
+template <>
+struct compute2_core_ints_params<Operator::delcgtga_delcgtgb> {
+  using type = ContractedGaussianGeminal;
+};
+static_assert(
+    std::is_same<core_eval_pack_type<Operator::delcgtg2>,
+                 core_eval_pack_type<Operator::delcgtga_delcgtgb>>::value,
+    "delcgtg2 and delcgtga_delcgtgb must share the core evaluator");
+
+struct compute2_core_ints_args {
+  value_type* gm;
+  scalar_type rho;
+  scalar_type T;
+  int mmax;
+  scalar_type one_over_rho;
+};
+
+inline constexpr bool is_one_of(Operator) { return false; }
+template <typename... Ops>
+inline constexpr bool is_one_of(Operator op, Operator first, Ops... rest) {
+  return op == first || is_one_of(op, rest...);
+}
+template <bool B>
+using requires_t = typename std::enable_if<B>::type;
+
+template <Operator Op, typename Pack, typename Params>
+requires_t<is_one_of(Op, Operator::coulomb, Operator::coulomb_opop,
+                     Operator::coulomb_op, Operator::opop_coulomb_opop,
+                     Operator::op_coulomb_op, Operator::giao_coulomb)>
+compute2_core_ints(Pack& pack, const Params&,
+                   const compute2_core_ints_args& a) {
+  pack.first()->eval(a.gm, a.T, a.mmax);
+}
+template <Operator Op, typename Pack, typename Params>
+requires_t<is_one_of(Op, Operator::delta, Operator::r12)> compute2_core_ints(
+    Pack& pack, const Params&, const compute2_core_ints_args& a) {
+  pack.first()->eval(a.gm, a.rho, a.T, a.mmax);
+}
+template <Operator Op, typename Pack, typename Params>
+requires_t<is_one_of(Op, Operator::cgtg, Operator::delcgtg2,
+                     Operator::delcgtga_delcgtgb, Operator::erf_coulomb)>
+compute2_core_ints(Pack& pack, const Params& params,
+                   const compute2_core_ints_args& a) {
+  pack.first()->eval(a.gm, a.rho, a.T, a.mmax, params);
+}
+template <Operator Op, typename Pack, typename Params>
+requires_t<Op == Operator::cgtg_x_coulomb> compute2_core_ints(
+    Pack& pack, const Params& params, const compute2_core_ints_args& a) {
+  pack.first()->eval(a.gm, a.rho, a.T, a.mmax, params, &pack.second());
+}
+template <Operator Op, typename Pack, typename Params>
+requires_t<Op == Operator::truncated_coulomb> compute2_core_ints(
+    Pack& pack, const Params& params, const compute2_core_ints_args& a) {
+  pack.first()->eval(a.gm, a.rho, a.T, a.mmax, params, pack.second());
+}
+template <Operator Op, typename Pack, typename Params>
+requires_t<Op == Operator::erfc_coulomb> compute2_core_ints(
+    Pack& pack, const Params& params, const compute2_core_ints_args& a) {
+  pack.first()->eval(a.gm, a.rho, a.T, a.mmax, params, 0., 1.);
+}
+template <Operator Op, typename Pack, typename Params>
+requires_t<Op == Operator::erfx_coulomb> compute2_core_ints(
+    Pack& pack, const Params& params, const compute2_core_ints_args& a) {
+  pack.first()->eval(a.gm, a.rho, a.T, a.mmax, params[0], params[1], params[2]);
+}
+template <Operator Op, typename Pack, typename Params>
+requires_t<Op == Operator::stg> compute2_core_ints(
+    Pack& pack, const Params& zeta, const compute2_core_ints_args& a) {
+  pack.first()->eval_slater(a.gm, a.one_over_rho, a.T, a.mmax, zeta);
+}
+template <Operator Op, typename Pack, typename Params>
+requires_t<Op == Operator::stg_x_coulomb> compute2_core_ints(
+    Pack& pack, const Params& zeta, const compute2_core_ints_args& a) {
+  pack.first()->eval_yukawa(a.gm, a.one_over_rho, a.T, a.mmax, zeta);
+}
+/// compute2 is instantiated for the 1-body operators (see init_compute2_ptrs),
+/// but never called
+template <Operator Op, typename Pack, typename Params>
+requires_t<rank(Op) == 1> compute2_core_ints(Pack&, const Params&,
+                                             const compute2_core_ints_args&) {
+  assert(false && "compute2_core_ints: not a 2-body operator");
+  abort();
+}
+
 __libint2_engine_inline std::vector<Engine::compute2_ptr_type>
 init_compute2_ptrs() {
   auto max_ncompute2_ptrs = nopers_2body * nbrakets_2body * nderivorders_2body;
@@ -1563,6 +1653,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   assert(screening_method_ != ScreeningMethod::Invalid);
   // the derivative order of the integrals over the operator, known at compile
   // time, hence evaluated once rather than per primitive
+  using traits = operator_traits<op>;
   constexpr auto total_deriv_order =
       der + operator_traits<op>::intrinsic_deriv_order;
   if (buildfnptrs_ == nullptr) throw missing_kernel();
@@ -1591,7 +1682,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   bool swap_braket;
   bool swap_tbra, swap_tket;
   {
-    const auto pair_swap = this->pair_swap();
+    const auto pair_swap = traits::pair_swap;
     const auto bra_total = tbra1.contr[0].l + tbra2.contr[0].l;
     const auto ket_total = tket1.contr[0].l + tket2.contr[0].l;
     const auto bra_max = std::max(tbra1.contr[0].l, tbra2.contr[0].l);
@@ -1599,8 +1690,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     // xx_xs is the alias of xs_xx, hence always swapped; else swap if the bra
     // is "heavier" than the ket; with coupled pair swaps the kernels are
     // generated for max(la,lb) <= lc when the totals tie
-    swap_braket = braket_ == BraKet::xx_xs ||
-                  (braket_ == BraKet::xx_xx && this->braket_swap() &&
+    swap_braket = bk == BraKet::xx_xs ||
+                  (bk == BraKet::xx_xx && traits::braket_swap &&
                    (bra_total > ket_total ||
                     (pair_swap == PairSwap::coupled && bra_total == ket_total &&
                      bra_max > ket_max)));
@@ -1626,9 +1717,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   const auto swap_tbra = (tbra1.contr[0].l > tbra2.contr[0].l);
   const auto swap_tket = (tket1.contr[0].l > tket2.contr[0].l);
   const auto swap_braket =
-      ((braket_ == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l <
-                                      tket1.contr[0].l + tket2.contr[0].l)) ||
-      braket_ == BraKet::xx_xs;
+      ((bk == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l <
+                                 tket1.contr[0].l + tket2.contr[0].l)) ||
+      bk == BraKet::xx_xs;
   assert(false && "feature not implemented");
   abort();
 #endif
@@ -1738,6 +1829,21 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     const auto& C = ket1.O;
     const auto& D = ket2.O;
 
+    auto& core_eval_pack =
+        any_cast<detail::core_eval_pack_type<op>&>(core_eval_pack_);
+    const auto& core_ints_params =
+        any_cast<const typename detail::compute2_core_ints_params<op>::type&>(
+            core_ints_params_);
+    const auto ln_prec = ln_precision_;
+    const auto prec = precision_;
+    const auto scale = scale_;
+    const auto screen_with_pfac =
+        (static_cast<int>(screening_method_) &
+         (static_cast<int>(ScreeningMethod::Original) |
+          static_cast<int>(ScreeningMethod::Conservative))) != 0;
+    const auto screen_conservative =
+        screening_method_ == ScreeningMethod::Conservative;
+
     // compute all primitive quartet data
     const auto npbra = spbra.primpairs.size();
     const auto npket = spket.primpairs.size();
@@ -1745,8 +1851,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     for (auto pb = 0; pb != npbra; ++pb) {
       for (auto pk = 0; pk != npket; ++pk) {
         // primitive quartet coarse screening:
-        if (spbra.primpairs[pb].ln_scr + spket.primpairs[pk].ln_scr >
-            ln_precision_) {
+        if (spbra.primpairs[pb].ln_scr + spket.primpairs[pk].ln_scr > ln_prec) {
           Libint_t& primdata = primdata_[p];
           const auto& sbra1 = bra1;
           const auto& sbra2 = bra2;
@@ -1799,15 +1904,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           const auto sqrt_gammapq = sqrt(gammapq);
           const auto oogammapq = 1.0 / (gammapq);
           auto pfac = K12 * sqrt_gammapq * oogammapq;
-          pfac *= c0 * c1 * c2 * c3 * scale_;
+          pfac *= c0 * c1 * c2 * c3 * scale;
 
           // original and conservative methods: screen primitive integral using
           // actual pfac
-          if (static_cast<int>(screening_method_) &
-              (static_cast<int>(ScreeningMethod::Original) |
-               static_cast<int>(ScreeningMethod::Conservative))) {
+          if (screen_with_pfac) {
             scalar_type magnitude_estimate = std::abs(pfac);
-            if (screening_method_ == ScreeningMethod::Conservative) {
+            if (screen_conservative) {
               // magnitude of primitive (ab|cd) integral for nonzero L differs
               // from that of (00|00) geometric and exponent-dependent factor,
               // some of which only depend on bra or ket, and some are bra-ket
@@ -1817,7 +1920,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   1., spbrapp.nonsph_screen_fac * spketpp.nonsph_screen_fac);
               magnitude_estimate *= nonspherical_pfac_magnitude * npbraket;
             }
-            if (magnitude_estimate < precision_) continue;
+            if (magnitude_estimate < prec) continue;
           }
 
           {
@@ -1826,171 +1929,18 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             auto* gm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
             const auto mmax = l + total_deriv_order;
 
-            if (!skip_core_ints) {
-// Simple core-eval dispatch: just `core_eval_ptr->eval(gm_ptr, T, mmax)`.
-// Applies to Coulomb-family operators whose core integral is the bare Fm.
-#define LIBINT2_SIMPLE_CORE_EVAL_CASE(OP)                           \
-  case Operator::OP: {                                              \
-    const auto& core_eval_ptr =                                     \
-        any_cast<const detail::core_eval_pack_type<Operator::OP>&>( \
-            core_eval_pack_)                                        \
-            .first();                                               \
-    core_eval_ptr->eval(gm_ptr, T, mmax);                           \
-  } break
-              switch (oper_) {
-                LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb);
-                LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb_opop);
-                LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb_op);
-                LIBINT2_SIMPLE_CORE_EVAL_CASE(opop_coulomb_opop);
-                LIBINT2_SIMPLE_CORE_EVAL_CASE(op_coulomb_op);
-                LIBINT2_SIMPLE_CORE_EVAL_CASE(giao_coulomb);
-                case Operator::cgtg_x_coulomb: {
-                  const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<
-                          Operator::cgtg_x_coulomb>&>(core_eval_pack_)
-                          .first();
-                  auto& core_eval_scratch =
-                      any_cast<detail::core_eval_pack_type<
-                          Operator::cgtg_x_coulomb>&>(core_eval_pack_)
-                          .second();
-                  const auto& core_ints_params =
-                      any_cast<const typename operator_traits<
-                          Operator::cgtg>::oper_params_type&>(
-                          core_ints_params_);
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params,
-                                      &core_eval_scratch);
-                } break;
-                case Operator::cgtg: {
-                  const auto& core_eval_ptr =
-                      any_cast<
-                          const detail::core_eval_pack_type<Operator::cgtg>&>(
-                          core_eval_pack_)
-                          .first();
-                  const auto& core_ints_params =
-                      any_cast<const typename operator_traits<
-                          Operator::cgtg>::oper_params_type&>(
-                          core_ints_params_);
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
-                } break;
-                // N.B. delcgtga_delcgtgb has the same core evaluator as
-                // delcgtg2, and for both core_ints_params_ holds the product
-                // geminal, see init_core_ints_params
-                case Operator::delcgtg2:
-                case Operator::delcgtga_delcgtgb: {
-                  static_assert(
-                      std::is_same<
-                          detail::core_eval_pack_type<Operator::delcgtg2>,
-                          detail::core_eval_pack_type<
-                              Operator::delcgtga_delcgtgb>>::value,
-                      "delcgtg2 and delcgtga_delcgtgb must share the core "
-                      "evaluator");
-                  const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<
-                          Operator::delcgtg2>&>(core_eval_pack_)
-                          .first();
-                  const auto& core_ints_params =
-                      any_cast<const typename operator_traits<
-                          Operator::cgtg>::oper_params_type&>(
-                          core_ints_params_);
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
-                } break;
-                case Operator::delta: {
-                  const auto& core_eval_ptr =
-                      any_cast<
-                          const detail::core_eval_pack_type<Operator::delta>&>(
-                          core_eval_pack_)
-                          .first();
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax);
-                } break;
-                case Operator::r12: {
-                  const auto& core_eval_ptr =
-                      any_cast<
-                          const detail::core_eval_pack_type<Operator::r12>&>(
-                          core_eval_pack_)
-                          .first();
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax);
-                } break;
-                case Operator::truncated_coulomb: {
-                  auto& pack = any_cast<detail::core_eval_pack_type<
-                      Operator::truncated_coulomb>&>(core_eval_pack_);
-                  const auto cutoff = any_cast<typename operator_traits<
-                      Operator::truncated_coulomb>::oper_params_type>(
-                      core_ints_params_);
-                  pack.first()->eval(gm_ptr, rho, T, mmax, cutoff,
-                                     pack.second());
-                } break;
-                case Operator::erf_coulomb: {
-                  const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<
-                          Operator::erf_coulomb>&>(core_eval_pack_)
-                          .first();
-                  const auto& core_ints_params =
-                      any_cast<const typename operator_traits<
-                          Operator::erf_coulomb>::oper_params_type&>(
-                          core_ints_params_);
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
-                } break;
-                case Operator::erfc_coulomb: {
-                  const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<
-                          Operator::erfc_coulomb>&>(core_eval_pack_)
-                          .first();
-                  const auto& core_ints_params =
-                      any_cast<const typename operator_traits<
-                          Operator::erfc_coulomb>::oper_params_type&>(
-                          core_ints_params_);
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params,
-                                      0., 1.);
-                } break;
-                case Operator::erfx_coulomb: {
-                  const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<
-                          Operator::erfx_coulomb>&>(core_eval_pack_)
-                          .first();
-                  const auto& core_ints_params =
-                      any_cast<const typename operator_traits<
-                          Operator::erfx_coulomb>::oper_params_type&>(
-                          core_ints_params_);
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params[0],
-                                      core_ints_params[1], core_ints_params[2]);
-                } break;
-                case Operator::stg: {
-                  const auto& core_eval_ptr =
-                      any_cast<
-                          const detail::core_eval_pack_type<Operator::stg>&>(
-                          core_eval_pack_)
-                          .first();
-                  auto zeta = any_cast<const typename operator_traits<
-                      Operator::stg>::oper_params_type&>(core_ints_params_);
-                  const auto one_over_rho = gammapq * oogammap * oogammaq;
-                  core_eval_ptr->eval_slater(gm_ptr, one_over_rho, T, mmax,
-                                             zeta);
-                } break;
-                case Operator::stg_x_coulomb: {
-                  const auto& core_eval_ptr =
-                      any_cast<
-                          const detail::core_eval_pack_type<Operator::stg>&>(
-                          core_eval_pack_)
-                          .first();
-                  auto zeta = any_cast<const typename operator_traits<
-                      Operator::stg>::oper_params_type&>(core_ints_params_);
-                  const auto one_over_rho = gammapq * oogammap * oogammaq;
-                  core_eval_ptr->eval_yukawa(gm_ptr, one_over_rho, T, mmax,
-                                             zeta);
-                } break;
-                default:
-                  assert(false && "missing case in a switch");  // unreachable
-                  abort();
-              }
-#undef LIBINT2_SIMPLE_CORE_EVAL_CASE
-            }
+            if (!skip_core_ints)
+              detail::compute2_core_ints<op>(
+                  core_eval_pack, core_ints_params,
+                  {gm_ptr, rho, T, static_cast<int>(mmax),
+                   gammapq * oogammap * oogammaq});
 
             for (auto m = 0; m != mmax + 1; ++m) {
               gm_ptr[m] *= pfac;
             }
 
             if (mmax != 0) {
-              if (braket_ == BraKet::xx_xx) {
+              if (bk == BraKet::xx_xx) {
 #if LIBINT2_DEFINED(eri, PA_x)
                 primdata.PA_x[0] = P[0] - A[0];
 #endif
@@ -2011,7 +1961,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
               }
 
-              if (braket_ != BraKet::xs_xs) {
+              if (bk != BraKet::xs_xs) {
 #if LIBINT2_DEFINED(eri, QC_x)
                 primdata.QC_x[0] = Q[0] - C[0];
 #endif
@@ -2032,7 +1982,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
               }
 
-              if (braket_ == BraKet::xx_xx) {
+              if (bk == BraKet::xx_xx) {
 #if LIBINT2_DEFINED(eri, AB_x)
                 primdata.AB_x[0] = AB[0];
 #endif
@@ -2053,7 +2003,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
               }
 
-              if (braket_ != BraKet::xs_xs) {
+              if (bk != BraKet::xs_xs) {
 #if LIBINT2_DEFINED(eri, CD_x)
                 primdata.CD_x[0] = CD[0];
 #endif
@@ -2261,8 +2211,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           }  // prefac-based prim quartet screen
 
         }  // rough prim quartet screen based on pair values
-      }    // ket prim pair
-    }      // bra prim pair
+      }  // ket prim pair
+    }  // bra prim pair
     primdata_[0].contrdepth = p;
   }
 
@@ -2301,7 +2251,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     class_profiles[id].build_vrr += t1.count();
 #endif
 #endif
-  }       // compute directly
+  }  // compute directly
   else {  // call libint
 #ifdef LIBINT2_ENGINE_TIMERS
 #ifdef LIBINT2_PROFILE
@@ -2323,7 +2273,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     };
 
     size_t buildfnidx;
-    switch (braket_) {
+    switch (bk) {
       case BraKet::xx_xx:
         check_lmax(bra1, hard_lmax_);
         check_lmax(bra2, hard_lmax_);
@@ -2368,9 +2318,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
         // fitting shell pure only for derivative order 0, see build_libint.cc).
         // Such kernels produce garbage for a cartesian shell, hence check in
         // all builds
-        if (detail::eri3_pure_sh && deriv_order_ == 0 &&
-            !detail::is_rkb_2body(oper_) && oper_ != Operator::giao_coulomb &&
-            bra1.contr[0].l > 1 && !bra1.contr[0].pure)
+        if (detail::eri3_pure_sh && der == 0 && !detail::is_rkb_2body(op) &&
+            op != Operator::giao_coulomb && bra1.contr[0].l > 1 &&
+            !bra1.contr[0].pure)
           throw std::invalid_argument(
               "Engine::compute2 -- this library assumes that the fitting "
               "(bra) shell of 3-center 2-body integrals is a solid harmonics "
@@ -2384,11 +2334,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #ifdef LIBINT_ERI2_PURE_SH
         // as for 3-center: derivative kernels are generated for cartesian
         // shells, only the energy kernels assume solid harmonics
-        if (deriv_order_ == 0 && bra1.contr[0].l > 1)
+        if (der == 0 && bra1.contr[0].l > 1)
           assert(bra1.contr[0].pure &&
                  "library assumes solid harmonics shells in a 2-center "
                  "2-body int, but a cartesian shell given in bra");
-        if (deriv_order_ == 0 && ket1.contr[0].l > 1)
+        if (der == 0 && ket1.contr[0].l > 1)
           assert(ket1.contr[0].pure &&
                  "library assumes solid harmonics shells in a 2-center "
                  "2-body int, but a cartesian shell given in ket");
@@ -2498,6 +2448,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           // the phase of this component due to the swaps (see
           // operator_traits); N.B. shell sets are ordered as
           // deriv index * nopers + component
+          // not traits::nopers: 3-center giao_coulomb computes only 3 of its 6
           const auto nopers = this->nopers();
           const auto component = s % nopers;
           const auto deriv_index = s / nopers;
@@ -2506,19 +2457,19 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           // BraKet::xx_xs the paired functions are in the ket (xs_xx)
           const auto trait_component = this->first_component() + component;
           const value_type component_phase =
-              (swap_ket ? this->pair_swap_phase(trait_component) : 1) *
-              (swap_bra && this->pair_swap() == PairSwap::independent
-                   ? this->bra_pair_swap_phase(trait_component)
+              (swap_ket ? traits::pair_swap_phase(trait_component) : 1) *
+              (swap_bra && traits::pair_swap == PairSwap::independent
+                   ? traits::bra_pair_swap_phase(trait_component)
                    : 1) *
-              (swap_braket ? this->braket_swap_phase(trait_component) : 1);
+              (swap_braket ? traits::braket_swap_phase(trait_component) : 1);
 
           // if permuting derivatives ints must update their derivative index
           // Additional BraKet types would require adding support to
           // DerivMapGenerator::generate_deriv_index_map
-          if (deriv_order_) {
+          if (der) {
             Tensor<size_t>& mapDerivIndex =
-                libint2::DerivMapGenerator::instance(deriv_order_, braket_);
-            switch (braket_) {
+                libint2::DerivMapGenerator::instance(der, bk);
+            switch (bk) {
               case BraKet::xx_xx: {
                 s_target =
                     mapDerivIndex((size_t)swap_braket, (size_t)swap_tbra,
@@ -2590,7 +2541,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   tgt_blk_mat = component_phase * src_blk_mat;
               }
             }  // end of loop
-          }    // over rows of source
+          }  // over rows of source
           std::swap(source, target);
         }  // need to permute?
 
@@ -2617,11 +2568,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
       // operator_traits::braket_swap_remap)
       // (N.B. not for 3-center integrals: BraKet::xx_xs is computed as xs_xx,
       // both have the components of the one AO pair only)
-      if (permute && swap_braket && braket_ == BraKet::xx_xx) {
-        const auto nopers = this->nopers();
+      if (permute && swap_braket && bk == BraKet::xx_xx) {
+        const unsigned int nopers = traits::nopers;
         bool trivial = true;
         for (auto c = 0u; c != nopers && trivial; ++c)
-          trivial = (this->braket_swap_remap(c) == c);
+          trivial = (traits::braket_swap_remap(c) == c);
         if (!trivial) {
           // N.B. targets_ uses ext_stack_allocator (its elements live in
           // primdata_[0].targets); do not copy the vector, a copy inherits
@@ -2632,11 +2583,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           for (auto s = 0; s != ntargets; ++s) {
             const auto d = s / nopers;
             const auto c = s % nopers;
-            targets_[d * nopers + this->braket_swap_remap(c)] = tmp[s];
+            targets_[d * nopers + traits::braket_swap_remap(c)] = tmp[s];
           }
         }
       }
-    }       // if need_scratch => needed to transpose and/or tform
+    }  // if need_scratch => needed to transpose and/or tform
     else {  // did not use scratch? may still need to update targets_
       if (set_targets_) {
         for (auto s = 0; s != ntargets; ++s)
